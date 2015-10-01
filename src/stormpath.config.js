@@ -78,6 +78,23 @@ angular.module('stormpath.CONFIG',[])
     /**
     * @ngdoc property
     *
+    * @name SOCIAL_LOGIN_SERVICE_NAME
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `$socialLogin`
+    *
+    * The name of the social login service, this changes the
+    * service name that you inject.
+    */
+    SOCIAL_LOGIN_SERVICE_NAME: '$socialLogin',
+
+
+    /**
+    * @ngdoc property
+    *
     * @name AUTHENTICATION_ENDPOINT
     *
     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
@@ -164,6 +181,24 @@ angular.module('stormpath.CONFIG',[])
     *
     */
     EMAIL_VERIFICATION_ENDPOINT: '/verify',
+
+
+    /**
+    * @ngdoc property
+    *
+    * @name OAUTH_PROVIDERS_ENDPOINT
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `/oauth/provider`
+    *
+    * The endpoint that is used for fetching a list of available OAuth providers.
+    * Used by {@link stormpath.socialLoginService.$socialLogin#getProviders $socialLogin.getProviders()}.
+    *
+    */
+    OAUTH_PROVIDERS_ENDPOINT: '/oauth/providers',
 
 
     /**

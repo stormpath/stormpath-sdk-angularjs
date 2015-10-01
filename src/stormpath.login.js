@@ -2,7 +2,14 @@
 
 angular.module('stormpath')
 
-.controller('SpLoginFormCtrl', ['$scope','$auth',function ($scope,$auth) {
+.controller('SpLoginFormCtrl', ['$scope','$auth','$socialLogin',function ($scope,$auth,$socialLogin) {
+  // Load list of social login providers from server.
+  $socialLogin.getProviders().then(function(providers) {
+    $scope.socialLoginProviders = providers;
+  }).catch(function(err) {
+    throw new Error('Could not load social providers from back-end: ' + err.message);
+  });
+
   $scope.formModel = {
     username: '',
     password: ''
@@ -14,7 +21,7 @@ angular.module('stormpath')
     $auth.authenticate($scope.formModel)
       .catch(function(response){
         $scope.posting = false;
-        $scope.error = response.data && response.data.error || 'XHR Error';
+        $scope.error = response.data && response.data.error || 'An error occured when communicating with server.';
       });
   };
 }])

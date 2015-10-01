@@ -83,7 +83,15 @@
  * });
  * </pre>
  */
-angular.module('stormpath',['stormpath.CONFIG','stormpath.auth','stormpath.userService'])
+angular.module('stormpath', [
+  'stormpath.CONFIG',
+  'stormpath.auth',
+  'stormpath.userService',
+  'stormpath.socialLogin',
+  'stormpath.facebookLogin',
+  'stormpath.googleLogin',
+  'stormpath.linkedinLogin'
+])
 .factory('SpAuthInterceptor',[function(){
   function SpAuthInterceptor(){
 

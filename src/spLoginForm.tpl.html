@@ -18,6 +18,11 @@
         <div class="col-sm-offset-4 col-sm-4">
           <p class="text-danger" ng-show="error" ng-bind="error"></p>
           <button type="submit" class="btn btn-primary" ng-disabled="posting">Login</button>
+
+          <div ng-repeat="(name, provider) in socialLoginProviders">
+            <button ng-show="provider.enabled" type="button" class="btn btn-primary" sp-social-login="{{name}}">Login with {{provider.service.name}}</button>
+          </div>
+
           <a href="/forgot" class="pull-right">Forgot Password</a>
         </div>
       </div>

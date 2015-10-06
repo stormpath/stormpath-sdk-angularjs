@@ -76,7 +76,7 @@ use it to secure your API::
 
     // ..
 
-    app.use('/api/things', ExpressStormpath.apiAuthenticationRequired, require('./api/thing'));
+    app.use('/api/things', ExpressStormpath.loginRequired, require('./api/thing'));
 
 Reload the App
 ---------------

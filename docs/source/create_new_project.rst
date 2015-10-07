@@ -120,4 +120,4 @@ stop the server by pressing ``Ctrl+C`` - then use these git commands::
 
 .. _Stormpath Admin Console: https://api.stormpath.com
 .. _Stormpath Angular SDK: https://github.com/stormpath/stormpath-sdk-angularjs
-.. _Stormpath Express Module: https://github.com/stormpath/stormpath-express
+.. _Stormpath Express Module: https://github.com/stormpath/express-stormpath

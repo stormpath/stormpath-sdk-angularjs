@@ -169,7 +169,7 @@ Apache 2.0, see [LICENSE](LICENSE).
 [example app]: https://github.com/stormpath/stormpath-sdk-angularjs/tree/master/example/dashboard-app
 [API Documentation]: https://docs.stormpath.com/angularjs/sdk/
 [Server Integration Guide]: https://docs.stormpath.com/angularjs/sdk/#/server
-[express-stormpath]: https://github.com/stormpath/stormpath-express
+[express-stormpath]: https://github.com/stormpath/express-stormpath
 [Stormpath SPA Development Server]: https://github.com/stormpath/stormpath-spa-dev-server
 [UI-Router]: https://github.com/angular-ui/ui-router
 [Yeoman Guide]: https://docs.stormpath.com/angularjs/guide

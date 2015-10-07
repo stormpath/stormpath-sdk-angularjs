@@ -36,7 +36,7 @@ For **other frameworks**, please see the [Server Integration Guide][].
 
 For a **quick demo setup**, use our [Stormpath SPA Development Server][].
 
-[express-stormpath]: https://github.com/stormpath/stormpath-express
+[express-stormpath]: https://github.com/stormpath/express-stormpath
 [Server Integration Guide]: https://docs.stormpath.com/angularjs/sdk/#/server
 [Stormpath SPA Development Server]: https://github.com/stormpath/stormpath-spa-dev-server
 [ui-router]: https://github.com/angular-ui/ui-router

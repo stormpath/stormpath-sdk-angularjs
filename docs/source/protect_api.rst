@@ -94,4 +94,4 @@ sections, we will show you how to create a registration form and a login form.
 At that point, you will be able to login and have access to the API.
 
 .. _Configuration and Config Vars: https://devcenter.heroku.com/articles/config-vars
-.. _Stormpath Express Module: https://github.com/stormpath/stormpath-express
+.. _Stormpath Express Module: https://github.com/stormpath/express-stormpath

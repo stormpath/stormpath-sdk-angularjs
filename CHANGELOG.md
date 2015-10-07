@@ -212,6 +212,6 @@ would break after logout (user state was not properly reflected after logout)
 [$stateChangeUnauthorized]: https://docs.stormpath.com/angularjs/sdk/#/api/stormpath.$stormpath#events_$statechangeunauthorized
 [ifUserInGroup]: https://docs.stormpath.com/angularjs/sdk/#/api/stormpath.ifUserInGroup:ifUserInGroup
 [ifUserNotInGroup]: https://docs.stormpath.com/angularjs/sdk/#/api/stormpath.ifUserNotInGroup:ifUserNotInGroup
-[Express-Stormpath]: https://github.com/stormpath/stormpath-express
+[Express-Stormpath]: https://github.com/stormpath/express-stormpath
 [Server Configuration]: http://docs.stormpath.com/angularjs/guide/protect_api.html
 [Yeoman Guide]: http://docs.stormpath.com/angularjs/guide/

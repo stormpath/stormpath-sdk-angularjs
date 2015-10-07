@@ -177,6 +177,6 @@ For more information, please see [Using Stormpath for OAuth 2.0 and Access/Refre
 [docs.stormpath.com]: https://docs.stormpath.com
 [ui-router]: https://github.com/angular-ui/ui-router
 [stormpath-sdk-node]: https://github.com/stormpath/stormpath-sdk-node "Stormpath Node SDK"
-[Stormpath Express Module]: https://github.com/stormpath/stormpath-express
+[Stormpath Express Module]: https://github.com/stormpath/express-stormpath
 
 [Using Stormpath for OAuth 2.0 and Access/Refresh Token Management]: http://docs.stormpath.com/guides/token-management/

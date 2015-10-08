@@ -88,15 +88,15 @@ angular.module('stormpath')
  * If you would like to customize the form:
  *
  * * Create a new view file in your application.
- * * Copy our default template into your file, found here:
+ * * Copy our default template HTML code into your file, found here:
  * <a href="https://github.com/stormpath/stormpath-sdk-angularjs/blob/master/src/spRegistrationForm.tpl.html" target="_blank">spRegistrationForm.tpl.html</a>.
  * * Modify the template to fit your needs, making sure to use `formModel.<FIELD>` as the
  * value for `ng-model` where `.<FIELD>` is the name of the field you want to set on
  * the new account (such as `middleName`).
  * * Use the `template-url` option on the directive to point to your new view file.
  *
- * If you would like to add Custom Data to the new account, you can add form inputs to the template
- * and use `formModel.customData.<FIELD>` as the value for `ng-model`
+ * Any form fields you supply that are not one of the default fields (first name, last name)
+ * will be automatically placed into the new account's customa data object.
  *
  * # Email Verification
  *

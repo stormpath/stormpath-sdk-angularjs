@@ -65,6 +65,12 @@ Previously it gave you a truthy value that would indicate if the account require
 email verification.  Now that the entire account object is passed, you need to
 inspect the account object's `status` property to see if it is `UNVERIFIED`.
 
+If your registration form is passing data for the new account's custom data
+object, you will need to change your `ng-model` references from
+`formModel.customData.<FIELD>` to `formModel.<FIELD>`.  We will automaticaly
+find the properties that are not part of the base account object, and place them
+on the custom data object for you.
+
 #### Error responses
 
 This SDK now expects any HTTP call which results in a `4xx` error to supply an

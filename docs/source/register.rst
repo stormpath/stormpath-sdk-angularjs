@@ -190,7 +190,7 @@ into it.  Then add the following markup to it in a place that you like:
   <div class="form-group">
     <label for="favColor" class="col-xs-12 col-sm-4 control-label">Favorite Color</label>
     <div class="col-xs-12 col-sm-4">
-      <input type="text" class="form-control" id="favColor" ng-model="formModel.customData.favColor" ng-disabled="creating">
+      <input type="text" class="form-control" id="favColor" ng-model="formModel.favColor" ng-disabled="creating">
     </div>
   </div>
 

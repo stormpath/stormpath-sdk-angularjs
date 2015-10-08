@@ -76,7 +76,7 @@ module.exports = function (grunt) {
         }
       },
       guide: {
-        files: ['docs/source/*.rst'],
+        files: ['docs/source/*.rst','docs/source/_themes/stormpath/*/**'],
         tasks: ['shell:guide'],
         options: {
           livereload: 35731,

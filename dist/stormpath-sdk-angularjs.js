@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2015
  * 
- * @version v0.7.0-dev-2015-09-25
+ * @version v0.7.1-dev-2015-10-08
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -555,6 +555,12 @@ angular.module('stormpath',['stormpath.CONFIG','stormpath.auth','stormpath.userS
  * * A reference to a property on the $scope.  That property can be a string or
  * regular expression.
  *
+ * **Note**: This feature depends on the data that is returned by the
+ * {@link api/stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG#properties_CURRENT_USER_URI CURRENT_USER_URI}.
+ * Your server should expand the account's groups before returning the user.
+ * If you are using [express-stormpath](https://github.com/stormpath/express-stormpath), simply use
+ * [Automatic Expansion](http://docs.stormpath.com/nodejs/express/latest/user_data.html#automatic-expansion)
+ *
  * # Using Regular Expressions
  *
  * If using a string expression as the attribute value, you can pass a regular
@@ -640,6 +646,12 @@ angular.module('stormpath',['stormpath.CONFIG','stormpath.auth','stormpath.userS
  *
  * This is the inverse of {@link stormpath.ifUserInGroup:ifUserInGroup ifUserInGroup},
  * please refer to that directive for full usage information.
+ *
+ * **Note**: This feature depends on the data that is returned by the
+ * {@link api/stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG#properties_CURRENT_USER_URI CURRENT_USER_URI}.
+ * Your server should expand the account's groups before returning the user.
+ * If you are using [express-stormpath](https://github.com/stormpath/express-stormpath), simply use
+ * [Automatic Expansion](http://docs.stormpath.com/nodejs/express/latest/user_data.html#automatic-expansion)
  *
  * @example
  *
@@ -1898,15 +1910,15 @@ angular.module('stormpath')
  * If you would like to customize the form:
  *
  * * Create a new view file in your application.
- * * Copy our default template into your file, found here:
+ * * Copy our default template HTML code into your file, found here:
  * <a href="https://github.com/stormpath/stormpath-sdk-angularjs/blob/master/src/spRegistrationForm.tpl.html" target="_blank">spRegistrationForm.tpl.html</a>.
  * * Modify the template to fit your needs, making sure to use `formModel.<FIELD>` as the
  * value for `ng-model` where `.<FIELD>` is the name of the field you want to set on
  * the new account (such as `middleName`).
  * * Use the `template-url` option on the directive to point to your new view file.
  *
- * If you would like to add Custom Data to the new account, you can add form inputs to the template
- * and use `formModel.customData.<FIELD>` as the value for `ng-model`
+ * Any form fields you supply that are not one of the default fields (first name, last name)
+ * will be automatically placed into the new account's customa data object.
  *
  * # Email Verification
  *
@@ -1999,7 +2011,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
   * Please use the `ifUserInGroup` directive instead
   */
   User.prototype.inGroup = function inGroup(groupName) {
-    return this.groups.filter(function(group){
+    return this.groups.items.filter(function(group){
       return group.name === groupName;
     }).length >0;
   };
@@ -2008,7 +2020,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
   * Please use the `ifUserInGroup` directive instead
   */
   User.prototype.matchesGroupExpression = function matchesGroupExpression(regex) {
-    return this.groups.filter(function(group){
+    return this.groups.items.filter(function(group){
       return regex.test(group.name);
     }).length >0;
   };

@@ -1,3 +1,10 @@
+# 0.7.1
+
+**Not Yet Released**
+
+Fixed the [ifUserInGroup][] and [ifUserNotInGroup][] directives to expect the
+new data format (expanded `account.groups`) from the `/me` route
+
 # 0.7.0
 
 ### ! ** Many Breaking Changes ** !

@@ -34,7 +34,7 @@ or ``set`` commands in your terminal.
 
 
 Require the Stormpath Module
----------------------------
+----------------------------
 
 Open the file ``server/app.js``.  This file is the entry point for our API
 server, it will run the server.
@@ -64,13 +64,27 @@ the default options.  Add this line after the ``var app = express();`` statement
 
 That block of code will attach Stormpath to your Express application, and let
 Stormpath know where the root of your Angular application is (the folder
-where all of the Angular assets live)
+where all of the Angular assets live).
 
-Open the file ``server/routes.js``.
+We also need to instruct Express to wait for Stormpath to be initialized.  Our
+module makes several requests to our API in order to fetch the information that
+it needs to correctly configure your Express application.  Find
+``server.listen`` statement at the end of the file, and wrap it in an event
+handler for ``stormpath.ready``, like so::
 
-This file is attaching some routes to the Express application that is setup in
-``server/app.js``.  You'll want to require ``express-stormpath`` again, and then
-use it to secure your API::
+    app.on('stormpath.ready',function() {
+      // Start server
+      server.listen(config.port, config.ip, function () {
+        console.log('Express server listening on %d, in %s mode', config.port, app.get('env'));
+      });
+    });
+
+Protect Your API Routes
+-----------------------
+
+Open the file ``server/routes.js``. This file is attaching some routes to the
+Express application that is setup in ``server/app.js``.  You'll want to require
+``express-stormpath`` again, and then use it to secure your API::
 
     var ExpressStormpath = require('express-stormpath');
 

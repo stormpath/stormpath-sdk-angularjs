@@ -540,6 +540,12 @@ angular.module('stormpath',['stormpath.CONFIG','stormpath.auth','stormpath.userS
  * * A reference to a property on the $scope.  That property can be a string or
  * regular expression.
  *
+ * **Note**: This feature depends on the data that is returned by the
+ * {@link api/stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG#properties_CURRENT_USER_URI CURRENT_USER_URI}.
+ * Your server should expand the account's groups before returning the user.
+ * If you are using [express-stormpath](https://github.com/stormpath/express-stormpath), simply use
+ * [Automatic Expansion](http://docs.stormpath.com/nodejs/express/latest/user_data.html#automatic-expansion)
+ *
  * # Using Regular Expressions
  *
  * If using a string expression as the attribute value, you can pass a regular
@@ -625,6 +631,12 @@ angular.module('stormpath',['stormpath.CONFIG','stormpath.auth','stormpath.userS
  *
  * This is the inverse of {@link stormpath.ifUserInGroup:ifUserInGroup ifUserInGroup},
  * please refer to that directive for full usage information.
+ *
+ * **Note**: This feature depends on the data that is returned by the
+ * {@link api/stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG#properties_CURRENT_USER_URI CURRENT_USER_URI}.
+ * Your server should expand the account's groups before returning the user.
+ * If you are using [express-stormpath](https://github.com/stormpath/express-stormpath), simply use
+ * [Automatic Expansion](http://docs.stormpath.com/nodejs/express/latest/user_data.html#automatic-expansion)
  *
  * @example
  *

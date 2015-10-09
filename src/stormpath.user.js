@@ -46,7 +46,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
   * Please use the `ifUserInGroup` directive instead
   */
   User.prototype.inGroup = function inGroup(groupName) {
-    return this.groups.filter(function(group){
+    return this.groups.items.filter(function(group){
       return group.name === groupName;
     }).length >0;
   };
@@ -55,7 +55,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
   * Please use the `ifUserInGroup` directive instead
   */
   User.prototype.matchesGroupExpression = function matchesGroupExpression(regex) {
-    return this.groups.filter(function(group){
+    return this.groups.items.filter(function(group){
       return regex.test(group.name);
     }).length >0;
   };

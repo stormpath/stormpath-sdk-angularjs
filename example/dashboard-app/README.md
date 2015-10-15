@@ -1,9 +1,9 @@
 # Stormpath Angular SDK Example
 
-This folder contains an example application that is build with the [Stormpath Angular SDK][]
+This folder contains an example application that is built with the [Stormpath Angular SDK][]
 and [Stormpath Express][].
 
-This application is the same one that is build when you follow the [Yeoman Guide][].
+This application is the same one that is built when you follow the [Yeoman Guide][].
 
 #### Running the Example Application
 
@@ -31,7 +31,7 @@ This application is the same one that is build when you follow the [Yeoman Guide
   ```bash
   export STORMPATH_CLIENT_APIKEY_ID=xxx
   export STORMPATH_CLIENT_APIKEY_SECRET=xxx
-  export STORMPATH_CLIENT_APPLICATION_HREF=xxx
+  export STORMPATH_APPLICATION_HREF=xxx
   ```
 
 5. Start the server with Grunt, this should start the server and open the Angular

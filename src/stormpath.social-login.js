@@ -30,6 +30,8 @@
       try {
         service = $injector.get('$' + providerName + 'Login');
       } catch (err) {
+        // Delete the provider from the list if we don't support it yet.
+        delete providers[providerName];
         return;
       }
 
@@ -145,7 +147,7 @@
    *
    * @description
    *
-   * Add this directive to a button or link in order to authenticate using an OAuth provider. The value should be an OAuth provider id such as google, github, facebook or linkedin.
+   * Add this directive to a button or link in order to authenticate using an OAuth provider. The value should be an OAuth provider id such as google or facebook.
    *
    * @example
    *

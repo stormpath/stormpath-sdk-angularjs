@@ -1,3 +1,7 @@
+// We've disabled support for social login with LinkedIn until we've
+// solved how to manage the differences between other OAuth providers.
+// https://developer-programs.linkedin.com/documents/exchange-jsapi-tokens-rest-api-oauth-tokens
+
 (function() {
   'use strict';
 

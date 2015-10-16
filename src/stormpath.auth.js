@@ -135,6 +135,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
         op.then(function(){
           $rootScope.$broadcast(STORMPATH_CONFIG.SESSION_END_EVENT);
         },function(response){
+          $rootScope.$broadcast(STORMPATH_CONFIG.SESSION_END_EVENT);
           console.error('logout error',response);
         });
         return op;

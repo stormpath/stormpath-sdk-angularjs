@@ -1,0 +1,25 @@
+{
+  "name": "cors-app",
+  "homepage": "https://github.com/stormpath/stormpath-sdk-angularjs",
+  "authors": [
+    "Robert <robert@stormpath.com>"
+  ],
+  "description": "",
+  "main": "",
+  "moduleType": [],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "app/bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular": "~1.4.7",
+    "stormpath-sdk-angularjs": "~0.7.1",
+    "jquery": "~2.1.4",
+    "bootstrap": "~3.3.5"
+  }
+}

@@ -172,7 +172,7 @@
           }
         });
 
-        element.click(function() {
+        element.bind('click', function() {
           var options = { scope: attrs.spScope }; // `scope` is OAuth scope, and not Angular scope
 
           parentScope.posting = true;

@@ -1,6 +1,10 @@
+# 0.7.2
+
+* Updating `grunt-contrib` dependencies
+
 # 0.7.1
 
-**Not Yet Released**
+**Released on October 8th, 2011**
 
 Fixed the [ifUserInGroup][] and [ifUserNotInGroup][] directives to expect the
 new data format (expanded `account.groups`) from the `/me` route

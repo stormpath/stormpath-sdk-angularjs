@@ -53,7 +53,7 @@
    *
    * @description
    *
-   * Returns a list of all social providers, provided by the `/spa-config/social-providers` endpoint.
+   * Returns a list of all social providers, provided by the `/spa-config` endpoint.
    */
   SocialLoginService.prototype.getProviders = function getProviders() {
     var providersPromise = this.providersPromise;
@@ -66,10 +66,12 @@
     providersPromise = this.$q.defer();
     this.providersPromise = providersPromise;
 
-    this.$http.get(this.STORMPATH_CONFIG.getUrl('SOCIAL_PROVIDERS_ENDPOINT')).then(function(response) {
-      var providers = response.data;
+    this.$http.get(this.STORMPATH_CONFIG.getUrl('SPA_CONFIG_ENDPOINT')).then(function(response) {
+      var providers;
 
-      if (!providers || typeof providers !== 'object') {
+      if (response.data && typeof response.data === 'object') {
+        providers = response.data.socialProviders;
+      } else {
         providers = {};
       }
 

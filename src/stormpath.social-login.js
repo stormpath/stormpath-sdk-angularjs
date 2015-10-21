@@ -49,11 +49,11 @@
    *
    * @returns {promise}
    *
-   * A promise that is resolved with the list of all available OAuth providers.
+   * A promise that is resolved with the list of all available social providers.
    *
    * @description
    *
-   * Returns a list of all OAuth providers, provided by the `/oauth/providers` endpoint.
+   * Returns a list of all social providers, provided by the `/spa-config/social-providers` endpoint.
    */
   SocialLoginService.prototype.getProviders = function getProviders() {
     var providersPromise = this.providersPromise;
@@ -66,8 +66,12 @@
     providersPromise = this.$q.defer();
     this.providersPromise = providersPromise;
 
-    this.$http.get(this.STORMPATH_CONFIG.getUrl('OAUTH_PROVIDERS_ENDPOINT')).then(function(response) {
+    this.$http.get(this.STORMPATH_CONFIG.getUrl('SOCIAL_PROVIDERS_ENDPOINT')).then(function(response) {
       var providers = response.data;
+
+      if (!providers || typeof providers !== 'object') {
+        providers = {};
+      }
 
       initProviders(providers);
 
@@ -147,7 +151,14 @@
    *
    * @description
    *
-   * Add this directive to a button or link in order to authenticate using an OAuth provider. The value should be an OAuth provider id such as google or facebook.
+   * Add this directive to a button or link in order to authenticate using a social provider.
+   * The value should be a social provider ID such as `google` or `facebook`.
+   *
+   * **Note:** If you are using Google+ Sign-In for server-side apps, Google recommends that you
+   * leave the Authorized redirect URI field blank in the Google Developer Console. In Stormpath,
+   * when creating the Google Directory, you must set the redirect URI to `postmessage`.
+   * 
+   * {@link http://docs.stormpath.com/guides/social-integrations/}
    *
    * @example
    *
@@ -173,7 +184,7 @@
         });
 
         element.bind('click', function() {
-          var options = { scope: attrs.spScope }; // `scope` is OAuth scope, and not Angular scope
+          var options = { scope: attrs.spScope }; // `scope` is OAuth scope, not Angular scope
 
           parentScope.posting = true;
 

@@ -192,13 +192,12 @@ angular.module('stormpath.CONFIG',[])
     *
     * @description
     *
-    * Default: `/oauth/provider`
+    * Default: `/spa-config/social-providers`
     *
-    * The endpoint that is used for fetching a list of available OAuth providers.
+    * The endpoint that is used for fetching a list of available social providers.
     * Used by {@link stormpath.socialLoginService.$socialLogin#getProviders $socialLogin.getProviders()}.
-    *
     */
-    OAUTH_PROVIDERS_ENDPOINT: '/oauth/providers',
+    SOCIAL_PROVIDERS_ENDPOINT: '/spa-config/social-providers',
 
 
     /**

@@ -14,6 +14,21 @@ var path = require('path');
 // Setup server
 var app = express();
 
+var server = require('http').createServer(app);
+
+/*
+  The config/express file is setting up the static file server which serves your
+  angular application assets.  We don't need to authenticate those requests, so
+  we do this before calling Stormpath.
+ */
+
+require('./config/express')(app);
+
+/*
+  Now we initialize Stormpath, any middleware that is registered after this
+  point will be protected by Stormpath.
+ */
+
 app.use(ExpressStormpath.init(app,{
   website: true,
   web: {
@@ -21,8 +36,7 @@ app.use(ExpressStormpath.init(app,{
   }
 }));
 
-var server = require('http').createServer(app);
-require('./config/express')(app);
+
 require('./routes')(app);
 
 app.on('stormpath.ready',function() {

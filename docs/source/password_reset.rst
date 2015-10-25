@@ -8,12 +8,12 @@ reset token by email.  We send the user a link with a verification token; when
 they click on this link, they arrive back at your site.  You then validate
 that this token came from Stormpath and ask the user to set a new password.
 
-This Angular SDK provides forms that faciliate this process for you.
+This Angular SDK provides forms that facilitate this process for you.
 
 We need two separate UI routes for this flow:
 
 * ``/forgot`` will serve a form that asks the user for their email address.  When
-  this form is submited we will send the email with a password reset link.
+  this form is submitted, we will send the email with a password reset link.
 * ``/reset`` will be the page they land on when they click on the link in their email.
 
 
@@ -57,7 +57,7 @@ Use the Password Reset Directives
 
 We want to modify the two views that we created in the last steps.
 
-Open ``client/app/forgot/forgot.html`` and replace its contents with this:
+Open ``client/app/forgot/forgot.html`` and replace its contents with the following:
 
 .. code-block:: html
 
@@ -74,7 +74,7 @@ Open ``client/app/forgot/forgot.html`` and replace its contents with this:
     </div>
 
 
-Next, open ``client/app/reset/reset.html`` and replace its contents with this:
+Next, open ``client/app/reset/reset.html`` and replace its contents with the following:
 
 .. code-block:: html
 
@@ -102,7 +102,7 @@ Directory that was automatically created for the Application.  Click into it,
 find the Workflows tab, then the Password Reset tab.
 
 You need to enable the **Password Reset Email** and modify the **Link Base URL**
-to point to your application.  At the moment that URL will be:
+to point to your application.  At the moment, that URL will be:
 
 .. code-block:: bash
 

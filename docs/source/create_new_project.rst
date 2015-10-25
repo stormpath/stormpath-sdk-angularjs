@@ -7,20 +7,20 @@ This part of the guide will walk you through the creation of an AngularJS
 project from scratch.  We will use `Grunt`_ as a build tool, and `Yeoman`_ as
 a scaffolding tool.
 
-We will use `Node.JS`_ as our backend server, with the Stormpath Express SDK.
+We will use `Node.JS`_ as our backend server with the Stormpath Express SDK.
 
 
 Installing Node, Grunt, Bower and Yeoman
 ----------------------------------------------
 
-If you haven't installed Node.js on your system you can get it from https://nodejs.org.
+If you haven't installed Node.js on your system, you can download it at https://nodejs.org.
 
 Then you need to install `Grunt`_, a tool for helping you build your
 project.  This must be installed as a global npm package::
 
     $ npm install -g grunt-cli
 
-The next tool you need is Yeoman_, a is a "scaffolding" tool (it makes it easy to create
+The next tool you need is Yeoman_, a "scaffolding" tool (it makes it easy to create
 repeatable boilerplate code).  This must also be installed as a global NPM package::
 
     $ npm install -g yo
@@ -42,8 +42,8 @@ Create an Angular-Fullstack Project
 ------------------------------------
 
 We are going to use the `Angular Fullstack Generator <https://github.com/DaftMonk/generator-angular-fullstack>`_.
-It's going to create a LOT of files for us; essentially, our entire development environment
-and the seed files for the client AND server.  This is really amazing!
+It's going to create _**a lot**_ of files for us; essentially, our entire development environment
+and the seed files for the client and the server.  This is really amazing!
 
 To use the generator, you need to first install it as a global node module::
 
@@ -77,11 +77,11 @@ Here are the choices that we made::
 
     ? Would you like to use mongoDB with Mongoose for data modeling? No
 
-Assuming everything installs OK, you should now have the default project ready to go.  Use this grunt command to start the development server and see the application::
+Assuming everything installs OK, you should now have the default project ready to go.  Use this grunt command to start the development server and view the application::
 
     $ grunt serve
 
-It should automatically open this page in your browser:
+It should automatically open the following page in your browser:
 
 .. image:: _static/fullstack-new-project.png
 
@@ -100,21 +100,21 @@ Upgrade Express
 --------------------------
 
 We also want to make sure that we are using the latest version of Express. Run
-this command to get the latest::
+the following command to get the latest::
 
     $ npm i express@latest --save
 
-In the next section, we will get your Stormpath Tenant information, so that we can
+In the next section, we will get your Stormpath Tenant information so that we can
 continue with the latter sections.
 
 Git Tracking
 --------------------------
 Now would be a good time to start using Git with your project. You can
-stop the server by pressing ``Ctrl+C`` - then use these git commands::
+stop the server by pressing ``Ctrl+C`` then use the following git commands::
 
     $ git init
     $ git add .
-    $ git commit -m "Begin dasbhoard app project"
+    $ git commit -m "Begin dashboard app project"
 
 
 

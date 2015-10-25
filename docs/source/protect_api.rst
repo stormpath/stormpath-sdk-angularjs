@@ -4,7 +4,7 @@ Configure the Server
 ====================
 
 In the previous section, :ref:`create_new_project`, we created a simple
-Express.js and installed the `Stormpath Express Module`_.  We are going to use that
+Express.js server and installed the `Stormpath Express Module`_.  We are going to use that
 SDK to secure the API endpoints in the Express server.
 
 
@@ -37,23 +37,23 @@ Require the Stormpath Module
 ----------------------------
 
 Open the file ``server/app.js``.  This file is the entry point for our API
-server, it will run the server.
+server and it will run the server.
 
 We want to initialize the Stormpath middleware and add it before our API
-declaration, so that the API will be automatically protected.
+declaration so that the API will be automatically protected.
 
-First things first, you need to require the SDK - place this at the top of the
-file, under the other require statements::
+First things first, you need to require the SDK; place the following at the top of the
+file under the other require statements::
 
     var ExpressStormpath = require('express-stormpath');
 
-We're also going to use the ``path``, so you should require that as well::
+We're also going to use the ``path``, so you should require the following as well::
 
    var path = require('path');
 
-Then you want to create an instance of the Stormpath middleware.  You can pass
+Then you want to create an instance of the Stormpath middleware.  You can pass in
 options, but in our case, we are just going to make a simple call and use all
-the default options.  Add this line after the ``var app = express();`` statement::
+the default options.  Add the following after the ``var app = express();`` statement::
 
     app.use(ExpressStormpath.init(app,{
       website: true,
@@ -62,15 +62,15 @@ the default options.  Add this line after the ``var app = express();`` statement
       }
     }));
 
-That block of code will attach Stormpath to your Express application, and let
+This block of code will attach Stormpath to your Express application, and let
 Stormpath know where the root of your Angular application is (the folder
 where all of the Angular assets live).
 
 We also need to instruct Express to wait for Stormpath to be initialized.  Our
 module makes several requests to our API in order to fetch the information that
-it needs to correctly configure your Express application.  Find
+it needs to correctly configure your Express application.  Find the
 ``server.listen`` statement at the end of the file, and wrap it in an event
-handler for ``stormpath.ready``, like so::
+handler for ``stormpath.ready`` like so::
 
     app.on('stormpath.ready',function() {
       // Start server
@@ -84,7 +84,7 @@ Protect Your API Routes
 
 Open the file ``server/routes.js``. This file is attaching some routes to the
 Express application that is setup in ``server/app.js``.  You'll want to require
-``express-stormpath`` again, and then use it to secure your API::
+``express-stormpath`` again and then use it to secure your API::
 
     var ExpressStormpath = require('express-stormpath');
 
@@ -96,8 +96,8 @@ Reload the App
 ---------------
 
 Restart the server by running ``grunt serve`` again.  You should now see that
-the features are no longer listed - this is because the endpoint fails to load
-with a ``401 Unauthorized`` - you can see this by looking inside the web console
+the features are no longer listed. This is because the endpoint fails to load
+with a ``401 Unauthorized``. You can see this by looking inside the web console
 in your browser:
 
 .. image:: _static/features-unauthorized.png

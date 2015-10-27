@@ -10,7 +10,7 @@ a "flash" to it; even if we are logged in, it will momentarily show
 as if we are not logged in.  This happens while we're fetching the information
 about the current user.
 
-You'll only see this on the main view; you won't see it on the Profile
+You'll only see this in the main view; you won't see it in the Profile
 view because that is an authenticated route.
 
 How do we solve this problem?
@@ -27,7 +27,7 @@ the view, but the current user state will be resolved either way.  This
 allows our templates to render properly and immediately once the state
 is known.
 
-Open the file ``client/app/main/main.js`` and add this option to the
+Open the file ``client/app/main/main.js`` and add the option to the
 state configuration::
 
     .state('main', {

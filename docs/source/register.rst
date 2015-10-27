@@ -3,7 +3,7 @@
 Create the Registration Form
 ===================
 
-We want our users to sign up for our service, so we need to provide a
+We want our users to sign up for our service so we need to provide a
 registration form.  The `Stormpath Angular SDK`_ provides a pre-built
 registration form that can be inserted with an Angular directive.  When a user
 submits this form, it will create a new account for them in the Stormpath
@@ -13,7 +13,7 @@ the :ref:`create_tenant` section.
 Generate the /register Route
 --------------------------------
 
-Stop the server and run this command in your project folder:
+Stop the server and run the following command in your project folder:
 
 .. code-block:: bash
 
@@ -41,7 +41,7 @@ Add the Registration Form Directive
 -----------------------------------
 
 Open the file ``client/app/register/register.html`` and then replace
-its contents with this:
+its contents with the following:
 
 .. code-block:: html
 
@@ -64,7 +64,7 @@ This HTML markup does the following:
 * Inserts the default registration form via the `spRegistrationForm`_ directive.
 * Declares (on the directive) that we want to send the user to the main page after they register.
 
-Save that file, and the browser should auto-reload. You should now
+Save that file and the browser should auto-reload. You should now
 see the registration view like this:
 
 .. image:: _static/registration_form.png
@@ -109,7 +109,7 @@ Add the sptoken Parameter
 When the user clicks on the link in their email, they will be sent to your
 application with a url parameter called ``sptoken`` - we need to let the UI
 router know about this.  Open the file ``client/app/verify/verify.js`` and
-modify the ``url`` string to include this parameter:
+modify the ``url`` string to include the following parameter:
 
 .. code-block:: js
 
@@ -194,7 +194,7 @@ into it.  Then add the following markup to it in a place that you like:
     </div>
   </div>
 
-Now, modify your registration form directive and tell it to use this custom template:
+Now, modify your registration form directive and tell it to use the following custom template:
 
 .. code-block:: html
 

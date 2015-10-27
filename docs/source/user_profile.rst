@@ -51,7 +51,7 @@ Create the View
 Because we have declared ``authenticate: true`` for this state, we
 are guaranteed that the user will always be logged in by the time that
 this view loads (if the user is not logged in, they are redirected
-to the login page - and then back here).
+to the login page and then back here).
 
 With that assurance, we can code our template without any complex
 switches.
@@ -59,12 +59,12 @@ The Stormpath module will automatically assign the current user
 object to ``user`` on the Root Scope, so it will always be available
 in your templates.
 
-We're going to keep this super simple and merely render user's object as a JSON
+We're going to keep this super simple and merely render a user's object as a JSON
 structure.  Obviously, you'll be doing more than this when your application goes
 live. :)
 
 Open the file ``client/app/profile/profile.html`` and then replace
-it's contents with this:
+its contents with the following:
 
 .. code-block:: html
 
@@ -93,7 +93,7 @@ Angular's built-in ``json`` filter to show the user object.
 Try It Out, See Your Profile!
 -----------------------------
 
-Go back to your browser, make sure your logged in, and then go to the
+Go back to your browser, make sure you're logged in, and then go to the
 Profile link.  You should now see your user data:
 
 .. image:: _static/profile_view.png

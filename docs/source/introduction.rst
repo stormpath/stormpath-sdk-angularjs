@@ -19,8 +19,8 @@ module API, you can visit the `Stormpath AngularJS SDK API Documentation`_.
 What We're Building
 --------------------
 
-In this guide we will create a simple API server which our Angular application
-will use, using Node.js.  If you wish to create a server using Java, please see
+In this guide we will create a simple API server that our Angular application
+will use using Node.js.  If you wish to create a server using Java, please see
 our `Java Web App Plugin Guide`_.  For other environments please visit
 `Stormpath Docs`_ to see if we have an integration for you!
 
@@ -30,19 +30,19 @@ By the end of this guide we will create the following:
 of boilerplate code, but don't worry, it's going to be created automatically for
 you!  This is the power of Yeoman.
 
-**A Node.js server**.  This server will serve the assets for the AngularJS
+**A Node.js server**.  This server will serve the assets for the Angular
 application.  It will also serve a simple API, which we will secure with
 Stormpath.
 
-**An AngularJS application**.  This will be an HTML5-based application, which
+**An Angular application**.  This will be an HTML5-based application, which
 allows users to register, login, and see their profile.  We will control profile
-access, so that only logged-in users can access that view.
+access so that only logged-in users can access that view.
 
 Example Project
 --------------------
 
-As you follow this tutorial you will be creating and editing files.  If you're
-uncertain about a certain step, you can compare you code to the example project
+As you follow this tutorial, you will be creating and editing files.  If you're
+uncertain about a certain step, you can compare your code to the example project
 in this folder of the SDK repository:
 
 https://github.com/stormpath/stormpath-sdk-angularjs/tree/master/example/dashboard-app
@@ -54,7 +54,7 @@ Getting stuck?  Stormpath is a developer-focused platform.  We want to hear from
 us anytime through one of the following channels:
 
 * Email support: support@stormpath.com
-* Our knowledgebase: https://support.stormpath.com/hc/en-us
+* Our knowledge base: https://support.stormpath.com/hc/en-us
 * Github: https://github.com/stormpath/stormpath-sdk-angularjs
 
 

@@ -20,11 +20,11 @@ Create an API Key Pair
 ----------------------
 
 Once you've logged into the `Stormpath Admin Console`_, click the "Manage API Keys" button on your home page.
-This will allow you to generate a new API key, it will prompt you to download your keypair.
+This will allow you to generate a new API key and it will prompt you to download your keypair.
 
 .. note::
     Please keep the API key pair file you just downloaded safe!  These two keys
-    allow you to make Stormpath API requests, and should be properly protected.
+    allow you to make Stormpath API requests and should be properly protected.
 
 .. _Stormpath Admin Console: https://api.stormpath.com/login
 

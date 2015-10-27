@@ -10,14 +10,14 @@
   "license": "Apache-2.0",
   "homepage": "https://github.com/stormpath/stormpath-sdk-angularjs",
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/stormpath/stormpath-sdk-angularjs.git"
+    "type": "git",
+    "url": "https://github.com/stormpath/stormpath-sdk-angularjs.git"
   },
   "devDependencies": {
     "grunt-contrib-concat": "^0.5.0",
     "grunt": "^0.4.5",
     "load-grunt-tasks": "^3.3.0",
-    "grunt-contrib-uglify": "^0.9.2",
+    "grunt-contrib-uglify": "^0.10.0",
     "grunt-contrib-jshint": "^0.11.3",
     "grunt-contrib-clean": "^0.6.0",
     "grunt-ngdocs": "^0.2.6",

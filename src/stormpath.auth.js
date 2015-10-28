@@ -130,10 +130,50 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
 
       };
 
+      /**
+       * @ngdoc event
+       *
+       * @name stormpath.authService.$user#$sessionEnd
+       *
+       * @eventOf stormpath.authService.$auth
+       *
+       * @eventType broadcast on root scope
+       *
+       * @param {Object} event
+       *
+       * Angular event object.
+
+       * @description
+       *
+       * This event is broadcast when a call to
+       * {@link stormpath.authService.$auth#methods_endSession $auth.endSession()}
+       * is successful.  Use this event when you want to do something after the
+       * user has logged out.
+       */
+      function endSessionEvent () {
+        $rootScope.$broadcast(STORMPATH_CONFIG.SESSION_END_EVENT);
+      }
+
+      /**
+       * @ngdoc function
+       *
+       * @name stormpath.authService.$auth#endSession
+       *
+       * @methodOf stormpath.authService.$auth
+       *
+       * @return {promise} A promise that is resolved when the logout request
+       * of the server is complete.
+       *
+       * @description Use this method to log the user out. It triggers a request
+       * to the `/logout` endpoint on the server.  This will delete the cookies
+       * that are used for authentication.  The
+       * {@link stormpath.authService.$auth#events_$sessionEnd $sessionEnd}
+       * event will be emitted after a successful logout.
+       */
       AuthService.prototype.endSession = function endSession(){
         var op = $http.get(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'));
         op.then(function(){
-          $rootScope.$broadcast(STORMPATH_CONFIG.SESSION_END_EVENT);
+          endSessionEvent();
         },function(response){
           console.error('logout error',response);
         });

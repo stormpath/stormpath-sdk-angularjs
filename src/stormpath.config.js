@@ -378,6 +378,42 @@ angular.module('stormpath.CONFIG',[])
     /**
     * @ngdoc property
     *
+    * @name ROUTE_CHANGE_UNAUTHENTICATED
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `$routeChangeUnauthenticated`
+    *
+    * The name of the event that is fired when the user attempts to visit a
+    * route that requires authentication, but the user is not
+    * authenticated.
+    */
+    ROUTE_CHANGE_UNAUTHENTICATED: '$routeChangeUnauthenticated',
+
+
+    /**
+    * @ngdoc property
+    *
+    * @name ROUTE_CHANGE_UNAUTHORIZED
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `$routeChangeUnauthorized`
+    *
+    * The name of the event that is fired when the user attempts to visit a
+    * route that has an access control rule which the user does not
+    * meet (such as not being in a specified group)
+    */
+    ROUTE_CHANGE_UNAUTHORIZED: '$routeChangeUnauthorized',
+
+
+    /**
+    * @ngdoc property
+    *
     * @name REGISTER_URI
     *
     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG

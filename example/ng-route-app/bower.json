@@ -1,0 +1,22 @@
+{
+  "name": "dashboard",
+  "version": "0.0.0",
+  "dependencies": {
+    "angular": ">=1.2.*",
+    "json3": "~3.3.1",
+    "es5-shim": "~3.0.1",
+    "jquery": "~1.11.0",
+    "bootstrap": "~3.1.1",
+    "angular-route": "~1.4.7",
+    "angular-resource": ">=1.2.*",
+    "angular-cookies": ">=1.2.*",
+    "angular-sanitize": ">=1.2.*",
+    "font-awesome": ">=4.1.0",
+    "lodash": "~2.4.1",
+    "stormpath-sdk-angularjs": "~0.7.1"
+  },
+  "devDependencies": {
+    "angular-mocks": ">=1.2.*",
+    "angular-scenario": ">=1.2.*"
+  }
+}

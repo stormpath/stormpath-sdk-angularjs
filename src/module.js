@@ -781,6 +781,21 @@ angular.module('stormpath',['stormpath.CONFIG','stormpath.auth','stormpath.userS
  *
  * This directive adds a click handler to the element.  When clicked, the user will be logged out.
  *
+ * **Note**: the click action triggers the logout request to the server and
+ * deletes your authentication information, it does not automatically redirect
+ * you to any view (we leave this in your control).
+ *
+ * The common use-case is to redirect users to the login view after they
+ * logout.  This can be done by observing the
+ * {@link stormpath.authService.$auth#events_$sessionEnd $sessionEnd} event.
+ * For example, if you are using UI Router:
+ *
+ * ```javascript
+ * $rootScope.$on('$sessionEnd',function () {
+ *   $state.transitionTo('login');
+ * });
+ * ```
+ *
  * @example
  *
  * <pre>

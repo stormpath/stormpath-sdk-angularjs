@@ -10,6 +10,28 @@ We provide some functionality, which makes it easy to make UI decisions
 by looking at the groups that the account is a member of.
 
 
+Server Configuration
+--------------------------
+
+Our Angular SDK knows who the current user is by accessing the ``/me`` route on
+your server.  This route needs to return the account object, with its groups
+expanded.  If you are using our Express.js library you can enable this with the
+``expand`` option:
+
+.. code-block:: javascript
+
+    app.use(ExpressStormpath.init(app,{
+      website: true,
+      expand: {
+        groups: true
+      },
+      web: {
+        spaRoot: path.join(__dirname, '..','client','index.html')
+      }
+    }));
+
+
+
 UI State Control
 --------------------------
 

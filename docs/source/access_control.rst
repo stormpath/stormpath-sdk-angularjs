@@ -14,7 +14,7 @@ Server Configuration
 --------------------------
 
 Our Angular SDK knows who the current user is by accessing the ``/me`` route on
-your server.  This route needs to return the account object, with it's groups
+your server.  This route needs to return the account object, with its groups
 expanded.  If you are using our Express.js library you can enable this with the
 ``expand`` option:
 

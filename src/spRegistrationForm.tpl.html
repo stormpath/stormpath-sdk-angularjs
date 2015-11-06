@@ -1,3 +1,34 @@
+<style>
+  .btn.btn-social {
+    margin-right: 7px;
+    min-width: 100px;
+  }
+
+  .btn.btn-facebook {
+    color: white;
+    background-color: #3B5998;
+    border-color: #37528C;
+  }
+  .btn.btn-facebook:hover,
+  .btn.btn-facebook:focus {
+    color: white;
+    background-color: #2F487B;
+    border-color: #2F487B;
+  }
+
+  .btn.btn-google {
+    color: white;
+    background-color: #dc4e41;
+    border-color: #C1453A;
+  }
+  .btn.btn-google:hover,
+  .btn.btn-google:focus {
+    color: white;
+    background-color: #C74539;
+    border-color: #AF4138;
+  }
+</style>
+
 <div class="row">
   <div class="col-sm-offset-4 col-xs-12 col-sm-4">
     <p class="alert alert-success" ng-show="created && !enabled">Your account has been created.  Please check your email for a verification link.</p>
@@ -38,6 +69,14 @@
         <div class="col-sm-offset-4 col-sm-4">
           <p class="alert alert-danger" ng-show="error" ng-bind="error"></p>
           <button type="submit" class="btn btn-primary" ng-disabled="creating">Register</button>
+        </div>
+      </div>
+      <div class="form-group" ng-show="socialLoginProviders">
+        <div class="col-sm-offset-4 col-sm-4">
+          <p>Or register with:</p>
+          <button ng-repeat="provider in socialLoginProviders" type="button" class="btn btn-social btn-{{provider.name}}" sp-social-login="{{provider.name}}">
+            {{provider.service.name}}
+          </button>
         </div>
       </div>
     </form>

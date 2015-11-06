@@ -1,7 +1,37 @@
+<style>
+  .btn.btn-social {
+    margin-right: 7px;
+    min-width: 100px;
+  }
+
+  .btn.btn-facebook {
+    color: white;
+    background-color: #3B5998;
+    border-color: #37528C;
+  }
+  .btn.btn-facebook:hover,
+  .btn.btn-facebook:focus {
+    color: white;
+    background-color: #2F487B;
+    border-color: #2F487B;
+  }
+
+  .btn.btn-google {
+    color: white;
+    background-color: #dc4e41;
+    border-color: #C1453A;
+  }
+  .btn.btn-google:hover,
+  .btn.btn-google:focus {
+    color: white;
+    background-color: #C74539;
+    border-color: #AF4138;
+  }
+</style>
+
 <div class="row">
   <div class="col-xs-12">
     <form class="form-horizontal" ng-hide="accepted" ng-submit="submit()">
-
       <div class="form-group">
         <label for="spEmail" class="col-xs-12 col-sm-4 control-label">Email</label>
         <div class="col-xs-12 col-sm-4">
@@ -19,6 +49,14 @@
           <p class="text-danger" ng-show="error" ng-bind="error"></p>
           <button type="submit" class="btn btn-primary" ng-disabled="posting">Login</button>
           <a href="/forgot" class="pull-right">Forgot Password</a>
+        </div>
+      </div>
+      <div class="form-group" ng-show="socialLoginProviders">
+        <div class="col-sm-offset-4 col-sm-4">
+          <p>Or login with:</p>
+          <button ng-repeat="provider in socialLoginProviders" type="button" class="btn btn-social btn-{{provider.name}}" sp-social-login="{{provider.name}}">
+            {{provider.service.name}}
+          </button>
         </div>
       </div>
     </form>

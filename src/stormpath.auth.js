@@ -171,12 +171,18 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
        * event will be emitted after a successful logout.
        */
       AuthService.prototype.endSession = function endSession(){
-        var op = $http.get(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'));
+        var op = $http.get(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'), {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
         op.then(function(){
           endSessionEvent();
         },function(response){
           console.error('logout error',response);
         });
+
         return op;
       };
 

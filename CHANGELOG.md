@@ -1,3 +1,8 @@
+# 0.8.0
+
+* Added support for social login with Google and Facbook (requires use of
+  [Express-Stormpath][] as your backend)
+
 # 0.7.2
 
 **Released on October 26th, 2015**

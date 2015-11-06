@@ -7,7 +7,34 @@ angular.module("spEmailVerification.tpl.html", []).run(["$templateCache", functi
 
 angular.module("spLoginForm.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("spLoginForm.tpl.html",
-    "<div class=row><div class=col-xs-12><form class=form-horizontal ng-hide=accepted ng-submit=submit()><div class=form-group><label for=spEmail class=\"col-xs-12 col-sm-4 control-label\">Email</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control id=spUsername ng-model=formModel.username placeholder=\"Username or Email\" ng-disabled=posting></div></div><div class=form-group><label for=spPassword class=\"col-xs-12 col-sm-4 control-label\">Password</label><div class=\"col-xs-12 col-sm-4\"><input type=password class=form-control id=spPassword ng-model=formModel.password placeholder=Password ng-disabled=posting></div></div><div class=form-group><div class=\"col-sm-offset-4 col-sm-4\"><p class=text-danger ng-show=error ng-bind=error></p><button type=submit class=\"btn btn-primary\" ng-disabled=posting>Login</button> <a href=/forgot class=pull-right>Forgot Password</a></div></div></form></div></div>");
+    "<style>.btn.btn-social {\n" +
+    "    margin-right: 7px;\n" +
+    "    min-width: 100px;\n" +
+    "  }\n" +
+    "\n" +
+    "  .btn.btn-facebook {\n" +
+    "    color: white;\n" +
+    "    background-color: #3B5998;\n" +
+    "    border-color: #37528C;\n" +
+    "  }\n" +
+    "  .btn.btn-facebook:hover,\n" +
+    "  .btn.btn-facebook:focus {\n" +
+    "    color: white;\n" +
+    "    background-color: #2F487B;\n" +
+    "    border-color: #2F487B;\n" +
+    "  }\n" +
+    "\n" +
+    "  .btn.btn-google {\n" +
+    "    color: white;\n" +
+    "    background-color: #dc4e41;\n" +
+    "    border-color: #C1453A;\n" +
+    "  }\n" +
+    "  .btn.btn-google:hover,\n" +
+    "  .btn.btn-google:focus {\n" +
+    "    color: white;\n" +
+    "    background-color: #C74539;\n" +
+    "    border-color: #AF4138;\n" +
+    "  }</style><div class=row><div class=col-xs-12><form class=form-horizontal ng-hide=accepted ng-submit=submit()><div class=form-group><label for=spEmail class=\"col-xs-12 col-sm-4 control-label\">Email</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control id=spUsername ng-model=formModel.username placeholder=\"Username or Email\" ng-disabled=posting></div></div><div class=form-group><label for=spPassword class=\"col-xs-12 col-sm-4 control-label\">Password</label><div class=\"col-xs-12 col-sm-4\"><input type=password class=form-control id=spPassword ng-model=formModel.password placeholder=Password ng-disabled=posting></div></div><div class=form-group><div class=\"col-sm-offset-4 col-sm-4\"><p class=text-danger ng-show=error ng-bind=error></p><button type=submit class=\"btn btn-primary\" ng-disabled=posting>Login</button> <a href=/forgot class=pull-right>Forgot Password</a></div></div><div class=form-group ng-show=socialLoginProviders><div class=\"col-sm-offset-4 col-sm-4\"><p>Or login with:</p><button ng-repeat=\"provider in socialLoginProviders\" type=button class=\"btn btn-social btn-{{provider.name}}\" sp-social-login={{provider.name}}>{{provider.service.name}}</button></div></div></form></div></div>");
 }]);
 
 angular.module("spPasswordResetForm.tpl.html", []).run(["$templateCache", function($templateCache) {
@@ -22,5 +49,32 @@ angular.module("spPasswordResetRequestForm.tpl.html", []).run(["$templateCache",
 
 angular.module("spRegistrationForm.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("spRegistrationForm.tpl.html",
-    "<div class=row><div class=\"col-sm-offset-4 col-xs-12 col-sm-4\"><p class=\"alert alert-success\" ng-show=\"created && !enabled\">Your account has been created. Please check your email for a verification link.</p><p ng-show=\"created && !enabled\" class=pull-right><a href=/login>Back to Login</a></p><p class=\"alert alert-success\" ng-show=\"created && enabled && !authenticating\">Your account has been created. <a href=/login>Login Now</a>.</p></div></div><div class=row><div class=col-xs-12><form class=form-horizontal ng-hide=\"created && !authenticating\" ng-submit=submit()><div class=form-group><label for=spFirstName class=\"col-xs-12 col-sm-4 control-label\">First Name</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control id=spFirstName ng-model=formModel.givenName placeholder=\"First Name\" ng-disabled=creating></div></div><div class=form-group><label for=spLastName class=\"col-xs-12 col-sm-4 control-label\">Last Name</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control id=spLastName ng-model=formModel.surname placeholder=\"Last Name\" ng-disabled=creating></div></div><div class=form-group><label for=spEmail class=\"col-xs-12 col-sm-4 control-label\">Email</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control id=spEmail ng-model=formModel.email placeholder=Email ng-disabled=creating></div></div><div class=form-group><label for=spPassword class=\"col-xs-12 col-sm-4 control-label\">Password</label><div class=\"col-xs-12 col-sm-4\"><input type=password class=form-control id=spPassword ng-model=formModel.password placeholder=Password ng-disabled=creating></div></div><div class=form-group><div class=\"col-sm-offset-4 col-sm-4\"><p class=\"alert alert-danger\" ng-show=error ng-bind=error></p><button type=submit class=\"btn btn-primary\" ng-disabled=creating>Register</button></div></div></form></div></div>");
+    "<style>.btn.btn-social {\n" +
+    "    margin-right: 7px;\n" +
+    "    min-width: 100px;\n" +
+    "  }\n" +
+    "\n" +
+    "  .btn.btn-facebook {\n" +
+    "    color: white;\n" +
+    "    background-color: #3B5998;\n" +
+    "    border-color: #37528C;\n" +
+    "  }\n" +
+    "  .btn.btn-facebook:hover,\n" +
+    "  .btn.btn-facebook:focus {\n" +
+    "    color: white;\n" +
+    "    background-color: #2F487B;\n" +
+    "    border-color: #2F487B;\n" +
+    "  }\n" +
+    "\n" +
+    "  .btn.btn-google {\n" +
+    "    color: white;\n" +
+    "    background-color: #dc4e41;\n" +
+    "    border-color: #C1453A;\n" +
+    "  }\n" +
+    "  .btn.btn-google:hover,\n" +
+    "  .btn.btn-google:focus {\n" +
+    "    color: white;\n" +
+    "    background-color: #C74539;\n" +
+    "    border-color: #AF4138;\n" +
+    "  }</style><div class=row><div class=\"col-sm-offset-4 col-xs-12 col-sm-4\"><p class=\"alert alert-success\" ng-show=\"created && !enabled\">Your account has been created. Please check your email for a verification link.</p><p ng-show=\"created && !enabled\" class=pull-right><a href=/login>Back to Login</a></p><p class=\"alert alert-success\" ng-show=\"created && enabled && !authenticating\">Your account has been created. <a href=/login>Login Now</a>.</p></div></div><div class=row><div class=col-xs-12><form class=form-horizontal ng-hide=\"created && !authenticating\" ng-submit=submit()><div class=form-group><label for=spFirstName class=\"col-xs-12 col-sm-4 control-label\">First Name</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control id=spFirstName ng-model=formModel.givenName placeholder=\"First Name\" ng-disabled=creating></div></div><div class=form-group><label for=spLastName class=\"col-xs-12 col-sm-4 control-label\">Last Name</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control id=spLastName ng-model=formModel.surname placeholder=\"Last Name\" ng-disabled=creating></div></div><div class=form-group><label for=spEmail class=\"col-xs-12 col-sm-4 control-label\">Email</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control id=spEmail ng-model=formModel.email placeholder=Email ng-disabled=creating></div></div><div class=form-group><label for=spPassword class=\"col-xs-12 col-sm-4 control-label\">Password</label><div class=\"col-xs-12 col-sm-4\"><input type=password class=form-control id=spPassword ng-model=formModel.password placeholder=Password ng-disabled=creating></div></div><div class=form-group><div class=\"col-sm-offset-4 col-sm-4\"><p class=\"alert alert-danger\" ng-show=error ng-bind=error></p><button type=submit class=\"btn btn-primary\" ng-disabled=creating>Register</button></div></div><div class=form-group ng-show=socialLoginProviders><div class=\"col-sm-offset-4 col-sm-4\"><p>Or register with:</p><button ng-repeat=\"provider in socialLoginProviders\" type=button class=\"btn btn-social btn-{{provider.name}}\" sp-social-login={{provider.name}}>{{provider.service.name}}</button></div></div></form></div></div>");
 }]);

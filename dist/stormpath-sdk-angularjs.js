@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2015
  * 
- * @version v0.7.1-dev-2015-10-08
+ * @version v0.8.0-dev-2015-11-05
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -98,7 +98,14 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
  * });
  * </pre>
  */
-angular.module('stormpath',['stormpath.CONFIG','stormpath.auth','stormpath.userService'])
+angular.module('stormpath', [
+  'stormpath.CONFIG',
+  'stormpath.auth',
+  'stormpath.userService',
+  'stormpath.socialLogin',
+  'stormpath.facebookLogin',
+  'stormpath.googleLogin'
+])
 .factory('SpAuthInterceptor',[function(){
   function SpAuthInterceptor(){
 
@@ -796,6 +803,21 @@ angular.module('stormpath',['stormpath.CONFIG','stormpath.auth','stormpath.userS
  *
  * This directive adds a click handler to the element.  When clicked, the user will be logged out.
  *
+ * **Note**: the click action triggers the logout request to the server and
+ * deletes your authentication information, it does not automatically redirect
+ * you to any view (we leave this in your control).
+ *
+ * The common use-case is to redirect users to the login view after they
+ * logout.  This can be done by observing the
+ * {@link stormpath.authService.$auth#events_$sessionEnd $sessionEnd} event.
+ * For example, if you are using UI Router:
+ *
+ * ```javascript
+ * $rootScope.$on('$sessionEnd',function () {
+ *   $state.transitionTo('login');
+ * });
+ * ```
+ *
  * @example
  *
  * <pre>
@@ -944,13 +966,59 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
 
       };
 
+      /**
+       * @ngdoc event
+       *
+       * @name stormpath.authService.$user#$sessionEnd
+       *
+       * @eventOf stormpath.authService.$auth
+       *
+       * @eventType broadcast on root scope
+       *
+       * @param {Object} event
+       *
+       * Angular event object.
+
+       * @description
+       *
+       * This event is broadcast when a call to
+       * {@link stormpath.authService.$auth#methods_endSession $auth.endSession()}
+       * is successful.  Use this event when you want to do something after the
+       * user has logged out.
+       */
+      function endSessionEvent () {
+        $rootScope.$broadcast(STORMPATH_CONFIG.SESSION_END_EVENT);
+      }
+
+      /**
+       * @ngdoc function
+       *
+       * @name stormpath.authService.$auth#endSession
+       *
+       * @methodOf stormpath.authService.$auth
+       *
+       * @return {promise} A promise that is resolved when the logout request
+       * of the server is complete.
+       *
+       * @description Use this method to log the user out. It triggers a request
+       * to the `/logout` endpoint on the server.  This will delete the cookies
+       * that are used for authentication.  The
+       * {@link stormpath.authService.$auth#events_$sessionEnd $sessionEnd}
+       * event will be emitted after a successful logout.
+       */
       AuthService.prototype.endSession = function endSession(){
-        var op = $http.get(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'));
+        var op = $http.get(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'), {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
         op.then(function(){
-          $rootScope.$broadcast(STORMPATH_CONFIG.SESSION_END_EVENT);
+          endSessionEvent();
         },function(response){
           console.error('logout error',response);
         });
+
         return op;
       };
 
@@ -1077,6 +1145,23 @@ angular.module('stormpath.CONFIG',[])
     /**
     * @ngdoc property
     *
+    * @name SOCIAL_LOGIN_SERVICE_NAME
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `$socialLogin`
+    *
+    * The name of the social login service, this changes the
+    * service name that you inject.
+    */
+    SOCIAL_LOGIN_SERVICE_NAME: '$socialLogin',
+
+
+    /**
+    * @ngdoc property
+    *
     * @name AUTHENTICATION_ENDPOINT
     *
     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
@@ -1163,6 +1248,25 @@ angular.module('stormpath.CONFIG',[])
     *
     */
     EMAIL_VERIFICATION_ENDPOINT: '/verify',
+
+
+    /**
+    * @ngdoc property
+    *
+    * @name SPA_CONFIG_ENDPOINT
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `/spa-config`
+    *
+    * The endpoint that is used to fetch the configuration for this app,
+    * for example a list of available social providers.
+    *
+    * Used by {@link stormpath.socialLoginService.$socialLogin#getProviders $socialLogin.getProviders()}.
+    */
+    SPA_CONFIG_ENDPOINT: '/spa-config',
 
 
     /**
@@ -1596,7 +1700,24 @@ angular.module('stormpath')
 
 angular.module('stormpath')
 
-.controller('SpLoginFormCtrl', ['$scope','$auth',function ($scope,$auth) {
+.controller('SpLoginFormCtrl', ['$scope','$auth','$socialLogin',function ($scope,$auth,$socialLogin) {
+  // Load list of social login providers from server.
+  $socialLogin.getProviders().then(function(providers) {
+    // Convert into an array.
+    $scope.socialLoginProviders = Object.keys(providers).map(function(providerName) {
+      var provider = providers[providerName];
+      provider.name = providerName;
+      return provider;
+    });
+
+    // Filter out the enabled providers.
+    $scope.socialLoginProviders = $scope.socialLoginProviders.filter(function(provider) {
+      return provider.enabled;
+    });
+  }).catch(function(err) {
+    throw new Error('Could not load social providers from back-end: ' + err.message);
+  });
+
   $scope.formModel = {
     username: '',
     password: ''
@@ -1608,7 +1729,7 @@ angular.module('stormpath')
     $auth.authenticate($scope.formModel)
       .catch(function(response){
         $scope.posting = false;
-        $scope.error = response.data && response.data.error || 'XHR Error';
+        $scope.error = response.data && response.data.error || 'An error occured when communicating with server.';
       });
   };
 }])
@@ -1659,6 +1780,7 @@ angular.module('stormpath')
     controller: 'SpLoginFormCtrl'
   };
 });
+
 'use strict';
 
 angular.module('stormpath')
@@ -1823,7 +1945,7 @@ angular.module('stormpath')
 'use strict';
 
 angular.module('stormpath')
-.controller('SpRegistrationFormCtrl', ['$scope','$user','$auth','$location',function ($scope,$user,$auth,$location) {
+.controller('SpRegistrationFormCtrl', ['$scope','$user','$auth','$location','$socialLogin',function ($scope,$user,$auth,$location,$socialLogin) {
   $scope.formModel = (typeof $scope.formModel==='object') ? $scope.formModel : {
     givenName:'',
     surname: '',
@@ -1834,6 +1956,24 @@ angular.module('stormpath')
   $scope.enabled = false;
   $scope.creating = false;
   $scope.authenticating = false;
+
+  // Load list of social login providers from server.
+  $socialLogin.getProviders().then(function(providers) {
+    // Convert into an array.
+    $scope.socialLoginProviders = Object.keys(providers).map(function(providerName) {
+      var provider = providers[providerName];
+      provider.name = providerName;
+      return provider;
+    });
+
+    // Filter out the enabled providers.
+    $scope.socialLoginProviders = $scope.socialLoginProviders.filter(function(provider) {
+      return provider.enabled;
+    });
+  }).catch(function(err) {
+    throw new Error('Could not load social providers from back-end: ' + err.message);
+  });
+
   $scope.submit = function(){
     $scope.creating = true;
     $scope.error = null;
@@ -1963,6 +2103,397 @@ angular.module('stormpath')
     }
   };
 });
+(function() {
+  'use strict';
+
+  function loginCallback(deferred, response) {
+    var data;
+
+    switch (response.status) {
+      case 'connected':
+        deferred.resolve({
+          providerData: {
+            providerId: 'facebook',
+            accessToken: response.authResponse.accessToken
+          }
+        });
+        break;
+
+      case 'not_authorized':
+        deferred.reject(new Error('Please log into this app'));
+        break;
+
+      default:
+        deferred.reject(new Error('Please log into Facebook.'));
+    }
+  }
+
+  function FacebookLoginService($q, $spJsLoader) {
+    this.name = 'Facebook';
+    this.clientId = null;
+    this.$q = $q;
+    this.$spJsLoader = $spJsLoader;
+  }
+
+  FacebookLoginService.prototype.init = function init() {
+    var clientId = this.clientId;
+
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId: clientId,
+        status: true,
+        cookie: true,
+        xfbml: true,
+        version: 'v2.4'
+      });
+    };
+
+    if (window.FB) {
+      window.fbAsyncInit();
+    } else {
+      this.$spJsLoader.load('facebook-jssdk', '//connect.facebook.net/en_US/sdk.js');
+    }
+  };
+
+  FacebookLoginService.prototype.login = function login(options) {
+    var deferred = this.$q.defer();
+
+    FB.login(loginCallback.bind(null, deferred), options);
+
+    return deferred.promise;
+  };
+
+  angular.module('stormpath.facebookLogin', [])
+  .provider('$facebookLogin', function() {
+    this.$get = ['$q', '$spJsLoader', function facebookLoginFactory($q, $spJsLoader) {
+      return new FacebookLoginService($q, $spJsLoader);
+    }];
+  });
+}());
+
+(function() {
+  'use strict';
+
+  function GoogleLoginService($q, $spJsLoader) {
+    this.name = 'Google';
+    this.clientId = null;
+    this.googleAuth = null;
+    this.$q = $q;
+    this.$spJsLoader = $spJsLoader;
+  }
+
+  GoogleLoginService.prototype.setGoogleAuth = function setGoogleAuth(auth) {
+    this.googleAuth = auth;
+  };
+
+  GoogleLoginService.prototype.init = function init(element) {
+    var clientId = this.clientId;
+    var setGoogleAuth = this.setGoogleAuth.bind(this);
+
+    this.$spJsLoader.load('google-jssdk', '//apis.google.com/js/api:client.js').then(function() {
+      gapi.load('auth2', function() {
+        var auth2 = gapi.auth2.init({
+          client_id: clientId,
+          cookiepolicy: 'single_host_origin'
+        });
+
+        setGoogleAuth(auth2);
+      });
+    });
+  };
+
+  GoogleLoginService.prototype.login = function login(options) {
+    var deferred = this.$q.defer();
+
+    options = options || {};
+    options.redirect_uri = 'postmessage';
+
+    this.googleAuth.grantOfflineAccess(options).then(function(response) {
+      deferred.resolve({
+        providerData: {
+          providerId: 'google',
+          code: response.code
+        }
+      });
+    }, function(err) {
+      deferred.reject(err);
+    });
+
+    return deferred.promise;
+  };
+
+  angular.module('stormpath.googleLogin', [])
+  .provider('$googleLogin', function() {
+    this.$get = ['$q', '$spJsLoader', function googleLoginFactory($q, $spJsLoader) {
+      return new GoogleLoginService($q, $spJsLoader);
+    }];
+  });
+}());
+
+(function() {
+  'use strict';
+
+  /**
+   * @ngdoc overview
+   *
+   * @name  stormpath.socialLoginService
+   *
+   * @description
+   *
+   * This module provides the {@link stormpath.socialLoginService.$socialLogin $socialLogin} service.
+   *
+   * Currently, this provider does not have any configuration methods.
+   */
+  function SocialLoginService(STORMPATH_CONFIG, $injector, $http, $q) {
+    this.providersPromise = null;
+    this.STORMPATH_CONFIG = STORMPATH_CONFIG;
+    this.$injector = $injector;
+    this.$http = $http;
+    this.$q = $q;
+  }
+
+  SocialLoginService.prototype.initProviders = function initProviders(providers) {
+    var $injector = this.$injector;
+
+    Object.keys(providers).forEach(function(providerName) {
+      var provider = providers[providerName];
+      var service;
+
+      try {
+        service = $injector.get('$' + providerName + 'Login');
+      } catch (err) {
+        // Delete the provider from the list if we don't support it yet.
+        delete providers[providerName];
+        return;
+      }
+
+      service.clientId = provider.clientId;
+      providers[providerName].service = service;
+    });
+  };
+
+  /**
+   * @ngdoc function
+   *
+   * @name  stormpath.socialLoginService.$socialLogin#getProviders
+   *
+   * @methodOf stormpath.socialLoginService.$socialLogin
+   *
+   * @returns {promise}
+   *
+   * A promise that is resolved with the list of all available social providers.
+   *
+   * @description
+   *
+   * Returns a list of all social providers, provided by the `/spa-config` endpoint.
+   */
+  SocialLoginService.prototype.getProviders = function getProviders() {
+    var providersPromise = this.providersPromise;
+    var initProviders = this.initProviders.bind(this);
+
+    if (providersPromise) {
+      return providersPromise.promise;
+    }
+
+    providersPromise = this.$q.defer();
+    this.providersPromise = providersPromise;
+
+    this.$http.get(this.STORMPATH_CONFIG.getUrl('SPA_CONFIG_ENDPOINT')).then(function(response) {
+      var providers;
+
+      if (response.data && typeof response.data === 'object') {
+        providers = response.data.socialProviders;
+      } else {
+        providers = {};
+      }
+
+      initProviders(providers);
+
+      providersPromise.resolve(providers);
+    }).catch(providersPromise.reject);
+
+    return providersPromise.promise;
+  };
+
+  angular.module('stormpath.socialLogin', ['stormpath.CONFIG'])
+
+  /**
+   * @ngdoc object
+   *
+   * @name stormpath.socialLoginService.$socialLoginProvider
+   *
+   * @description
+   *
+   * Provides the {@link stormpath.socialLoginService.$socialLogin $socialLogin} service.
+   *
+   * Currently, this provider does not have any configuration methods.
+   */
+  .config(['$injector', 'STORMPATH_CONFIG', function $socialLoginProvider($injector, STORMPATH_CONFIG) {
+    /**
+     * @ngdoc object
+     *
+     * @name stormpath.socialLoginService.$socialLogin
+     *
+     * @description
+     *
+     * The social login service provides methods for letting users logging in with Facebook, Google, etc.
+     */
+    var socialLoginFactory = ['$http', '$q', '$injector', function socialLoginFactory($http, $q, $injector) {
+      return new SocialLoginService(STORMPATH_CONFIG, $injector, $http, $q);
+    }];
+
+    $injector.get('$provide').factory(STORMPATH_CONFIG.SOCIAL_LOGIN_SERVICE_NAME, socialLoginFactory);
+  }])
+
+  /**
+   * @ngdoc object
+   *
+   * @name stormpath.socialLoginService.$spJsLoader
+   *
+   * @description
+   *
+   * The `$spJsLoader` provides a method for loading scripts during runtime.
+   * Used by the social provider services to load their SDKs.
+   */
+  .factory('$spJsLoader', ['$q', function($q) {
+    return {
+      load: function load(id, src, innerHTML) {
+        var deferred = $q.defer();
+        var firstJsElement = document.getElementsByTagName('script')[0];
+        var jsElement = document.createElement('script');
+
+        if (document.getElementById(id)) {
+          deferred.resolve();
+        } else {
+          jsElement.id = id;
+          jsElement.src = src;
+          jsElement.innerHTML = innerHTML;
+          jsElement.onload = deferred.resolve;
+
+          firstJsElement.parentNode.insertBefore(jsElement, firstJsElement);
+        }
+
+        return deferred.promise;
+      }
+    };
+  }])
+
+  /**
+   * @ngdoc directive
+   *
+   * @name stormpath.spSocialLogin:spSocialLogin
+   *
+   * @description
+   *
+   * Add this directive to a button or link in order to authenticate using a social provider.
+   * The value should be a social provider ID such as `google` or `facebook`.
+   *
+   * **Note:** If you are using Google+ Sign-In for server-side apps, Google recommends that you
+   * leave the Authorized redirect URI field blank in the Google Developer Console. In Stormpath,
+   * when creating the Google Directory, you must set the redirect URI to `postmessage`.
+   * 
+   * {@link http://docs.stormpath.com/guides/social-integrations/}
+   *
+   * @example
+   *
+   * <pre>
+   * <div class="container">
+   *   <button sp-social-login="facebook" sp-scope="public_profile,email">Login with Facebook</button>
+   * </div>
+   * </pre>
+   */
+  .directive('spSocialLogin', ['$socialLogin', '$auth', function($socialLogin, $auth) {
+    return {
+      link: function(scope, element, attrs) {
+        var providerService;
+        var parentScope = scope.$parent;
+
+        $socialLogin.getProviders().then(function(providers) {
+          var provider = providers[attrs.spSocialLogin];
+
+          if (provider && provider.service) {
+            providerService = provider.service;
+            providerService.init(element);
+          }
+        });
+
+        element.bind('click', function() {
+          var options = { scope: attrs.spScope }; // `scope` is OAuth scope, not Angular scope
+
+          parentScope.posting = true;
+
+          providerService.login(options).then(function(data) {
+            return $auth.authenticate(data);
+          }).catch(function(err) {
+            parentScope.posting = false;
+
+            if (err.message) {
+              parentScope.error = err.message;
+            } else if (err.data && err.data.error) {
+              parentScope.error = err.data.error;
+            } else {
+              parentScope.error = 'An error occured when communicating with server.';
+            }
+          });
+        });
+      }
+    };
+  }]);
+}());
+
+// We've disabled support for social login with LinkedIn until we've
+// solved how to manage the differences between other OAuth providers.
+// https://developer-programs.linkedin.com/documents/exchange-jsapi-tokens-rest-api-oauth-tokens
+
+(function() {
+  'use strict';
+
+  // Returns a string in LinkedIn's format for initializing the SDK
+  // https://developer.linkedin.com/docs/signin-with-linkedin
+  function buildLinkedInSDKConfig(clientId) {
+    return 'api_key: ' + clientId + '\n' + 'authorize: true';
+  }
+
+  function loadLinkedInSDK($spJsLoader, clientId) {
+    var innerHTML = buildLinkedInSDKConfig(clientId);
+
+    $spJsLoader.load('linkedin-jssdk', '//platform.linkedin.com/in.js', innerHTML);
+  }
+
+  function LinkedInLoginService($q, $spJsLoader) {
+    this.name = 'LinkedIn';
+    this.clientId = null;
+    this.$q = $q;
+    this.$spJsLoader = $spJsLoader;
+  }
+
+  LinkedInLoginService.prototype.init = function init(element) {
+    loadLinkedInSDK(this.$spJsLoader, this.clientId);
+  };
+
+  LinkedInLoginService.prototype.login = function login(options) {
+    var deferred = this.$q.defer();
+
+    IN.User.authorize(function() {
+      deferred.resolve({
+        providerData: {
+          providerId: 'linkedin',
+          accessToken: IN.ENV.auth.oauth_token
+        }
+      });
+    });
+
+    return deferred.promise;
+  };
+
+  angular.module('stormpath.linkedinLogin', [])
+  .provider('$linkedinLogin', function() {
+    this.$get = ['$q', '$spJsLoader', function linkedInLoginFactory($q, $spJsLoader) {
+      return new LinkedInLoginService($q, $spJsLoader);
+    }];
+  });
+}());
+
 'use strict';
 /**
  * @ngdoc overview

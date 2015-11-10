@@ -1,6 +1,6 @@
 # 0.8.0
 
-* Added support for social login with Google and Facbook (requires use of
+* Added support for social login with Google and Facebook (requires use of
   [Express-Stormpath][] as your backend)
 
 # 0.7.2

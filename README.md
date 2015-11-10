@@ -152,7 +152,10 @@ See the [example app][] in this repository for an example application.
 
 ## Help
 
-Contact us via email at support@stormpath.com or visit our [support center][].
+If you have an issue while integrating this library, please make sure to look
+at the open issues on this repository and the [Troubleshooting Document](TROUBLESHOOTING.md).
+
+You may also contact us via email at support@stormpath.com or visit our [support center][].
 
 ## Contributing
 

@@ -1,3 +1,11 @@
+# 0.8.1
+
+* Fixed bug that displayed social login titles without any social login providers
+* Updated grunt-html2js to version 0.3.5
+* Updated grunt-contrib-clean to version 0.7.0
+* Updated grunt-contrib-uglify to version 0.10.1
+* Removed dist folder from the ignored file so we can use this lib with webpack or browserify
+
 # 0.8.0
 
 * Added support for social login with Google and Facebook (requires use of

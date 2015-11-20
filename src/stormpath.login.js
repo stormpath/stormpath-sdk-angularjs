@@ -3,6 +3,8 @@
 angular.module('stormpath')
 
 .controller('SpLoginFormCtrl', ['$scope','$auth','$socialLogin',function ($scope,$auth,$socialLogin) {
+  $scope.socialLoginProviders = [];
+
   // Load list of social login providers from server.
   $socialLogin.getProviders().then(function(providers) {
     // Convert into an array.

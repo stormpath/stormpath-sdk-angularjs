@@ -12,6 +12,7 @@ angular.module('stormpath')
   $scope.enabled = false;
   $scope.creating = false;
   $scope.authenticating = false;
+  $scope.socialLoginProviders = [];
 
   // Load list of social login providers from server.
   $socialLogin.getProviders().then(function(providers) {

@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2015
  * 
- * @version v0.8.0-dev-2015-11-05
+ * @version v0.8.1-dev-2015-11-20
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -1701,6 +1701,8 @@ angular.module('stormpath')
 angular.module('stormpath')
 
 .controller('SpLoginFormCtrl', ['$scope','$auth','$socialLogin',function ($scope,$auth,$socialLogin) {
+  $scope.socialLoginProviders = [];
+
   // Load list of social login providers from server.
   $socialLogin.getProviders().then(function(providers) {
     // Convert into an array.
@@ -1956,6 +1958,7 @@ angular.module('stormpath')
   $scope.enabled = false;
   $scope.creating = false;
   $scope.authenticating = false;
+  $scope.socialLoginProviders = [];
 
   // Load list of social login providers from server.
   $socialLogin.getProviders().then(function(providers) {

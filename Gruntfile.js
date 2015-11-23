@@ -152,6 +152,13 @@ module.exports = function (grunt) {
     html2js: {
       options: {
         module: 'stormpath.templates',
+        fileHeaderString: '<%= meta.banner %>\n\n'+
+                          '/* commonjs package manager support (eg componentjs) */\n'+
+                          'if (typeof module !== "undefined" && typeof exports !== "undefined" && module.exports === exports){\n'+
+                          '  module.exports = \'stormpath.templates\';\n'+
+                          '}\n\n'+
+                          '(function (window, angular, undefined) {\n',
+        fileFooterString: '})(window, window.angular);',
         htmlmin: {
           collapseBooleanAttributes: false,
           collapseWhitespace: true,

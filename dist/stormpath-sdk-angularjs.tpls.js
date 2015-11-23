@@ -1,3 +1,19 @@
+/**
+ * stormpath-sdk-angularjs
+ * Copyright Stormpath, Inc. 2015
+ * 
+ * @version v0.8.2-dev-2015-11-23
+ * @link https://github.com/stormpath/stormpath-sdk-angularjs
+ * @license Apache-2.0
+ */
+
+/* commonjs package manager support (eg componentjs) */
+if (typeof module !== "undefined" && typeof exports !== "undefined" && module.exports === exports){
+  module.exports = 'stormpath.templates';
+}
+
+(function (window, angular, undefined) {
+
 angular.module('stormpath.templates', ['spEmailVerification.tpl.html', 'spLoginForm.tpl.html', 'spPasswordResetForm.tpl.html', 'spPasswordResetRequestForm.tpl.html', 'spRegistrationForm.tpl.html']);
 
 angular.module("spEmailVerification.tpl.html", []).run(["$templateCache", function($templateCache) {
@@ -78,3 +94,4 @@ angular.module("spRegistrationForm.tpl.html", []).run(["$templateCache", functio
     "    border-color: #AF4138;\n" +
     "  }</style><div class=row><div class=\"col-sm-offset-4 col-xs-12 col-sm-4\"><p class=\"alert alert-success\" ng-show=\"created && !enabled\">Your account has been created. Please check your email for a verification link.</p><p ng-show=\"created && !enabled\" class=pull-right><a href=/login>Back to Login</a></p><p class=\"alert alert-success\" ng-show=\"created && enabled && !authenticating\">Your account has been created. <a href=/login>Login Now</a>.</p></div></div><div class=row><div class=col-xs-12><form class=form-horizontal ng-hide=\"created && !authenticating\" ng-submit=submit()><div class=form-group><label for=spFirstName class=\"col-xs-12 col-sm-4 control-label\">First Name</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control id=spFirstName ng-model=formModel.givenName placeholder=\"First Name\" ng-disabled=creating></div></div><div class=form-group><label for=spLastName class=\"col-xs-12 col-sm-4 control-label\">Last Name</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control id=spLastName ng-model=formModel.surname placeholder=\"Last Name\" ng-disabled=creating></div></div><div class=form-group><label for=spEmail class=\"col-xs-12 col-sm-4 control-label\">Email</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control id=spEmail ng-model=formModel.email placeholder=Email ng-disabled=creating></div></div><div class=form-group><label for=spPassword class=\"col-xs-12 col-sm-4 control-label\">Password</label><div class=\"col-xs-12 col-sm-4\"><input type=password class=form-control id=spPassword ng-model=formModel.password placeholder=Password ng-disabled=creating></div></div><div class=form-group><div class=\"col-sm-offset-4 col-sm-4\"><p class=\"alert alert-danger\" ng-show=error ng-bind=error></p><button type=submit class=\"btn btn-primary\" ng-disabled=creating>Register</button></div></div><div class=form-group ng-show=socialLoginProviders.length><div class=\"col-sm-offset-4 col-sm-4\"><p>Or register with:</p><button ng-repeat=\"provider in socialLoginProviders\" type=button class=\"btn btn-social btn-{{provider.name}}\" sp-social-login={{provider.name}}>{{provider.service.name}}</button></div></div></form></div></div>");
 }]);
+})(window, window.angular);

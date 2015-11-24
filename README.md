@@ -148,7 +148,41 @@ you through the creation of an Angular application from scratch, using Yeoman.
 
 ## Example
 
-See the [example app][] in this repository for an example application.
+See the [example app][] in this repository for an example application that uses
+Yeoman as it's boilerplate.
+
+For a simplified example that does not use a boilerplate system, please see
+this repository:
+
+[Stormpath Angular + Express Fullstack Sample Project](https://github.com/stormpath/express-stormpath-angular-sample-project)
+
+If you are hosting your API on a different domain than your Angular application,
+please see the [CORS example app][] in this repository.
+
+## Browserify
+
+This module can be used with Browserify.  Please add the following lines to your
+`package.json` file:
+
+```json
+"browser": {
+  "stormpath": "./node_modules/stormpath-sdk-angularjs/dist/stormpath-sdk-angularjs.js",
+  "stormpath.templates": "./node_modules/stormpath-sdk-angularjs/dist/stormpath-sdk-angularjs.tpls.js"
+}
+```
+
+You should also install the package `angular-ui-router`, as our library
+currently depends on it.
+
+Then in your application you can use `require` to require our modules:
+
+```javascript
+var app = angular.module('todoApp', [
+  require('angular-ui-router'),
+  require('stormpath'),
+  require('stormpath.templates')
+]);
+```
 
 ## Help
 
@@ -179,3 +213,4 @@ Apache 2.0, see [LICENSE](LICENSE).
 [UI-Router]: https://github.com/angular-ui/ui-router
 [Yeoman Guide]: https://docs.stormpath.com/angularjs/guide
 [support center]: https://support.stormpath.com
+[CORS example app]: https://github.com/stormpath/stormpath-sdk-angularjs/tree/master/example/cors-app

@@ -1,3 +1,7 @@
+# 0.8.2
+
+* Bug fixed: `stormpath-sdk-angularjs` now exports 'stormpath' instead of 'ui.router'
+
 # 0.8.1
 
 * Fixed bug that displayed social login titles without any social login providers

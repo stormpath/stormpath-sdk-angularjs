@@ -35,7 +35,10 @@ module.exports = function (grunt) {
     },
     express: {
       options: {
-        port: process.env.PORT || 9000
+        port: process.env.PORT || 9000,
+        // output option will force Grunt to wait for this
+        // line to be seen in server output, before continuing
+        output: 'Stormpath Ready'
       },
       dev: {
         options: {

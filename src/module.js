@@ -248,9 +248,15 @@ angular.module('stormpath', [
               away from the login page and send the user to the
               post login state.
              */
-            if($user.currentUser && $user.currentUser.href){
+            if($user.currentUser!==false){
               e.preventDefault();
-              $state.go(config.defaultPostLoginState);
+              $user.get().finally(function(){
+                if($user.currentUser && $user.currentUser.href){
+                  $state.go(config.defaultPostLoginState);
+                } else {
+                  $state.go(toState.name,toParams);
+                }
+              });
             }
           }
         });

@@ -200,6 +200,7 @@ angular.module('stormpath', [
     '$user', '$injector', 'STORMPATH_CONFIG', '$rootScope', '$location',
     function stormpathServiceFactory($user, $injector, STORMPATH_CONFIG, $rootScope, $location) {
       var $state;
+      var $route;
 
       function StormpathService(){
         var encoder = new UrlEncodedFormParser();
@@ -207,6 +208,10 @@ angular.module('stormpath', [
 
         if ($injector.has('$state')) {
           $state = $injector.get('$state');
+        }
+
+        if ($injector.has('$route')) {
+          $route = $injector.get('$route');
         }
 
         return this;
@@ -431,7 +436,11 @@ angular.module('stormpath', [
       StormpathService.prototype.routeChangeInterceptor = function routeChangeInterceptor(config) {
         function goToRoute(route) {
           setTimeout(function() {
-            $location.path(route);
+            if (route.$$route.originalPath === $location.path()) {
+              $route.reload();
+            } else {
+              $location.path(route);
+            }
           });
         }
 

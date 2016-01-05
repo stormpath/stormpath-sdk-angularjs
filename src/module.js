@@ -36,8 +36,8 @@
  * {@link stormpath.$stormpath#methods_uiRouter $stormpath.uiRouter()} in your
  * application's config block.
  *
- * This configuration does not support Angular's built-in `$routeProvider` at
- * this time, we will add this in a future version.
+ * If you're using Angular's built-in `$routeProvider` instead of UI Router, please
+ * use {@link stormpath.$stormpath#methods_ngRouter $stormpath.ngRouter()} instead.
  *
  * **NOTE:** Do not define this configuration on a abstract state, it must go on
  * the child state.  However, the controller of the abstract state will be
@@ -73,6 +73,83 @@
  *     $stateProvider
  *       .state('secrets', {
  *         url: '/admin',
+ *         controller: 'AdminCtrl',
+ *         sp: {
+ *           authorize: {
+ *             group: 'admins'
+ *           }
+ *         }
+ *       });
+ * });
+ * </pre>
+ */
+
+ /**
+ * @ngdoc object
+ *
+ * @name stormpath.SpRouteConfig:SpRouteConfig
+ *
+ * @property {boolean} authenticate
+ *
+ * If `true`, the user must be authenticated in order to view this route.
+ * If the user is not authenticated, they will
+ * be redirected to the `login` route.  After they login, they will be redirected to
+ * the route that was originally requested.
+ *
+ * @property {object} authorize
+ *
+ * An object that defines access control rules.  Currently, it supports a group-based
+ * check.  See the example below.
+ *
+ * @property {boolean} waitForUser
+ *
+ * If `true`, delay the route transition until we know
+ * if the user is authenticated or not.  This is useful for situations where
+ * you want everyone to see this route, but the route may look different
+ * depending on the user's authentication route.
+ *
+ *
+ * @description
+ *
+ * The Stormpath Route Config is an object that you can define on a route.
+ * Use this configuration to define access control for your routes, as
+ * defined by the ngRoute module.
+ *
+ * You will need to be using the ngRoute module, and you need
+ * to enable the integration by calling
+ * {@link stormpath.$stormpath#methods_ngRouter $stormpath.ngRouter()} in your
+ * application's config block.
+ *
+ * If you're using UI Router instead of Angular's built-in `$routeProvider`, please
+ * use {@link stormpath.$stormpath#methods_uiRouter $stormpath.uiRouter()} instead.
+ *
+ * @example
+ *
+ * <pre>
+ *
+ * angular.module('myApp')
+ *   .config(function ($routeProvider) {
+ *     // Wait until we know if the user is logged in before showing the homepage
+ *     $routeProvider
+ *       .when('/main', {
+*         controller: 'MainCtrl',
+ *         sp: {
+ *           waitForUser: true
+ *         }
+ *       });
+ *
+ *     // Require a user to be authenticated in order to see this route
+ *     $routeProvider
+ *       .when('/secrets', {
+ *         controller: 'SecretsCtrl',
+ *         sp: {
+ *           authenticate: true
+ *         }
+ *       });
+ *
+ *     // Require a user to be in the admins group in order to see this route
+ *     $routeProvider
+ *       .when('/secrets', {
  *         controller: 'AdminCtrl',
  *         sp: {
  *           authorize: {
@@ -120,12 +197,23 @@ angular.module('stormpath', [
    */
 
   this.$get = [
-    '$user','$state','STORMPATH_CONFIG','$rootScope',
-    function stormpathServiceFactory($user,$state,STORMPATH_CONFIG,$rootScope){
+    '$user', '$injector', 'STORMPATH_CONFIG', '$rootScope', '$location',
+    function stormpathServiceFactory($user, $injector, STORMPATH_CONFIG, $rootScope, $location) {
+      var $state;
+      var $route;
 
       function StormpathService(){
         var encoder = new UrlEncodedFormParser();
         this.encodeUrlForm = encoder.encode.bind(encoder);
+
+        if ($injector.has('$state')) {
+          $state = $injector.get('$state');
+        }
+
+        if ($injector.has('$route')) {
+          $route = $injector.get('$route');
+        }
+
         return this;
       }
       function stateChangeUnauthenticatedEvent(toState, toParams){
@@ -273,6 +361,156 @@ angular.module('stormpath', [
 
       }
 
+      function routeChangeUnauthenticatedEvent(toRoute) {
+        /**
+         * @ngdoc event
+         *
+         * @name stormpath.$stormpath#$routeChangeUnauthenticated
+         *
+         * @eventOf stormpath.$stormpath
+         *
+         * @eventType broadcast on root scope
+         *
+         * @param {Object} event
+         *
+         * Angular event object.
+         *
+         * @param {Object} toRoute The route that the user attempted to access.
+         *
+         * @description
+         *
+         * This event is broadcast when a route change is prevented,
+         * because the user is not logged in.
+         *
+         * Use this event if you want to implement your own strategy for
+         * presenting the user with a login form.
+         *
+         * To receive this event, you must be using the ngRoute module.
+         *
+         * @example
+         *
+         * <pre>
+         *   $rootScope.$on('$routeChangeUnauthenticated', function(event, toRoute) {
+         *     // Your custom logic for deciding how the user should login, and
+         *     // if you want to redirect them to the desired route afterwards
+         *   });
+         * </pre>
+         */
+        $rootScope.$broadcast(STORMPATH_CONFIG.ROUTE_CHANGE_UNAUTHENTICATED, toRoute);
+      }
+
+      function routeChangeUnauthorizedEvent(toRoute) {
+        /**
+         * @ngdoc event
+         *
+         * @name stormpath.$stormpath#$routeChangeUnauthorized
+         *
+         * @eventOf stormpath.$stormpath
+         *
+         * @eventType broadcast on root scope
+         *
+         * @param {Object} event
+         *
+         * Angular event object.
+         *
+         * @param {Object} toRoute The route that the user attempted to access.
+         *
+         * @description
+         *
+         * This event is broadcast when a route change is prevented,
+         * because the user is not authorized by the rules defined in the
+         * {@link stormpath.SpRouteConfig:SpRouteConfig Stormpath Route Configuration}
+         * for the requested route.
+         *
+         * Use this event if you want to implement your own strategy for telling
+         * the user that they are forbidden from viewing that route.
+         *
+         * To receive this event, you must be using the ngRoute module.
+         *
+         * @example
+         *
+         * <pre>
+         *   $rootScope.$on('$routeChangeUnauthorized', function(event, toRoute) {
+         *     // Your custom logic for deciding how the user should be
+         *     // notified that they are forbidden from this route
+         *   });
+         * </pre>
+         */
+        $rootScope.$broadcast(STORMPATH_CONFIG.ROUTE_CHANGE_UNAUTHORIZED, toRoute);
+      }
+
+      StormpathService.prototype.routeChangeInterceptor = function routeChangeInterceptor(config) {
+        function goToRoute(route) {
+          setTimeout(function() {
+            if (route.$$route.originalPath === $location.path()) {
+              $route.reload();
+            } else {
+              $location.path(route);
+            }
+          });
+        }
+
+        $rootScope.$on('$routeChangeStart', function(event, toRoute) {
+          if (!toRoute.$$route) {
+            return;
+          }
+
+          var sp = toRoute.$$route.sp || {}; // Grab the sp config for this route
+
+          if ((sp.authenticate || sp.authorize) && !$user.currentUser) {
+            event.preventDefault();
+
+            $user.get().then(function() {
+              // The user is authenticated, continue to the requested route
+              if (sp.authorize) {
+                if (authorizeStateConfig(sp)) {
+                  goToRoute(toRoute);
+                } else {
+                  stateChangeUnauthorizedEvent(toRoute);
+                }
+              } else {
+                goToRoute(toRoute);
+              }
+            }, function() {
+              // The user is not authenticated, emit the necessary event
+              routeChangeUnauthenticatedEvent(toRoute);
+            });
+          } else if (sp.waitForUser && $user.currentUser === null) {
+            event.preventDefault();
+
+            $user.get().finally(function() {
+              goToRoute(toRoute);
+            });
+          } else if ($user.currentUser && sp.authorize) {
+            if (!authorizeStateConfig(sp)) {
+              event.preventDefault();
+              routeChangeUnauthorizedEvent(toRoute);
+            }
+          } else if (toRoute.$$route.originalPath === config.loginRoute) {
+            /*
+              If the user is already logged in, we will redirect
+              away from the login page and send the user to the
+              post login route.
+             */
+            if ($user.currentUser && $user.currentUser.href) {
+              event.preventDefault();
+              goToRoute(config.defaultPostLoginRoute);
+            }
+          }
+        });
+      };
+
+      function authorizeRouteConfig(spRouteConfig) {
+        var sp = spRouteConfig;
+
+        if (sp && sp.authorize && sp.authorize.group) {
+          return $user.currentUser.inGroup(sp.authorize.group);
+        }
+
+        console.error('Unknown authorize configuration for spRouteConfig', sp);
+        return false;
+      }
+
       /**
        * @ngdoc function
        *
@@ -354,6 +592,92 @@ angular.module('stormpath', [
         if(config.forbiddenState){
           self.forbiddenWatcher = $rootScope.$on(STORMPATH_CONFIG.STATE_CHANGE_UNAUTHORIZED,function(){
             $state.go(config.forbiddenState);
+          });
+        }
+      };
+
+      /**
+       * @ngdoc function
+       *
+       * @name stormpath#ngRouter
+       *
+       * @methodOf stormpath.$stormpath
+       *
+       * @param {object} config
+       *
+       * * **`autoRedirect`** - Defaults to true.  After the user logs in at
+       * the route defined by `loginRoute`, they will be redirected back to the
+       * route that was originally requested.
+       *
+       * * **`defaultPostLoginRoute`**  - Where the user should be sent, after login,
+       * if they have visited the login page directly.  If you do not define a value,
+       * nothing will happen at the login route.  You can alternatively use the
+       * {@link stormpath.authService.$auth#events_$authenticated $authenticated} event to know
+       * that login is successful.
+       *
+       * * **`forbiddenRoute`** - The route that we should send the user
+       * to if they try to an access a view that they are not authorized to view.
+       * This happens in response to an `authorize` rule in one of your
+       * {@link stormpath.SpRouteConfig:SpRouteConfig Stormpath Route Configurations}
+       *
+       * * **`loginRoute`** - The route name that we should send the user
+       * to if they need to login.  You'll probably use `login` for this value.
+       *
+       * @description
+       *
+       * Call this method to enable the integration with the ngRoute module.
+       *
+       * When enabled, you can define {@link stormpath.SpRouteConfig:SpRouteConfig Stormpath Route Configurations} on your routes.
+       * This object allows you to define access control for the route.
+       *
+       * You can pass config options to this integration, the options control the
+       * default behavior around "need to login" and "forbidden" situations.
+       * If you wish to implement your own logic for these situations, simply
+       * omit the options and use the events (documented below) to know
+       * what is happening in the application.
+       *
+       * @example
+       *
+       * <pre>
+       * angular.module('myApp')
+       *   .run(function($stormpath){
+       *     $stormpath.ngRouter({
+       *       forbiddenRoute: '/forbidden',
+       *       defaultPostLoginRoute: '/home',
+       *       loginRoute: '/login'
+       *     });
+       *   });
+       * </pre>
+       */
+      StormpathService.prototype.ngRouter = function ngRouter(config) {
+        var self = this;
+
+        config = typeof config === 'object' ? config : {};
+
+        this.routeChangeInterceptor(config);
+
+        if (config.loginRoute) {
+          this.unauthenticatedWather = $rootScope.$on(STORMPATH_CONFIG.ROUTE_CHANGE_UNAUTHENTICATED, function(event, toRoute) {
+            self.postLogin = {
+              toRoute: toRoute
+            };
+
+            $location.path(config.loginRoute);
+          });
+        }
+
+        $rootScope.$on(STORMPATH_CONFIG.AUTHENTICATION_SUCCESS_EVENT_NAME, function() {
+          if (self.postLogin && config.autoRedirect !== false) {
+            $location.path(self.postLogin.toRoute);
+            self.postLogin = null;
+          } else if (config.defaultPostLoginRoute) {
+            $location.path(config.defaultPostLoginRoute);
+          }
+        });
+
+        if (config.forbiddenRoute) {
+          this.forbiddenWatcher = $rootScope.$on(STORMPATH_CONFIG.ROUTE_CHANGE_UNAUTHORIZED, function() {
+            $location.path(config.forbiddenRoute);
           });
         }
       };

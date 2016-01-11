@@ -1,3 +1,12 @@
+# 0.9.0
+
+* Adding support for ngRoute.  Please see the API Documentation and the new
+  `ng-route-app` in the examples folder!
+
+* Bug fixed: you could navigate to the login form, even when logged in.
+
+* Updating `express-stormpath` versions in example projects.
+
 # 0.8.2
 
 * Bug fixed: `stormpath-sdk-angularjs` now exports 'stormpath' instead of 'ui.router'

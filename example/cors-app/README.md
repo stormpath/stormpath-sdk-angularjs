@@ -17,7 +17,7 @@ domain from your API service.
 2. Clone this repo to your computer, and enter the directory for this example:
 
   ```bash
-  git clone git@github.com:stormpath/stormpath-sdk-angularjs.git
+  git clone https://github.com/stormpath/stormpath-sdk-angularjs.git
   cd stormpath-sdk-angularjs/example/cors-app
   ```
 

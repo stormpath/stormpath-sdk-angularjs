@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('stormpath')
-.controller('SpRegistrationFormCtrl', ['$scope','$user','$auth','$location','$socialLogin',function ($scope,$user,$auth,$location,$socialLogin) {
+.controller('SpRegistrationFormCtrl', ['$scope','$user','$auth','$location','$socialLogin','$injector', function ($scope,$user,$auth,$location,$socialLogin, $injector) {
   $scope.formModel = (typeof $scope.formModel==='object') ? $scope.formModel : {
     givenName:'',
     surname: '',
@@ -45,7 +45,11 @@ angular.module('stormpath')
             password: $scope.formModel.password
           })
           .then(function(){
-            if($scope.postLoginPath){
+            var $state = $injector.get('$state');
+            if($scope.postLoginState && $state){
+              $state.go($scope.postLoginState);
+            }
+            else if($scope.postLoginPath){
               $location.path($scope.postLoginPath);
             }
           })
@@ -85,7 +89,14 @@ angular.module('stormpath')
  * @param {string} postLoginState
  *
  * If using the `autoLogin` option, you can specify the name of a UI state that the user
- * should be redirected to after they successfully have registered.
+ * should be redirected to after they successfully have registered.  This is a UI Router
+ * integration, and requires that module.
+ *
+ * @param {string} postLoginPath
+ *
+ * If using the `autoLogin` option, you can specify the path that the user
+ * should be sent to after registration.  This value is passed to
+ * `$location.path()` and does not require a specific routing module.
  *
  * @param {string} template-url
  *
@@ -156,6 +167,7 @@ angular.module('stormpath')
     controller: 'SpRegistrationFormCtrl',
     link: function(scope,element,attrs){
       scope.autoLogin = attrs.autoLogin==='true';
+      scope.postLoginPath = attrs.postLoginPath || '';
       scope.postLoginState = attrs.postLoginState || '';
     }
   };

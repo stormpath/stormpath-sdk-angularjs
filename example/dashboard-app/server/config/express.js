@@ -23,8 +23,6 @@ module.exports = function(app) {
   app.set('view engine', 'html');
   app.set('trust proxy', true);
   app.use(compression());
-  app.use(bodyParser.urlencoded({ extended: true }));
-  app.use(bodyParser.json());
   app.use(methodOverride());
   app.use(cookieParser());
 

@@ -45,7 +45,7 @@ angular.module('stormpath')
             password: $scope.formModel.password
           })
           .then(function(){
-            var $state = $injector.get('$state');
+            var $state = $injector.has('$state') ? $injector.get('$state') : null;
             if($scope.postLoginState && $state){
               $state.go($scope.postLoginState);
             }

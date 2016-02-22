@@ -26,6 +26,25 @@ module.exports = function (grunt) {
     clean: {
       ngdocs: '<%= tmpdir %>/site/**/*'
     },
+    replace: {
+      dist: {
+        options: {
+          patterns: [
+            {
+              match: 'PACKAGE_VERSION',
+              replacement: '<%= pkg.version %>'
+            },
+            {
+              match: 'PACKAGE_NAME',
+              replacement: '<%= pkg.name %>'
+            }
+          ]
+        },
+        files: [
+          {expand: true, flatten: true, src: ['<%= builddir %>/<%= pkg.name %>*.js'], dest: '<%= builddir %>'}
+        ]
+      }
+    },
     concat: {
       options: {
         banner: '<%= meta.banner %>\n\n'+
@@ -144,10 +163,10 @@ module.exports = function (grunt) {
         files:[{
           expand: true,
           flatten: true,
-          src: '.tmp/build/*',
+          src: '<%= builddir %>/*',
           dest: 'dist/'
         }]
-      },
+      }
     },
     html2js: {
       options: {
@@ -200,7 +219,7 @@ module.exports = function (grunt) {
 
   grunt.registerTask('build', 'Perform a normal build', ['concat', 'html2js','uglify','docs']);
 
-  grunt.registerTask('dist', 'Perform a distribution', ['build', 'copy:dist']);
+  grunt.registerTask('dist', 'Perform a distribution', ['build', 'replace:dist', 'copy:dist']);
 
   grunt.registerTask('develop',
     'Build source and distribution, useful if you are modifying this module as a linked modue while developging another module',

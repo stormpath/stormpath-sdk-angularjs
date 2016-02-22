@@ -179,8 +179,38 @@ angular.module('stormpath', [
 
   return new SpAuthInterceptor();
 }])
+.factory('StormpathAgentInterceptor',['$window',function($window){
+  function getLocation (href) {
+    var l = $window.document.createElement('a');
+    l.href = href;
+    return l;
+  }
+
+  function StormpathAgentInterceptor(){
+
+  }
+  /**
+   * Adds the X-Stormpath-Agent header, if the requested URL is on the same
+   * domain as the current document.
+   *
+   * @param  {Object} config $http config object.
+   * @return {Object} config $http config object.
+   */
+  StormpathAgentInterceptor.prototype.request = function(config){
+    var a = getLocation(config.url);
+    var b = $window.location;
+    if (a.host === b.host){
+      // The placeholders in the value are replaced by the `grunt dist` command.
+      config.headers['X-Stormpath-Agent'] = '@@PACKAGE_NAME/@@PACKAGE_VERSION';
+    }
+    return config;
+  };
+
+  return new StormpathAgentInterceptor();
+}])
 .config(['$httpProvider',function($httpProvider){
   $httpProvider.interceptors.push('SpAuthInterceptor');
+  $httpProvider.interceptors.push('StormpathAgentInterceptor');
 }])
 .provider('$stormpath', [function $stormpathProvider(){
   /**

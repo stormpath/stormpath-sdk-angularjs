@@ -201,7 +201,7 @@ angular.module('stormpath', [
     var b = $window.location;
     if (a.host === b.host){
       // The placeholders in the value are replaced by the `grunt dist` command.
-      config.headers['X-Stormpath-Agent'] = '@@PACKAGE_NAME/@@PACKAGE_VERSION';
+      config.headers['X-Stormpath-Agent'] = '@@PACKAGE_NAME/@@PACKAGE_VERSION' + ' angularjs/' + angular.version.full;
     }
     return config;
   };

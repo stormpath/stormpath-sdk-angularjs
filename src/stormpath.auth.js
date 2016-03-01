@@ -84,8 +84,8 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
          *        console.log('login success');
          *        $state.go('home');
          *      })
-         *      .catch(function(httpResponse){
-         *        $scope.errorMessage = response.data.message;
+         *      .catch(function(err){
+         *        $scope.errorMessage = err.message;
          *      });
          *   }
          *
@@ -109,8 +109,8 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
          *        console.log('login success');
          *        $state.go('home');
          *      })
-         *      .catch(function(httpResponse){
-         *        $scope.errorMessage = response.data.message;
+         *      .catch(function(err){
+         *        $scope.errorMessage = err.message;
          *      });
          *   }
          *

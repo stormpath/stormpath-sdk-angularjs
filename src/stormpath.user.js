@@ -154,9 +154,9 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
          *       // The account requires email verification
          *     }
          *   })
-         *   .catch(function(response){
+         *   .catch(function(err){
          *     // Show the error message to the user
-         *     $scope.error = response.data.error;
+         *     $scope.error = err.message;
          *   });
          * </pre>
          */

@@ -53,8 +53,8 @@ angular.module('stormpath')
               $location.path($scope.postLoginPath);
             }
           })
-          .catch(function(response){
-            $scope.error = response.data.error;
+          .catch(function(err){
+            $scope.error = err.message;
           })
           .finally(function(){
             $scope.authenticating = false;
@@ -64,9 +64,9 @@ angular.module('stormpath')
           $scope.creating = false;
         }
       })
-      .catch(function(response){
+      .catch(function(err){
         $scope.creating = false;
-        $scope.error = response.data.error;
+        $scope.error = err.message;
       });
   };
 }])

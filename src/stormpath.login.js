@@ -31,9 +31,9 @@ angular.module('stormpath')
     $scope.posting = true;
     $scope.error = null;
     $auth.authenticate($scope.formModel)
-      .catch(function(response){
+      .catch(function(err){
         $scope.posting = false;
-        $scope.error = response.data && response.data.error || 'An error occured when communicating with server.';
+        $scope.error = err.message;
       });
   };
 }])

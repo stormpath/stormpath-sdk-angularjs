@@ -197,8 +197,6 @@
 
             if (err.message) {
               parentScope.error = err.message;
-            } else if (err.data && err.data.error) {
-              parentScope.error = err.data.error;
             } else {
               parentScope.error = 'An error occured when communicating with server.';
             }

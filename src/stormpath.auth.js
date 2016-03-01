@@ -120,6 +120,9 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
         var op = $http($spFormEncoder.formPost({
             url: STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'),
             method: 'POST',
+            headers: {
+              'Accept': 'application/json'
+            },
             withCredentials: true,
             data: data
           })

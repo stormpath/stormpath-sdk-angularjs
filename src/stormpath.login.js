@@ -2,30 +2,17 @@
 
 angular.module('stormpath')
 
-.controller('SpLoginFormCtrl', ['$scope','$auth','$socialLogin',function ($scope,$auth,$socialLogin) {
-  $scope.socialLoginProviders = [];
+.controller('SpLoginFormCtrl', ['$scope','$auth','$viewModel',function ($scope,$auth,$viewModel) {
+  $scope.viewModel = null;
 
-  // Load list of social login providers from server.
-  $socialLogin.getProviders().then(function(providers) {
-    // Convert into an array.
-    $scope.socialLoginProviders = Object.keys(providers).map(function(providerName) {
-      var provider = providers[providerName];
-      provider.name = providerName;
-      return provider;
-    });
-
-    // Filter out the enabled providers.
-    $scope.socialLoginProviders = $scope.socialLoginProviders.filter(function(provider) {
-      return provider.enabled;
-    });
-  }).catch(function(err) {
-    throw new Error('Could not load social providers from back-end: ' + err.message);
+  // Load login view model from server.
+  $viewModel.getLoginModel().then(function (model) {
+    $scope.viewModel = model;
+  }).catch(function (err) {
+    throw new Error('Could not load login view model from back-end: ' + err.message);
   });
 
-  $scope.formModel = {
-    username: '',
-    password: ''
-  };
+  $scope.formModel = {};
   $scope.posting = false;
   $scope.submit = function(){
     $scope.posting = true;

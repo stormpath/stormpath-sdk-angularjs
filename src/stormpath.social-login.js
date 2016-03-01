@@ -20,69 +20,6 @@
     this.$q = $q;
   }
 
-  SocialLoginService.prototype.initProviders = function initProviders(providers) {
-    var $injector = this.$injector;
-
-    Object.keys(providers).forEach(function(providerName) {
-      var provider = providers[providerName];
-      var service;
-
-      try {
-        service = $injector.get('$' + providerName + 'Login');
-      } catch (err) {
-        // Delete the provider from the list if we don't support it yet.
-        delete providers[providerName];
-        return;
-      }
-
-      service.clientId = provider.clientId;
-      providers[providerName].service = service;
-    });
-  };
-
-  /**
-   * @ngdoc function
-   *
-   * @name  stormpath.socialLoginService.$socialLogin#getProviders
-   *
-   * @methodOf stormpath.socialLoginService.$socialLogin
-   *
-   * @returns {promise}
-   *
-   * A promise that is resolved with the list of all available social providers.
-   *
-   * @description
-   *
-   * Returns a list of all social providers, provided by the `/spa-config` endpoint.
-   */
-  SocialLoginService.prototype.getProviders = function getProviders() {
-    var providersPromise = this.providersPromise;
-    var initProviders = this.initProviders.bind(this);
-
-    if (providersPromise) {
-      return providersPromise.promise;
-    }
-
-    providersPromise = this.$q.defer();
-    this.providersPromise = providersPromise;
-
-    this.$http.get(this.STORMPATH_CONFIG.getUrl('SPA_CONFIG_ENDPOINT')).then(function(response) {
-      var providers;
-
-      if (response.data && typeof response.data === 'object') {
-        providers = response.data.socialProviders;
-      } else {
-        providers = {};
-      }
-
-      initProviders(providers);
-
-      providersPromise.resolve(providers);
-    }).catch(providersPromise.reject);
-
-    return providersPromise.promise;
-  };
-
   angular.module('stormpath.socialLogin', ['stormpath.CONFIG'])
 
   /**
@@ -166,24 +103,26 @@
    *
    * <pre>
    * <div class="container">
-   *   <button sp-social-login="facebook" sp-scope="public_profile,email">Login with Facebook</button>
+   *   <button sp-social-login="facebook" sp-client-id="oauth client id" sp-scope="public_profile,email">Login with Facebook</button>
    * </div>
    * </pre>
    */
-  .directive('spSocialLogin', ['$socialLogin', '$auth', function($socialLogin, $auth) {
+  .directive('spSocialLogin', ['$viewModel', '$auth', '$injector', function($viewModel, $auth, $injector) {
     return {
       link: function(scope, element, attrs) {
         var providerService;
         var parentScope = scope.$parent;
 
-        $socialLogin.getProviders().then(function(providers) {
-          var provider = providers[attrs.spSocialLogin];
+        try {
+          providerService = $injector.get('$' + attrs.spSocialLogin + 'Login');
+        } catch (err) {
+          return;
+        }
 
-          if (provider && provider.service) {
-            providerService = provider.service;
-            providerService.init(element);
-          }
-        });
+        providerService.clientId = attrs.spClientId;
+        providerService.init(element);
+
+        scope.providerName = providerService.name;
 
         element.bind('click', function() {
           var options = { scope: attrs.spScope }; // `scope` is OAuth scope, not Angular scope

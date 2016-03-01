@@ -168,8 +168,10 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
           data: accountData
         }))
         .then(function(response){
-          op.resolve(response.data);
-          registeredEvent(response.data);
+          var account = response.data.account || response.data;
+
+          op.resolve(account);
+          registeredEvent(account);
         },op.reject);
 
         return op.promise;
@@ -231,7 +233,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
 
           $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI'),{withCredentials:true}).then(function(response){
             self.cachedUserOp = null;
-            self.currentUser = new User(response.data);
+            self.currentUser = new User(response.data.account || response.data);
             currentUserEvent(self.currentUser);
             op.resolve(self.currentUser);
           },function(response){

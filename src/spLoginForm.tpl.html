@@ -34,7 +34,10 @@
 
 <div class="row">
   <div class="col-xs-12">
-    <form class="form-horizontal" ng-hide="accepted" ng-submit="submit()">
+    <div ng-show="!viewModel" style="text-align: center;">
+      Loading...
+    </div>
+    <form class="form-horizontal" ng-hide="accepted || !viewModel" ng-submit="submit()">
       <div class="form-group" ng-repeat="field in viewModel.form.fields">
         <label for="spEmail" class="col-xs-12 col-sm-4 control-label">{{field.label}}</label>
         <div class="col-xs-12 col-sm-4">

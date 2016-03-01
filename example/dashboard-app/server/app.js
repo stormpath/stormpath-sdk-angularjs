@@ -30,16 +30,19 @@ console.log('Initializing Stormpath');
   Now we initialize Stormpath, any middleware that is registered after this
   point will be protected by Stormpath.
 
-  The spaRoot setting tells the Stormpath library where your Angular app is,
+  The spa setting tells the Stormpath library where your Angular app is,
   as it will need to serve it for the default routes like /login and
   /register.  The appPath property is provided by the configuration parser
   in the Yeoman boilerplate.
  */
 
 app.use(ExpressStormpath.init(app,{
-  website: true,
   web: {
-    spaRoot: app.get('appPath')
+    produces: ['application/json'],
+    spa: {
+      enabled: true,
+      view: app.get('appPath')
+    }
   }
 }));
 

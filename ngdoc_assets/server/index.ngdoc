@@ -78,6 +78,7 @@ in the {@link api/stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG STORMPATH_CONFIG}
       <p>**Login**</p>
       <p>
         Used to authenticate a user and generate an access token which is stored in a secure cookie.
+        Also used to get a view model of how to render the login form. Read more about the view model [here](https://docs.stormpath.com/nodejs/express/latest/login.html#json-login-api).
       </p>
     </td>
     <td>
@@ -115,7 +116,10 @@ in the {@link api/stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG STORMPATH_CONFIG}
   <tr>
     <td>
       <p>**User Registration**</p>
-      <p>Used to create new Stormpath accounts</p>
+      <p>
+        Used to create new Stormpath accounts.
+        Also used to get a view model of how to render the registration form. Read more about the view model [here](https://docs.stormpath.com/nodejs/express/latest/registration.html#json-registration-api).
+      </p>
     </td>
     <td>
       `/register`

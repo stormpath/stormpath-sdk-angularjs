@@ -164,6 +164,7 @@ angular.module('stormpath', [
   'stormpath.CONFIG',
   'stormpath.auth',
   'stormpath.userService',
+  'stormpath.viewModelService',
   'stormpath.socialLogin',
   'stormpath.facebookLogin',
   'stormpath.googleLogin'
@@ -208,9 +209,40 @@ angular.module('stormpath', [
 
   return new StormpathAgentInterceptor();
 }])
+/**
+ * Interceptor that intercepts Stormpath error responses and
+ * translates them to errors. Adds backward-compatibility for
+ * the error structure prior to the framework spec.
+ */
+.factory('StormpathErrorInterceptor',['$q', function($q){
+  function StormpathErrorInterceptor(){
+  }
+
+  StormpathErrorInterceptor.prototype.responseError = function(response){
+    var errorMessage = null;
+
+    if (response.data) {
+      errorMessage = response.data.message || response.data.error;
+    }
+
+    if (!errorMessage) {
+      errorMessage = 'An error occured when communicating with the API server.';
+    }
+
+    var error = new Error(errorMessage);
+    
+    error.response = response;
+    error.statusCode = response.status;
+
+    return $q.reject(error);
+  };
+
+  return new StormpathErrorInterceptor();
+}])
 .config(['$httpProvider',function($httpProvider){
   $httpProvider.interceptors.push('SpAuthInterceptor');
   $httpProvider.interceptors.push('StormpathAgentInterceptor');
+  $httpProvider.interceptors.push('StormpathErrorInterceptor');
 }])
 .provider('$stormpath', [function $stormpathProvider(){
   /**

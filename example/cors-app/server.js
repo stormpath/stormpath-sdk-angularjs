@@ -32,15 +32,7 @@ apiService.use(cors({
   credentials: true
 }));
 
-/*
-  Even though this is an API Service, we enable the
-  "website" option because this exposes the /login endpoint
-  for your Angular application to POST a login attempt to.
- */
-
-apiService.use(stormpath.init(apiService,{
-  website: true
-}));
+apiService.use(stormpath.init(apiService,{ }));
 
 /*
   We use the loginRequired middleware, as that will assert

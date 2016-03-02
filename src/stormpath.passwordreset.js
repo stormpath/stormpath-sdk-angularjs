@@ -65,8 +65,8 @@ angular.module('stormpath')
       .then(function(){
         $scope.reset = true;
       })
-      .catch(function(response){
-        $scope.error = response.data.error;
+      .catch(function(err){
+        $scope.error = err.message;
       }).finally(function(){
         $scope.posting = false;
       });

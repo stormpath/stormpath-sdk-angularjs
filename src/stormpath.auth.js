@@ -84,8 +84,8 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
          *        console.log('login success');
          *        $state.go('home');
          *      })
-         *      .catch(function(httpResponse){
-         *        $scope.errorMessage = response.data.message;
+         *      .catch(function(err){
+         *        $scope.errorMessage = err.message;
          *      });
          *   }
          *
@@ -109,8 +109,8 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
          *        console.log('login success');
          *        $state.go('home');
          *      })
-         *      .catch(function(httpResponse){
-         *        $scope.errorMessage = response.data.message;
+         *      .catch(function(err){
+         *        $scope.errorMessage = err.message;
          *      });
          *   }
          *
@@ -120,6 +120,9 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
         var op = $http($spFormEncoder.formPost({
             url: STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'),
             method: 'POST',
+            headers: {
+              'Accept': 'application/json'
+            },
             withCredentials: true,
             data: data
           })
@@ -171,7 +174,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
        * event will be emitted after a successful logout.
        */
       AuthService.prototype.endSession = function endSession(){
-        var op = $http.get(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'), {
+        var op = $http.post(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'), null, {
             headers: {
                 'Accept': 'application/json'
             }

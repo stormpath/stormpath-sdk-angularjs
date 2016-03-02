@@ -186,25 +186,6 @@ angular.module('stormpath.CONFIG',[])
     /**
     * @ngdoc property
     *
-    * @name SPA_CONFIG_ENDPOINT
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `/spa-config`
-    *
-    * The endpoint that is used to fetch the configuration for this app,
-    * for example a list of available social providers.
-    *
-    * Used by {@link stormpath.socialLoginService.$socialLogin#getProviders $socialLogin.getProviders()}.
-    */
-    SPA_CONFIG_ENDPOINT: '/spa-config',
-
-
-    /**
-    * @ngdoc property
-    *
     * @name ENDPOINT_PREFIX
     *
     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG

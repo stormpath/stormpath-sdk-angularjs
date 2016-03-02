@@ -2,38 +2,32 @@
 
 angular.module('stormpath')
 
-.controller('SpLoginFormCtrl', ['$scope','$auth','$socialLogin',function ($scope,$auth,$socialLogin) {
-  $scope.socialLoginProviders = [];
+.controller('SpLoginFormCtrl', ['$scope','$auth','$viewModel',function ($scope,$auth,$viewModel) {
+  $scope.viewModel = null;
 
-  // Load list of social login providers from server.
-  $socialLogin.getProviders().then(function(providers) {
-    // Convert into an array.
-    $scope.socialLoginProviders = Object.keys(providers).map(function(providerName) {
-      var provider = providers[providerName];
-      provider.name = providerName;
-      return provider;
+  $viewModel.getLoginModel().then(function (model) {
+    var supportedProviders = ['facebook', 'google'];
+
+    model.accountStores = model.accountStores.filter(function (accountStore) {
+      var providerId = accountStore.provider.providerId;
+
+      return supportedProviders.indexOf(providerId) > -1;
     });
 
-    // Filter out the enabled providers.
-    $scope.socialLoginProviders = $scope.socialLoginProviders.filter(function(provider) {
-      return provider.enabled;
-    });
-  }).catch(function(err) {
-    throw new Error('Could not load social providers from back-end: ' + err.message);
+    $scope.viewModel = model;
+  }).catch(function (err) {
+    throw new Error('Could not load login view model from back-end: ' + err.message);
   });
 
-  $scope.formModel = {
-    username: '',
-    password: ''
-  };
+  $scope.formModel = {};
   $scope.posting = false;
   $scope.submit = function(){
     $scope.posting = true;
     $scope.error = null;
     $auth.authenticate($scope.formModel)
-      .catch(function(response){
+      .catch(function(err){
         $scope.posting = false;
-        $scope.error = response.data && response.data.error || 'An error occured when communicating with server.';
+        $scope.error = err.message;
       });
   };
 }])

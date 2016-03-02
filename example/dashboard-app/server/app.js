@@ -10,7 +10,7 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 var express = require('express');
 var config = require('./config/environment');
 var ExpressStormpath = require('express-stormpath');
-var path = require('path');
+
 // Setup server
 var app = express();
 
@@ -30,16 +30,19 @@ console.log('Initializing Stormpath');
   Now we initialize Stormpath, any middleware that is registered after this
   point will be protected by Stormpath.
 
-  The spaRoot setting tells the Stormpath library where your Angular app is,
+  The spa setting tells the Stormpath library where your Angular app is,
   as it will need to serve it for the default routes like /login and
   /register.  The appPath property is provided by the configuration parser
   in the Yeoman boilerplate.
  */
 
 app.use(ExpressStormpath.init(app,{
-  website: true,
   web: {
-    spaRoot: app.get('appPath')
+    produces: ['application/json'],
+    spa: {
+      enabled: true,
+      view: app.get('appPath')
+    }
   }
 }));
 
@@ -47,14 +50,14 @@ app.use(ExpressStormpath.init(app,{
 require('./routes')(app);
 
 app.on('stormpath.ready',function() {
-
   console.log('Stormpath Ready');
-
-  // Start server
-  server.listen(config.port, config.ip, function () {
-    console.log('Express server listening on %d, in %s mode', config.port, app.get('env'));
-  });
 });
+
+// Start server
+server.listen(config.port, config.ip, function () {
+  console.log('Express server listening on %d, in %s mode', config.port, app.get('env'));
+});
+
 
 // Expose app
 exports = module.exports = app;

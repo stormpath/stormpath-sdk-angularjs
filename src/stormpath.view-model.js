@@ -16,6 +16,16 @@
     });
   };
 
+  ViewModelService.prototype.getRegisterModel = function getRegisterModel() {
+    return this.$http.get(this.STORMPATH_CONFIG.getUrl('REGISTER_URI'), {
+      headers: {
+        'Accept': 'application/json'
+      }
+    }).then(function (response) {
+      return response.data;
+    });
+  };
+
   angular.module('stormpath.viewModelService', [])
   .provider('$viewModel', function () {
     this.$get = ['$http', 'STORMPATH_CONFIG', function viewModelFactory($http, STORMPATH_CONFIG) {

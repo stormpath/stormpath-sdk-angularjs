@@ -30,11 +30,15 @@
     background-color: #C74539;
     border-color: #AF4138;
   }
+
+  .sp-loading {
+    text-align: center;
+  }
 </style>
 
 <div class="row">
   <div class="col-xs-12">
-    <div ng-show="!viewModel" style="text-align: center;">
+    <div ng-show="!viewModel" class="sp-loading">
       Loading...
     </div>
     <form class="form-horizontal" ng-hide="accepted || !viewModel" ng-submit="submit()">

@@ -5,7 +5,6 @@ angular.module('stormpath')
 .controller('SpLoginFormCtrl', ['$scope','$auth','$viewModel',function ($scope,$auth,$viewModel) {
   $scope.viewModel = null;
 
-  // Load login view model from server.
   $viewModel.getLoginModel().then(function (model) {
     $scope.viewModel = model;
   }).catch(function (err) {

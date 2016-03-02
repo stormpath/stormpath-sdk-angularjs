@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2016
  * 
- * @version v0.9.0-dev-2016-01-25
+ * @version v1.0.0-dev-2016-03-02
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -179,6 +179,7 @@ angular.module('stormpath', [
   'stormpath.CONFIG',
   'stormpath.auth',
   'stormpath.userService',
+  'stormpath.viewModelService',
   'stormpath.socialLogin',
   'stormpath.facebookLogin',
   'stormpath.googleLogin'
@@ -194,8 +195,69 @@ angular.module('stormpath', [
 
   return new SpAuthInterceptor();
 }])
+.factory('StormpathAgentInterceptor',['$window',function($window){
+  function getLocation (href) {
+    var l = $window.document.createElement('a');
+    l.href = href;
+    return l;
+  }
+
+  function StormpathAgentInterceptor(){
+
+  }
+  /**
+   * Adds the X-Stormpath-Agent header, if the requested URL is on the same
+   * domain as the current document.
+   *
+   * @param  {Object} config $http config object.
+   * @return {Object} config $http config object.
+   */
+  StormpathAgentInterceptor.prototype.request = function(config){
+    var a = getLocation(config.url);
+    var b = $window.location;
+    if (a.host === b.host){
+      // The placeholders in the value are replaced by the `grunt dist` command.
+      config.headers['X-Stormpath-Agent'] = 'stormpath-sdk-angularjs/1.0.0' + ' angularjs/' + angular.version.full;
+    }
+    return config;
+  };
+
+  return new StormpathAgentInterceptor();
+}])
+/**
+ * Interceptor that intercepts Stormpath error responses and
+ * translates them to errors. Adds backward-compatibility for
+ * the error structure prior to the framework spec.
+ */
+.factory('StormpathErrorInterceptor',['$q', function($q){
+  function StormpathErrorInterceptor(){
+  }
+
+  StormpathErrorInterceptor.prototype.responseError = function(response){
+    var errorMessage = null;
+
+    if (response.data) {
+      errorMessage = response.data.message || response.data.error;
+    }
+
+    if (!errorMessage) {
+      errorMessage = 'An error occured when communicating with the API server.';
+    }
+
+    var error = new Error(errorMessage);
+    
+    error.response = response;
+    error.statusCode = response.status;
+
+    return $q.reject(error);
+  };
+
+  return new StormpathErrorInterceptor();
+}])
 .config(['$httpProvider',function($httpProvider){
   $httpProvider.interceptors.push('SpAuthInterceptor');
+  $httpProvider.interceptors.push('StormpathAgentInterceptor');
+  $httpProvider.interceptors.push('StormpathErrorInterceptor');
 }])
 .provider('$stormpath', [function $stormpathProvider(){
   /**
@@ -1250,8 +1312,8 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
          *        console.log('login success');
          *        $state.go('home');
          *      })
-         *      .catch(function(httpResponse){
-         *        $scope.errorMessage = response.data.message;
+         *      .catch(function(err){
+         *        $scope.errorMessage = err.message;
          *      });
          *   }
          *
@@ -1275,8 +1337,8 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
          *        console.log('login success');
          *        $state.go('home');
          *      })
-         *      .catch(function(httpResponse){
-         *        $scope.errorMessage = response.data.message;
+         *      .catch(function(err){
+         *        $scope.errorMessage = err.message;
          *      });
          *   }
          *
@@ -1286,6 +1348,9 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
         var op = $http($spFormEncoder.formPost({
             url: STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'),
             method: 'POST',
+            headers: {
+              'Accept': 'application/json'
+            },
             withCredentials: true,
             data: data
           })
@@ -1337,7 +1402,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
        * event will be emitted after a successful logout.
        */
       AuthService.prototype.endSession = function endSession(){
-        var op = $http.get(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'), {
+        var op = $http.post(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'), null, {
             headers: {
                 'Accept': 'application/json'
             }
@@ -1578,25 +1643,6 @@ angular.module('stormpath.CONFIG',[])
     *
     */
     EMAIL_VERIFICATION_ENDPOINT: '/verify',
-
-
-    /**
-    * @ngdoc property
-    *
-    * @name SPA_CONFIG_ENDPOINT
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `/spa-config`
-    *
-    * The endpoint that is used to fetch the configuration for this app,
-    * for example a list of available social providers.
-    *
-    * Used by {@link stormpath.socialLoginService.$socialLogin#getProviders $socialLogin.getProviders()}.
-    */
-    SPA_CONFIG_ENDPOINT: '/spa-config',
 
 
     /**
@@ -2066,38 +2112,32 @@ angular.module('stormpath')
 
 angular.module('stormpath')
 
-.controller('SpLoginFormCtrl', ['$scope','$auth','$socialLogin',function ($scope,$auth,$socialLogin) {
-  $scope.socialLoginProviders = [];
+.controller('SpLoginFormCtrl', ['$scope','$auth','$viewModel',function ($scope,$auth,$viewModel) {
+  $scope.viewModel = null;
 
-  // Load list of social login providers from server.
-  $socialLogin.getProviders().then(function(providers) {
-    // Convert into an array.
-    $scope.socialLoginProviders = Object.keys(providers).map(function(providerName) {
-      var provider = providers[providerName];
-      provider.name = providerName;
-      return provider;
+  $viewModel.getLoginModel().then(function (model) {
+    var supportedProviders = ['facebook', 'google'];
+
+    model.accountStores = model.accountStores.filter(function (accountStore) {
+      var providerId = accountStore.provider.providerId;
+
+      return supportedProviders.indexOf(providerId) > -1;
     });
 
-    // Filter out the enabled providers.
-    $scope.socialLoginProviders = $scope.socialLoginProviders.filter(function(provider) {
-      return provider.enabled;
-    });
-  }).catch(function(err) {
-    throw new Error('Could not load social providers from back-end: ' + err.message);
+    $scope.viewModel = model;
+  }).catch(function (err) {
+    throw new Error('Could not load login view model from back-end: ' + err.message);
   });
 
-  $scope.formModel = {
-    username: '',
-    password: ''
-  };
+  $scope.formModel = {};
   $scope.posting = false;
   $scope.submit = function(){
     $scope.posting = true;
     $scope.error = null;
     $auth.authenticate($scope.formModel)
-      .catch(function(response){
+      .catch(function(err){
         $scope.posting = false;
-        $scope.error = response.data && response.data.error || 'An error occured when communicating with server.';
+        $scope.error = err.message;
       });
   };
 }])
@@ -2216,8 +2256,8 @@ angular.module('stormpath')
       .then(function(){
         $scope.reset = true;
       })
-      .catch(function(response){
-        $scope.error = response.data.error;
+      .catch(function(err){
+        $scope.error = err.message;
       }).finally(function(){
         $scope.posting = false;
       });
@@ -2313,34 +2353,26 @@ angular.module('stormpath')
 'use strict';
 
 angular.module('stormpath')
-.controller('SpRegistrationFormCtrl', ['$scope','$user','$auth','$location','$socialLogin',function ($scope,$user,$auth,$location,$socialLogin) {
-  $scope.formModel = (typeof $scope.formModel==='object') ? $scope.formModel : {
-    givenName:'',
-    surname: '',
-    email: '',
-    password: ''
-  };
+.controller('SpRegistrationFormCtrl', ['$scope','$user','$auth','$location','$viewModel','$injector', function ($scope,$user,$auth,$location,$viewModel, $injector) {
+  $scope.formModel = (typeof $scope.formModel==='object') ? $scope.formModel : {};
   $scope.created = false;
   $scope.enabled = false;
   $scope.creating = false;
   $scope.authenticating = false;
-  $scope.socialLoginProviders = [];
+  $scope.viewModel = null;
 
-  // Load list of social login providers from server.
-  $socialLogin.getProviders().then(function(providers) {
-    // Convert into an array.
-    $scope.socialLoginProviders = Object.keys(providers).map(function(providerName) {
-      var provider = providers[providerName];
-      provider.name = providerName;
-      return provider;
+  $viewModel.getRegisterModel().then(function (model) {
+    var supportedProviders = ['facebook', 'google'];
+
+    model.accountStores = model.accountStores.filter(function (accountStore) {
+      var providerId = accountStore.provider.providerId;
+
+      return supportedProviders.indexOf(providerId) > -1;
     });
 
-    // Filter out the enabled providers.
-    $scope.socialLoginProviders = $scope.socialLoginProviders.filter(function(provider) {
-      return provider.enabled;
-    });
-  }).catch(function(err) {
-    throw new Error('Could not load social providers from back-end: ' + err.message);
+    $scope.viewModel = model;
+  }).catch(function (err) {
+    throw new Error('Could not load login view model from back-end: ' + err.message);
   });
 
   $scope.submit = function(){
@@ -2357,12 +2389,16 @@ angular.module('stormpath')
             password: $scope.formModel.password
           })
           .then(function(){
-            if($scope.postLoginPath){
+            var $state = $injector.has('$state') ? $injector.get('$state') : null;
+            if($scope.postLoginState && $state){
+              $state.go($scope.postLoginState);
+            }
+            else if($scope.postLoginPath){
               $location.path($scope.postLoginPath);
             }
           })
-          .catch(function(response){
-            $scope.error = response.data.error;
+          .catch(function(err){
+            $scope.error = err.message;
           })
           .finally(function(){
             $scope.authenticating = false;
@@ -2372,9 +2408,9 @@ angular.module('stormpath')
           $scope.creating = false;
         }
       })
-      .catch(function(response){
+      .catch(function(err){
         $scope.creating = false;
-        $scope.error = response.data.error;
+        $scope.error = err.message;
       });
   };
 }])
@@ -2397,7 +2433,14 @@ angular.module('stormpath')
  * @param {string} postLoginState
  *
  * If using the `autoLogin` option, you can specify the name of a UI state that the user
- * should be redirected to after they successfully have registered.
+ * should be redirected to after they successfully have registered.  This is a UI Router
+ * integration, and requires that module.
+ *
+ * @param {string} postLoginPath
+ *
+ * If using the `autoLogin` option, you can specify the path that the user
+ * should be sent to after registration.  This value is passed to
+ * `$location.path()` and does not require a specific routing module.
  *
  * @param {string} template-url
  *
@@ -2468,6 +2511,7 @@ angular.module('stormpath')
     controller: 'SpRegistrationFormCtrl',
     link: function(scope,element,attrs){
       scope.autoLogin = attrs.autoLogin==='true';
+      scope.postLoginPath = attrs.postLoginPath || '';
       scope.postLoginState = attrs.postLoginState || '';
     }
   };
@@ -2621,69 +2665,6 @@ angular.module('stormpath')
     this.$q = $q;
   }
 
-  SocialLoginService.prototype.initProviders = function initProviders(providers) {
-    var $injector = this.$injector;
-
-    Object.keys(providers).forEach(function(providerName) {
-      var provider = providers[providerName];
-      var service;
-
-      try {
-        service = $injector.get('$' + providerName + 'Login');
-      } catch (err) {
-        // Delete the provider from the list if we don't support it yet.
-        delete providers[providerName];
-        return;
-      }
-
-      service.clientId = provider.clientId;
-      providers[providerName].service = service;
-    });
-  };
-
-  /**
-   * @ngdoc function
-   *
-   * @name  stormpath.socialLoginService.$socialLogin#getProviders
-   *
-   * @methodOf stormpath.socialLoginService.$socialLogin
-   *
-   * @returns {promise}
-   *
-   * A promise that is resolved with the list of all available social providers.
-   *
-   * @description
-   *
-   * Returns a list of all social providers, provided by the `/spa-config` endpoint.
-   */
-  SocialLoginService.prototype.getProviders = function getProviders() {
-    var providersPromise = this.providersPromise;
-    var initProviders = this.initProviders.bind(this);
-
-    if (providersPromise) {
-      return providersPromise.promise;
-    }
-
-    providersPromise = this.$q.defer();
-    this.providersPromise = providersPromise;
-
-    this.$http.get(this.STORMPATH_CONFIG.getUrl('SPA_CONFIG_ENDPOINT')).then(function(response) {
-      var providers;
-
-      if (response.data && typeof response.data === 'object') {
-        providers = response.data.socialProviders;
-      } else {
-        providers = {};
-      }
-
-      initProviders(providers);
-
-      providersPromise.resolve(providers);
-    }).catch(providersPromise.reject);
-
-    return providersPromise.promise;
-  };
-
   angular.module('stormpath.socialLogin', ['stormpath.CONFIG'])
 
   /**
@@ -2767,24 +2748,26 @@ angular.module('stormpath')
    *
    * <pre>
    * <div class="container">
-   *   <button sp-social-login="facebook" sp-scope="public_profile,email">Login with Facebook</button>
+   *   <button sp-social-login="facebook" sp-client-id="oauth client id" sp-scope="public_profile,email">Login with Facebook</button>
    * </div>
    * </pre>
    */
-  .directive('spSocialLogin', ['$socialLogin', '$auth', function($socialLogin, $auth) {
+  .directive('spSocialLogin', ['$viewModel', '$auth', '$injector', function($viewModel, $auth, $injector) {
     return {
       link: function(scope, element, attrs) {
         var providerService;
         var parentScope = scope.$parent;
 
-        $socialLogin.getProviders().then(function(providers) {
-          var provider = providers[attrs.spSocialLogin];
+        try {
+          providerService = $injector.get('$' + attrs.spSocialLogin + 'Login');
+        } catch (err) {
+          return;
+        }
 
-          if (provider && provider.service) {
-            providerService = provider.service;
-            providerService.init(element);
-          }
-        });
+        providerService.clientId = attrs.spClientId;
+        providerService.init(element);
+
+        scope.providerName = providerService.name;
 
         element.bind('click', function() {
           var options = { scope: attrs.spScope }; // `scope` is OAuth scope, not Angular scope
@@ -2798,8 +2781,6 @@ angular.module('stormpath')
 
             if (err.message) {
               parentScope.error = err.message;
-            } else if (err.data && err.data.error) {
-              parentScope.error = err.data.error;
             } else {
               parentScope.error = 'An error occured when communicating with server.';
             }
@@ -3019,9 +3000,9 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
          *       // The account requires email verification
          *     }
          *   })
-         *   .catch(function(response){
+         *   .catch(function(err){
          *     // Show the error message to the user
-         *     $scope.error = response.data.error;
+         *     $scope.error = err.message;
          *   });
          * </pre>
          */
@@ -3033,8 +3014,10 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
           data: accountData
         }))
         .then(function(response){
-          op.resolve(response.data);
-          registeredEvent(response.data);
+          var account = response.data.account || response.data;
+
+          op.resolve(account);
+          registeredEvent(account);
         },op.reject);
 
         return op.promise;
@@ -3096,7 +3079,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
 
           $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI'),{withCredentials:true}).then(function(response){
             self.cachedUserOp = null;
-            self.currentUser = new User(response.data);
+            self.currentUser = new User(response.data.account || response.data);
             currentUserEvent(self.currentUser);
             op.resolve(self.currentUser);
           },function(response){
@@ -3402,4 +3385,40 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
     }
   ];
 }]);
+
+(function () {
+  'use strict';
+
+  function ViewModelService($http, STORMPATH_CONFIG) {
+    this.$http = $http;
+    this.STORMPATH_CONFIG = STORMPATH_CONFIG;
+  }
+
+  ViewModelService.prototype.getLoginModel = function getLoginModel() {
+    return this.$http.get(this.STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'), {
+      headers: {
+        'Accept': 'application/json'
+      }
+    }).then(function (response) {
+      return response.data;
+    });
+  };
+
+  ViewModelService.prototype.getRegisterModel = function getRegisterModel() {
+    return this.$http.get(this.STORMPATH_CONFIG.getUrl('REGISTER_URI'), {
+      headers: {
+        'Accept': 'application/json'
+      }
+    }).then(function (response) {
+      return response.data;
+    });
+  };
+
+  angular.module('stormpath.viewModelService', [])
+  .provider('$viewModel', function () {
+    this.$get = ['$http', 'STORMPATH_CONFIG', function viewModelFactory($http, STORMPATH_CONFIG) {
+      return new ViewModelService($http, STORMPATH_CONFIG);
+    }];
+  });
+}());
 })(window, window.angular);

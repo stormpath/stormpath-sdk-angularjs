@@ -18,7 +18,7 @@
   ],
   "dependencies": {
     "angular": "~1.4.7",
-    "stormpath-sdk-angularjs": "~0.7.1",
+    "stormpath-sdk-angularjs": "~1.0.0",
     "jquery": "~2.1.4",
     "bootstrap": "~3.3.5"
   }

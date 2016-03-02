@@ -3,7 +3,13 @@
 This version needs at least version `3.0.0` of [express-stormpath](https://github.com/stormpath/express-stormpath).
 
 * Added support for the registration view model ([#119](https://github.com/stormpath/stormpath-sdk-angularjs/pull/119))
+
+  This allows you to customize the registration form using the Stormpath Express configuration: <https://docs.stormpath.com/nodejs/express/latest/registration.html#creating-custom-fields>
+
 * Added support for the login view model ([#118](https://github.com/stormpath/stormpath-sdk-angularjs/pull/118))
+
+  This allows you to customize the login form using the Stormpath Express configuration: <https://docs.stormpath.com/nodejs/express/latest/login.html#form-customization>
+
 * Changed logout request to use POST ([#117](https://github.com/stormpath/stormpath-sdk-angularjs/pull/117))
 * Added support for new error structure ([#114](https://github.com/stormpath/stormpath-sdk-angularjs/pull/114))
 * Added X-Stormpath-Agent header to requests ([#107](https://github.com/stormpath/stormpath-sdk-angularjs/pull/107))

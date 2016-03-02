@@ -10,7 +10,7 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 var express = require('express');
 var config = require('./config/environment');
 var ExpressStormpath = require('express-stormpath');
-var path = require('path');
+
 // Setup server
 var app = express();
 
@@ -37,9 +37,12 @@ console.log('Initializing Stormpath');
  */
 
 app.use(ExpressStormpath.init(app,{
-  website: true,
   web: {
-    spaRoot: app.get('appPath')
+    produces: ['application/json'],
+    spa: {
+      enabled: true,
+      view: app.get('appPath')
+    }
   }
 }));
 
@@ -47,14 +50,14 @@ app.use(ExpressStormpath.init(app,{
 require('./routes')(app);
 
 app.on('stormpath.ready',function() {
-
   console.log('Stormpath Ready');
-
-  // Start server
-  server.listen(config.port, config.ip, function () {
-    console.log('Express server listening on %d, in %s mode', config.port, app.get('env'));
-  });
 });
+
+// Start server
+server.listen(config.port, config.ip, function () {
+  console.log('Express server listening on %d, in %s mode', config.port, app.get('env'));
+});
+
 
 // Expose app
 exports = module.exports = app;

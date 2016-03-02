@@ -164,6 +164,7 @@ angular.module('stormpath', [
   'stormpath.CONFIG',
   'stormpath.auth',
   'stormpath.userService',
+  'stormpath.viewModelService',
   'stormpath.socialLogin',
   'stormpath.facebookLogin',
   'stormpath.googleLogin'

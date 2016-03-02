@@ -27,6 +27,10 @@
     background-color: #C74539;
     border-color: #AF4138;
   }
+
+  .sp-loading {
+    text-align: center;
+  }
 </style>
 
 <div class="row">
@@ -40,29 +44,14 @@
 </div>
 <div class="row">
   <div class="col-xs-12">
-    <form class="form-horizontal" ng-hide="created && !authenticating" ng-submit="submit()">
-      <div class="form-group">
-        <label for="spFirstName" class="col-xs-12 col-sm-4 control-label">First Name</label>
+    <div ng-show="!viewModel" class="sp-loading">
+      Loading...
+    </div>
+    <form class="form-horizontal" ng-hide="!viewModel || (created && !authenticating)" ng-submit="submit()">
+      <div class="form-group" ng-repeat="field in viewModel.form.fields">
+        <label for="sp-{{field.name}}" class="col-xs-12 col-sm-4 control-label">{{field.label}}</label>
         <div class="col-xs-12 col-sm-4">
-          <input class="form-control" id="spFirstName" ng-model="formModel.givenName" placeholder="First Name" ng-disabled="creating">
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="spLastName" class="col-xs-12 col-sm-4 control-label">Last Name</label>
-        <div class="col-xs-12 col-sm-4">
-          <input class="form-control" id="spLastName" ng-model="formModel.surname" placeholder="Last Name" ng-disabled="creating">
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="spEmail" class="col-xs-12 col-sm-4 control-label">Email</label>
-        <div class="col-xs-12 col-sm-4">
-          <input class="form-control" id="spEmail" ng-model="formModel.email" placeholder="Email" ng-disabled="creating">
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="spPassword" class="col-xs-12 col-sm-4 control-label">Password</label>
-        <div class="col-xs-12 col-sm-4">
-          <input type="password" class="form-control" id="spPassword" ng-model="formModel.password" placeholder="Password" ng-disabled="creating">
+          <input class="form-control" name="{{field.name}}" id="sp-{{field.name}}" type="{{field.type}}" ng-model="formModel[field.name]" placeholder="{{field.placeholder}}" ng-disabled="creating" ng-required="field.required">
         </div>
       </div>
       <div class="form-group">
@@ -71,11 +60,11 @@
           <button type="submit" class="btn btn-primary" ng-disabled="creating">Register</button>
         </div>
       </div>
-      <div class="form-group" ng-show="socialLoginProviders.length">
+      <div class="form-group" ng-show="viewModel.accountStores.length">
         <div class="col-sm-offset-4 col-sm-4">
           <p>Or register with:</p>
-          <button ng-repeat="provider in socialLoginProviders" type="button" class="btn btn-social btn-{{provider.name}}" sp-social-login="{{provider.name}}">
-            {{provider.service.name}}
+          <button ng-repeat="accountStore in viewModel.accountStores" type="button" class="btn btn-social btn-{{accountStore.provider.providerId}}" sp-social-login="{{accountStore.provider.providerId}}" sp-client-id="{{accountStore.provider.clientId}}" sp-scope="{{accountStore.provider.scope}}">
+            {{providerName}}
           </button>
         </div>
       </div>

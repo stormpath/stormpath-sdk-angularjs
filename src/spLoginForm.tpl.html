@@ -40,9 +40,9 @@
     </div>
     <form class="form-horizontal" ng-hide="accepted || !viewModel" ng-submit="submit()">
       <div class="form-group" ng-repeat="field in viewModel.form.fields">
-        <label for="spEmail" class="col-xs-12 col-sm-4 control-label">{{field.label}}</label>
+        <label for="sp-{{field.name}}" class="col-xs-12 col-sm-4 control-label">{{field.label}}</label>
         <div class="col-xs-12 col-sm-4">
-          <input class="form-control" name="{{field.name}}" type="{{field.type}}" ng-model="formModel[field.name]" placeholder="{{field.placeholder}}" ng-disabled="posting" ng-required="field.required">
+          <input class="form-control" name="{{field.name}}" id="sp-{{field.name}}" type="{{field.type}}" ng-model="formModel[field.name]" placeholder="{{field.placeholder}}" ng-disabled="posting" ng-required="field.required">
         </div>
       </div>
       <div class="form-group">

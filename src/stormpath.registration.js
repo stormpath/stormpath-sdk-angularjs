@@ -1,34 +1,26 @@
 'use strict';
 
 angular.module('stormpath')
-.controller('SpRegistrationFormCtrl', ['$scope','$user','$auth','$location','$socialLogin','$injector', function ($scope,$user,$auth,$location,$socialLogin, $injector) {
-  $scope.formModel = (typeof $scope.formModel==='object') ? $scope.formModel : {
-    givenName:'',
-    surname: '',
-    email: '',
-    password: ''
-  };
+.controller('SpRegistrationFormCtrl', ['$scope','$user','$auth','$location','$viewModel','$injector', function ($scope,$user,$auth,$location,$viewModel, $injector) {
+  $scope.formModel = (typeof $scope.formModel==='object') ? $scope.formModel : {};
   $scope.created = false;
   $scope.enabled = false;
   $scope.creating = false;
   $scope.authenticating = false;
-  $scope.socialLoginProviders = [];
+  $scope.viewModel = null;
 
-  // Load list of social login providers from server.
-  $socialLogin.getProviders().then(function(providers) {
-    // Convert into an array.
-    $scope.socialLoginProviders = Object.keys(providers).map(function(providerName) {
-      var provider = providers[providerName];
-      provider.name = providerName;
-      return provider;
+  $viewModel.getRegisterModel().then(function (model) {
+    var supportedProviders = ['facebook', 'google'];
+
+    model.accountStores = model.accountStores.filter(function (accountStore) {
+      var providerId = accountStore.provider.providerId;
+
+      return supportedProviders.indexOf(providerId) > -1;
     });
 
-    // Filter out the enabled providers.
-    $scope.socialLoginProviders = $scope.socialLoginProviders.filter(function(provider) {
-      return provider.enabled;
-    });
-  }).catch(function(err) {
-    throw new Error('Could not load social providers from back-end: ' + err.message);
+    $scope.viewModel = model;
+  }).catch(function (err) {
+    throw new Error('Could not load login view model from back-end: ' + err.message);
   });
 
   $scope.submit = function(){

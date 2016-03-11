@@ -88,13 +88,15 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
           *
           * @description
           *
-          * Retains the account object of the currently logged in user.
+          * Retains the result of the last call to {@link stormpath.userService.$user#methods_get $user.get()}.
+          * This property is set after every resolution of the {@link stormpath.userService.$user#methods_get $user.get()} promise.
           *
-          * If the user state is unknown, this value is `null`.
+          * If the user state is unknown (while {@link stormpath.userService.$user#methods_get $user.get()}
+          * is waiting to be resolved), this value is `null`.
           *
-          * If the user state is known and the user is not logged in
-          * ({@link stormpath.userService.$user#methods_get $user.get()} has
-          * been called, and rejected) then this value will be `false`.
+          * If the call to {@link stormpath.userService.$user#methods_get $user.get()} has resolved, one of the following will happen:
+          * * If the user is not logged in, this value will be `false`.
+          * * If the user is logged in, this value will be the account object of the user.
           *
           */
 
@@ -198,6 +200,9 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
          * If you cannot make use of the promise, you can also observe the
          * {@link $notLoggedin $notLoggedin} or {@link $currentUser $currentUser}
          * events.  They are emitted when this method has a success or failure.
+         *
+         * The result of this operation will be cached on the {@link stormpath.userService.$user#properties_currentuser $user.currentUser}
+         * property.
          *
          * The user object is a Stormpath Account
          * object, which is wrapped by a {@link eh User} type.

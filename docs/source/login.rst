@@ -1,7 +1,7 @@
 .. _login:
 
 Create the Login Form
-============================
+=====================
 
 Login forms are pretty straightforward, why re-invent the wheel? The `Stormpath
 Angular SDK`_ includes a default login form that you can be quickly inserted
@@ -9,7 +9,7 @@ into your application via an Angular directive.  To use it, we need to create a
 Login route and a view in our application.
 
 Generate the /login Route
---------------------------------
+-------------------------
 
 We can use Yeoman to create the Angular route and view at the same time.
 
@@ -31,7 +31,7 @@ It will then tell you about the files it has created::
   create client/app/login/login.html
 
 Use the Login Form Directive
---------------------------------
+----------------------------
 
 Open the file ``client/app/login/login.html`` and then replace
 its contents with the following:

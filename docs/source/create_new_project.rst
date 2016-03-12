@@ -1,7 +1,7 @@
 .. _create_new_project:
 
 Creating a Fullstack Project
-==============================
+============================
 
 This part of the guide will walk you through the creation of an AngularJS
 project from scratch.  We will use `Grunt`_ as a build tool, and `Yeoman`_ as
@@ -11,7 +11,7 @@ We will use `Node.JS`_ as our backend server with the Stormpath Express SDK.
 
 
 Installing Node, Grunt, Bower and Yeoman
-----------------------------------------------
+----------------------------------------
 
 If you haven't installed Node.js on your system, you can download it at https://nodejs.org.
 
@@ -39,7 +39,7 @@ Finally, we will install `Bower`_, a package manager for front-end applications:
 
 
 Create an Angular-Fullstack Project
-------------------------------------
+-----------------------------------
 
 We are going to use the `Angular Fullstack Generator <https://github.com/DaftMonk/generator-angular-fullstack>`_.
 It's going to create _**a lot**_ of files for us; essentially, our entire development environment
@@ -86,7 +86,7 @@ It should automatically open the following page in your browser:
 .. image:: _static/fullstack-new-project.png
 
 Install the Stormpath Packages
---------------------------
+------------------------------
 
 We need to add two packages to this project: the `Stormpath Express Module`_ and the `Stormpath Angular SDK`_.
 Because the Angular SDK is a front-end application, it is managed with `Bower`_.
@@ -97,7 +97,7 @@ Install them with these commands, which will also persist them to your ``package
     $ bower install --save stormpath-sdk-angularjs
 
 Upgrade Express
---------------------------
+---------------
 
 We also want to make sure that we are using the latest version of Express. Run
 the following command to get the latest::
@@ -108,7 +108,7 @@ In the next section, we will get your Stormpath Tenant information so that we ca
 continue with the latter sections.
 
 Git Tracking
---------------------------
+------------
 Now would be a good time to start using Git with your project. You can
 stop the server by pressing ``Ctrl+C`` then use the following git commands::
 

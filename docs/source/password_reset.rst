@@ -1,7 +1,7 @@
 .. _password_reset:
 
 Password Reset Flow
-============================
+===================
 
 Stormpath provides a secure solution that allows your users to request a password
 reset token by email.  We send the user a link with a verification token; when
@@ -18,7 +18,7 @@ We need two separate UI routes for this flow:
 
 
 Generate the Routes
---------------------------------
+-------------------
 
 Using the generator command, create a routes for ``forgot`` and ``reset``:
 
@@ -42,7 +42,7 @@ Using the generator command, create a routes for ``forgot`` and ``reset``:
 
 
 Add the sptoken Parameter
---------------------------------
+-------------------------
 
 When the user clicks on the link in their email, they will be sent to your
 application with a url parameter called ``sptoken`` - we need to let the UI
@@ -53,7 +53,7 @@ the ``url`` string to include this parameter::
 
 
 Use the Password Reset Directives
---------------------------------
+---------------------------------
 
 We want to modify the two views that we created in the last steps.
 
@@ -93,7 +93,7 @@ Next, open ``client/app/reset/reset.html`` and replace its contents with the fol
 
 
 Configure the Directory
-------------------------------------
+-----------------------
 
 In order to use the password reset feature, you will need to enable it
 on the Directory that this account will be created in.  Login to the
@@ -116,7 +116,7 @@ Here is what that screen looks like:
 
 
 Try It, Reset your Password!
---------------------------------
+----------------------------
 
 This form should be fully functional now!  Visit the Login page and you
 will see a link to the Forgot Password flow.

@@ -1,7 +1,7 @@
 .. _configure_angular:
 
 Configure the Angular Application
---------------------------------
+---------------------------------
 
 There are a few things we need to setup before we can build the
 rest of the application.  We need to add the Stormpath modules as
@@ -9,7 +9,7 @@ dependencies of our application, and we need to configure some of the
 magic that will happen with the `UI Router`_ module.
 
 Add Stormpath to the Angular Application
-==========================================
+========================================
 
 We need to manually declare the Stormpath Angular SDK as a module
 in the Angular application.

@@ -1,7 +1,7 @@
 .. _user_dashboard:
 
 Create the Profile View
-=========================
+=======================
 
 Most user-centric applications have a Profile view where the user can view and
 edit their basic profile information.  In this section, we will show you how to
@@ -9,7 +9,7 @@ make a *very* simple display of the user's information.  In the next release of
 this guide, we will show you how to update the user's information, see :ref:`coming_soon`
 
 Generate the /profile Route
------------------
+---------------------------
 
 Alright, one more time!  We're going to use the generator to scaffold the files for us:
 
@@ -24,7 +24,7 @@ Alright, one more time!  We're going to use the generator to scaffold the files 
 
 
 Force Authentication
----------------------
+--------------------
 
 The user must be logged in if they want to see their profile;
 otherwise, there is nothing to show!  We want to prevent users
@@ -46,7 +46,7 @@ state configuration to include the Stormpath state configuration::
     });
 
 Create the View
-------------------
+---------------
 
 Because we have declared ``authenticate: true`` for this state, we
 are guaranteed that the user will always be logged in by the time that

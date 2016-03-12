@@ -1,7 +1,7 @@
 .. _register:
 
 Create the Registration Form
-===================
+============================
 
 We want our users to sign up for our service so we need to provide a
 registration form.  The `Stormpath Angular SDK`_ provides a pre-built
@@ -11,7 +11,7 @@ Directory that is associated with the Stormpath Application that you created in
 the :ref:`create_tenant` section.
 
 Generate the /register Route
---------------------------------
+----------------------------
 
 Stop the server and run the following command in your project folder:
 
@@ -75,7 +75,7 @@ please see the API documentation for the
 The most useful feature is the ability to specify your own template.
 
 Generate the /verify Route
---------------------------------
+--------------------------
 
 The `Stormpath Email Verification`_ feature will allow you to confirm a user's
 identity by sending them a link that they must click on.
@@ -104,7 +104,7 @@ call the controller ``verify``:
 
 
 Add the sptoken Parameter
---------------------------------
+-------------------------
 
 When the user clicks on the link in their email, they will be sent to your
 application with a url parameter called ``sptoken`` - we need to let the UI
@@ -143,7 +143,7 @@ replace its contents with the following:
     </div>
 
 Configure the Directory
-------------------------------------
+-----------------------
 
 In order to use the email verification feature, you will need to enable it
 on the Directory that this account will be created in.  Login to the

@@ -175,11 +175,51 @@ the list of things again -- remember how we locked it down?  Now that
 you are authenticated, you are allowed to access that part of the API
 again.
 
-Customizing the Form
-----------------------
 
-Do you need to customize the form?  This can be done by supplying
-your own template and adding or removing the appropriate fields.
+Customizing the Form Fields
+---------------------------
+
+When rendering the registration form, the Stormpath Angular SDK will make a JSON
+GET request to the ``/register`` endpoint on your server, and it expects to
+receive a view model that describes the form and it's fields.  As such, you will
+define your custom registration fields in your server-side configuration. Please
+see the `Express-Stormpath Registration Documentation`_ for in-depth
+instructions.
+
+As an example, we can do the following in `server/app.js`:
+
+.. code-block:: javascript
+
+  app.use(ExpressStormpath.init(app,{
+    web: {
+
+      /* .. Other options */
+
+      register: {
+        form: {
+          fields: {
+            favoriteColor: {
+              enabled: true,
+              label: 'Favorite Color?',
+              placeholder: 'e.g. Blue',
+              required: true,
+              type: 'text'
+            }
+          }
+        }
+      }
+    }
+  }));
+
+With this custom field configuration, the Stormpath Angular SDK will
+automatically render this field on your registration form and apply the data to
+the user's custom data object when they register - cool!
+
+Customizing the Form Template
+-----------------------------
+
+If you would like to modify the HTML template that renders our form, you can do
+that as well.  You'll make use of the ``template-url`` option on the directive.
 
 For example, create a new file in ``client/app/register/`` and call it
 ``my-register.html``.  Copy the contents from our existing ``register.html``
@@ -190,7 +230,7 @@ into it.  Then add the following markup to it in a place that you like:
   <div class="form-group">
     <label for="favColor" class="col-xs-12 col-sm-4 control-label">Favorite Color</label>
     <div class="col-xs-12 col-sm-4">
-      <input type="text" class="form-control" id="favColor" ng-model="formModel.favColor" ng-disabled="creating">
+      <input type="text" class="form-control" id="favColor" ng-model="formModel.favoriteColor" ng-disabled="creating">
     </div>
   </div>
 
@@ -213,6 +253,8 @@ will go into the ``customData`` object on the Account object.
 For more information about the registration form, see the  `spRegistrationForm`_ documentation.
 
 .. _Bootstrap: http://getbootstrap.com
+
+.. _Express-Stormpath Registration Documentation: https://docs.stormpath.com/nodejs/express/latest/registration.html
 
 .. _Stormpath Angular SDK: https://github.com/stormpath/stormpath-sdk-angularjs
 

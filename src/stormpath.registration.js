@@ -105,9 +105,22 @@ angular.module('stormpath')
  *  * Email
  *  * Password
  *
- * # Customizing the Form
+ * # Customizing the Form Fields
  *
- * If you would like to customize the form:
+ * Our library will make a JSON GET request to the `/register` endpoint on your
+ * server, and it expects to receive a view model that describes the form and
+ * it's fields.  As such, you will define your custom registration fields in
+ * your server-side configuration.  Please see the relevant documentation:
+ *
+ * * Node.js: [Express-Stormpath - Registration](https://docs.stormpath.com/nodejs/express/latest/registration.html)
+ * * PHP: [Stormpath Laravel - Registration](https://docs.stormpath.com/php/laravel/latest/registration.html)
+ * * All other frameworks: please see the server integration guide or contact
+ *   [support@stormpath.com](support@stormpath.com) for assistance.
+ *
+ * # Customizing the Form Template
+ *
+ * If you would like to modify the HTML template that renders our form, you can
+ * do that as well.  Here is what you'll need to do:
  *
  * * Create a new view file in your application.
  * * Copy our default template HTML code into your file, found here:
@@ -117,7 +130,8 @@ angular.module('stormpath')
  * the new account (such as `middleName`).
  * * Use the `template-url` option on the directive to point to your new view file.
  *
- * Any form fields you supply that are not one of the default fields (first name, last name)
+ * Any form fields you supply that are not one of the default fields (first
+ * name, last name) will need to be defined in the view model (see above) and
  * will be automatically placed into the new account's customa data object.
  *
  * # Email Verification

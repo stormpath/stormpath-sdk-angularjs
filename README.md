@@ -1,5 +1,7 @@
 # Stormpath AngularJS SDK
 
+[![NPM Version](https://img.shields.io/npm/v/stormpath-sdk-angularjs.svg?style=flat)](https://npmjs.org/package/stormpath-sdk-angularjs)
+[![NPM Downloads](http://img.shields.io/npm/dm/stormpath-sdk-angularjs.svg?style=flat)](https://npmjs.org/package/stormpath-sdk-angularjs)
 [![Bower Version](https://img.shields.io/bower/v/stormpath-sdk-angularjs.svg?style=flat)](https://bower.io)
 [![Build Status](https://img.shields.io/travis/stormpath/stormpath-sdk-angularjs.svg?style=flat)](https://travis-ci.org/stormpath/stormpath-sdk-angularjs)
 

@@ -12,7 +12,17 @@
         'Accept': 'application/json'
       }
     }).then(function (response) {
-      return response.data;
+
+      var supportedProviders = ['facebook', 'google'];
+
+      var model = response.data;
+
+      model.accountStores = model.accountStores.filter(function (accountStore) {
+        var providerId = accountStore.provider.providerId;
+
+        return supportedProviders.indexOf(providerId) > -1;
+      });
+      return model;
     });
   };
 

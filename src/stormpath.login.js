@@ -6,14 +6,6 @@ angular.module('stormpath')
   $scope.viewModel = null;
 
   $viewModel.getLoginModel().then(function (model) {
-    var supportedProviders = ['facebook', 'google'];
-
-    model.accountStores = model.accountStores.filter(function (accountStore) {
-      var providerId = accountStore.provider.providerId;
-
-      return supportedProviders.indexOf(providerId) > -1;
-    });
-
     $scope.viewModel = model;
   }).catch(function (err) {
     throw new Error('Could not load login view model from back-end: ' + err.message);

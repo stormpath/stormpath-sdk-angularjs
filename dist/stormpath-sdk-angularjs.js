@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2016
  * 
- * @version v1.0.0-dev-2016-03-02
+ * @version v1.0.0-dev-2016-04-27
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -2116,14 +2116,6 @@ angular.module('stormpath')
   $scope.viewModel = null;
 
   $viewModel.getLoginModel().then(function (model) {
-    var supportedProviders = ['facebook', 'google'];
-
-    model.accountStores = model.accountStores.filter(function (accountStore) {
-      var providerId = accountStore.provider.providerId;
-
-      return supportedProviders.indexOf(providerId) > -1;
-    });
-
     $scope.viewModel = model;
   }).catch(function (err) {
     throw new Error('Could not load login view model from back-end: ' + err.message);
@@ -2457,9 +2449,22 @@ angular.module('stormpath')
  *  * Email
  *  * Password
  *
- * # Customizing the Form
+ * # Customizing the Form Fields
  *
- * If you would like to customize the form:
+ * Our library will make a JSON GET request to the `/register` endpoint on your
+ * server, and it expects to receive a view model that describes the form and
+ * it's fields.  As such, you will define your custom registration fields in
+ * your server-side configuration.  Please see the relevant documentation:
+ *
+ * * Node.js: [Express-Stormpath - Registration](https://docs.stormpath.com/nodejs/express/latest/registration.html)
+ * * PHP: [Stormpath Laravel - Registration](https://docs.stormpath.com/php/laravel/latest/registration.html)
+ * * All other frameworks: please see the server integration guide or contact
+ *   [support@stormpath.com](support@stormpath.com) for assistance.
+ *
+ * # Customizing the Form Template
+ *
+ * If you would like to modify the HTML template that renders our form, you can
+ * do that as well.  Here is what you'll need to do:
  *
  * * Create a new view file in your application.
  * * Copy our default template HTML code into your file, found here:
@@ -2469,7 +2474,8 @@ angular.module('stormpath')
  * the new account (such as `middleName`).
  * * Use the `template-url` option on the directive to point to your new view file.
  *
- * Any form fields you supply that are not one of the default fields (first name, last name)
+ * Any form fields you supply that are not one of the default fields (first
+ * name, last name) will need to be defined in the view model (see above) and
  * will be automatically placed into the new account's customa data object.
  *
  * # Email Verification
@@ -2599,33 +2605,37 @@ angular.module('stormpath')
     this.googleAuth = auth;
   };
 
-  GoogleLoginService.prototype.init = function init(element) {
-    var clientId = this.clientId;
+  GoogleLoginService.prototype.init = function init(element, _options) {
+    var options = angular.copy(_options || {});
     var setGoogleAuth = this.setGoogleAuth.bind(this);
+
+    options.client_id = this.clientId;
 
     this.$spJsLoader.load('google-jssdk', '//apis.google.com/js/api:client.js').then(function() {
       gapi.load('auth2', function() {
-        var auth2 = gapi.auth2.init({
-          client_id: clientId,
-          cookiepolicy: 'single_host_origin'
-        });
+        var auth2 = gapi.auth2.init(options);
 
         setGoogleAuth(auth2);
       });
     });
   };
 
+// https://accounts.google.com/AccountChooser?continue=https://accounts.google.com/o/oauth2/auth?access_type%3Doffline%26openid.realm%26scope%3Demail%2Bprofile%2Bopenid%26origin%3Dhttp://localhost:3000%26response_type%3Dcode%2Bpermission%26redirect_uri%3Dstoragerelay://http/localhost:3000?id%253Dauth803280%26ss_domain%3Dhttp://localhost:3000%26client_id%3D441084632428-9au0gijbo5icagep9u79qtf7ic7cc5au.apps.googleusercontent.com%26hl%3Den-US%26from_login%3D1%26as%3D35625cb0500ad0fe&btmpl=authsub&hl=en_US&scc=1&oauth=1
+
   GoogleLoginService.prototype.login = function login(options) {
     var deferred = this.$q.defer();
+    var googleAuth = this.googleAuth;
 
     options = options || {};
     options.redirect_uri = 'postmessage';
 
-    this.googleAuth.grantOfflineAccess(options).then(function(response) {
+    googleAuth.signIn(options).then(function() {
+      var authResponse = googleAuth.currentUser.get().getAuthResponse();
+
       deferred.resolve({
         providerData: {
           providerId: 'google',
-          code: response.code
+          accessToken: authResponse.access_token
         }
       });
     }, function(err) {
@@ -2741,7 +2751,7 @@ angular.module('stormpath')
    * **Note:** If you are using Google+ Sign-In for server-side apps, Google recommends that you
    * leave the Authorized redirect URI field blank in the Google Developer Console. In Stormpath,
    * when creating the Google Directory, you must set the redirect URI to `postmessage`.
-   * 
+   *
    * {@link http://docs.stormpath.com/guides/social-integrations/}
    *
    * @example
@@ -2764,13 +2774,21 @@ angular.module('stormpath')
           return;
         }
 
+        var initOptions = {};
+
+        if(attrs.spHd){
+          initOptions.hosted_domain = attrs.spHd;
+        }
+
         providerService.clientId = attrs.spClientId;
-        providerService.init(element);
+        providerService.init(element, initOptions);
 
         scope.providerName = providerService.name;
 
         element.bind('click', function() {
           var options = { scope: attrs.spScope }; // `scope` is OAuth scope, not Angular scope
+
+
 
           parentScope.posting = true;
 
@@ -2934,13 +2952,15 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
           *
           * @description
           *
-          * Retains the account object of the currently logged in user.
+          * Retains the result of the last call to {@link stormpath.userService.$user#methods_get $user.get()}.
+          * This property is set after every resolution of the {@link stormpath.userService.$user#methods_get $user.get()} promise.
           *
-          * If the user state is unknown, this value is `null`.
+          * If the user state is unknown (while {@link stormpath.userService.$user#methods_get $user.get()}
+          * is waiting to be resolved), this value is `null`.
           *
-          * If the user state is known and the user is not logged in
-          * ({@link stormpath.userService.$user#methods_get $user.get()} has
-          * been called, and rejected) then this value will be `false`.
+          * If the call to {@link stormpath.userService.$user#methods_get $user.get()} has resolved, one of the following will happen:
+          * * If the user is not logged in, this value will be `false`.
+          * * If the user is logged in, this value will be the account object of the user.
           *
           */
 
@@ -3044,6 +3064,9 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
          * If you cannot make use of the promise, you can also observe the
          * {@link $notLoggedin $notLoggedin} or {@link $currentUser $currentUser}
          * events.  They are emitted when this method has a success or failure.
+         *
+         * The result of this operation will be cached on the {@link stormpath.userService.$user#properties_currentuser $user.currentUser}
+         * property.
          *
          * The user object is a Stormpath Account
          * object, which is wrapped by a {@link eh User} type.
@@ -3400,7 +3423,17 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
         'Accept': 'application/json'
       }
     }).then(function (response) {
-      return response.data;
+
+      var supportedProviders = ['facebook', 'google'];
+
+      var model = response.data;
+
+      model.accountStores = model.accountStores.filter(function (accountStore) {
+        var providerId = accountStore.provider.providerId;
+
+        return supportedProviders.indexOf(providerId) > -1;
+      });
+      return model;
     });
   };
 

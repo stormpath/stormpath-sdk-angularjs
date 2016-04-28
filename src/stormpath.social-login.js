@@ -96,7 +96,7 @@
    * **Note:** If you are using Google+ Sign-In for server-side apps, Google recommends that you
    * leave the Authorized redirect URI field blank in the Google Developer Console. In Stormpath,
    * when creating the Google Directory, you must set the redirect URI to `postmessage`.
-   * 
+   *
    * {@link http://docs.stormpath.com/guides/social-integrations/}
    *
    * @example
@@ -119,13 +119,21 @@
           return;
         }
 
+        var initOptions = {};
+
+        if(attrs.spHd){
+          initOptions.hosted_domain = attrs.spHd;
+        }
+
         providerService.clientId = attrs.spClientId;
-        providerService.init(element);
+        providerService.init(element, initOptions);
 
         scope.providerName = providerService.name;
 
         element.bind('click', function() {
           var options = { scope: attrs.spScope }; // `scope` is OAuth scope, not Angular scope
+
+
 
           parentScope.posting = true;
 

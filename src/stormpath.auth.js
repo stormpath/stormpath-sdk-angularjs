@@ -176,7 +176,8 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
       AuthService.prototype.endSession = function endSession(){
         var op = $http.post(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'), null, {
             headers: {
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded'
             }
         });
 

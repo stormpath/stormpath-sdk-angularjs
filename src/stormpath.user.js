@@ -74,8 +74,8 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
   };
 
   this.$get = [
-    '$q','$http','STORMPATH_CONFIG','$rootScope','$spFormEncoder',
-    function userServiceFactory($q,$http,STORMPATH_CONFIG,$rootScope,$spFormEncoder){
+    '$q','$http','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer',
+    function userServiceFactory($q,$http,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer){
       function UserService(){
         this.cachedUserOp = null;
 
@@ -162,21 +162,20 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
          *   });
          * </pre>
          */
-        var op = $q.defer();
 
-        $http($spFormEncoder.formPost({
+        return $http($spFormEncoder.formPost({
           url: STORMPATH_CONFIG.getUrl('REGISTER_URI'),
           method: 'POST',
           data: accountData
         }))
         .then(function(response){
           var account = response.data.account || response.data;
-
-          op.resolve(account);
           registeredEvent(account);
-        },op.reject);
+          return $q.resolve(account);
+        },function(httpResponse){
+          return $q.reject($spErrorTransformer.transformError(httpResponse));
+        });
 
-        return op.promise;
       };
       UserService.prototype.get = function get() {
         /**
@@ -384,7 +383,10 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
           method: 'POST',
           url: STORMPATH_CONFIG.getUrl('FORGOT_PASSWORD_ENDPOINT'),
           data: data
-        }));
+        }))
+        .catch(function(httpResponse){
+          return $q.reject($spErrorTransformer.transformError(httpResponse));
+        });
       };
 
       /**
@@ -425,7 +427,10 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
           method: 'POST',
           url:STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT'),
           data: data
-        }));
+        }))
+        .catch(function(httpResponse){
+          return $q.reject($spErrorTransformer.transformError(httpResponse));
+        });
       };
       function registeredEvent(account){
         /**

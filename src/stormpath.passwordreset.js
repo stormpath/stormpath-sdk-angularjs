@@ -7,16 +7,16 @@ angular.module('stormpath')
   $scope.formModel = {
     username: ''
   };
-  $scope.requestFailed = false;
+  $scope.error = null;
   $scope.submit = function(){
     $scope.posting = true;
-    $scope.requestFailed = false;
+    $scope.error = null;
     $user.passwordResetRequest({email: $scope.formModel.email})
       .then(function(){
         $scope.sent = true;
       })
-      .catch(function(){
-        $scope.requestFailed = true;
+      .catch(function(err){
+        $scope.error = err.message;
       }).finally(function(){
         $scope.posting = false;
       });

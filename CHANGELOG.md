@@ -1,3 +1,11 @@
+# 1.1.0
+
+* The `$user.get()` method now takes a boolean `bypassCache` option, e.g. `$user.get(true)` will make a new request of the `/me` endpoint, instead of returning the user data that was already cached on login.
+
+* Logout requests (which makes a POST to `/logout` on our framework integration) are now using `Content-Type: application/x-www-form-urlencoded`, in order to prevent an un-necessary OPTIONS request.
+
+* Fixed #151, an un-intended catching of error responses on all HTTP responses. Now we only handle error responses that come from our known framework endpoints.
+
 # 1.0.0
 
 This version needs at least version `3.0.0` of [express-stormpath](https://github.com/stormpath/express-stormpath).

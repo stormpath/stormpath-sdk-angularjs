@@ -36,4 +36,4 @@ Table of Contents
    password_reset
    access_control
    wait_for_user
-   coming_soon
+   support

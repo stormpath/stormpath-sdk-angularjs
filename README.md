@@ -186,12 +186,19 @@ var app = angular.module('todoApp', [
 ]);
 ```
 
-## Help
+## Support
 
-If you have an issue while integrating this library, please make sure to look
-at the open issues on this repository and the [Troubleshooting Document](TROUBLESHOOTING.md).
+We're here to help if you get stuck.  There are several ways that you an get in
+touch with a member of our team:
 
-You may also contact us via email at support@stormpath.com or visit our [support center][].
+* Send an email to [support@stormpath.com](mailto:support@stormpath.com)
+* Open a Github Issue on this repository.
+* Join us on our Slack channel: [https://talkstormpath.shipit.xyz/](https://talkstormpath.shipit.xyz/)
+
+[Stormpath AngularJS SDK]: https://github.com/stormpath/stormpath-sdk-angularjs
+[Stormpath Product Guide]: https://docs.stormpath.com/rest/product-guide/latest/
+[Stormpath React SDK]: https://github.com/stormpath/stormpath-sdk-react
+[express-stormpath]: https://docs.stormpath.com/nodejs/express/latest/
 
 ## Contributing
 

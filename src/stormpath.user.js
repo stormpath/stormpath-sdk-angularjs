@@ -177,13 +177,19 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
         });
 
       };
-      UserService.prototype.get = function get() {
+      UserService.prototype.get = function get(bypassCache) {
         /**
          * @ngdoc function
          *
          * @name get
          *
          * @methodOf stormpath.userService.$user
+         *
+         * @param {Boolean} [bypassCache=false]
+         *
+         * By default, the UserService will cache the user object after it is
+         * retrieved the first time.  Specify `true` if you need to bypass this
+         * cache, e.g. after updating the user's custom data.
          *
          * @returns {promise}
          *
@@ -203,8 +209,9 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
          * The result of this operation will be cached on the {@link stormpath.userService.$user#properties_currentuser $user.currentUser}
          * property.
          *
-         * The user object is a Stormpath Account
-         * object, which is wrapped by a {@link eh User} type.
+         * The user object is a Stormpath Account object, which is wrapped by a
+         * {@link eh User} type.  It is fetched from the `/me` endpoint on your
+         * server, which is provided by our framework integrations.
          *
          * @example
          *
@@ -229,7 +236,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
         if(self.cachedUserOp){
           return self.cachedUserOp.promise;
         }
-        else if(self.currentUser !== null && self.currentUser!==false){
+        else if(self.currentUser !== null && self.currentUser!==false && bypassCache!==true){
           op.resolve(self.currentUser);
           return op.promise;
         }else{

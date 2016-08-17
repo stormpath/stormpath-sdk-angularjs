@@ -120,8 +120,9 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
 
 
         function success(httpResponse){
-          cacheCurrentUser();
-          authenticatedEvent(httpResponse);
+          $user.get(true).then(function(){
+            authenticatedEvent(httpResponse);
+          });
         }
         function error(httpResponse){
           authenticationFailureEvent(httpResponse);
@@ -196,10 +197,6 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
 
         return op;
       };
-
-      function cacheCurrentUser(){
-        return $user.get();
-      }
 
       function authenticatedEvent(response){
         /**

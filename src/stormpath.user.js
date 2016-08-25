@@ -309,14 +309,9 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
        * verified and can be used for login.  If rejected the token is expired
        * or has already been used.
        *
-       * @param  {Object} data Data object
+       * @param  {String} sptoken
        *
-       * An object literal for passing the email verification token.
-       * Must follow this format:
-       * ```
-       * {
-       *   sptoken: '<token from email>'
-       * }```
+       * The value of the `sptoken` that was sent by email to the user
        *
        * @description
        *

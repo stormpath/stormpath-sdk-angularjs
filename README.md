@@ -51,7 +51,17 @@ will walk you through the creation of a full-stack application.*
   <script src="stormpath-sdk-angularjs.tpls.min.js"></script>
   ```
 
-  Or install with bower: `$ bower install --save stormpath-sdk-angularjs`
+  Or install with bower:
+
+  ```
+  $ bower install stormpath-sdk-angularjs --save
+  ```
+
+  Or install with npm:
+
+  ```
+  $ npm install stormpath-sdk-angularjs --save
+  ```
 
 4. **Add the Module to Your App's Dependencies**
 

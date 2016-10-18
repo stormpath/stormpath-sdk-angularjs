@@ -24,10 +24,10 @@ module provides to your application.  With this SDK you can:
 If you're not sure where to start, the [Quickstart][] on Github is useful if
 you have an existing project
 
-Are you sarting a new project?  The [Yeoman Guide][] will help you build an
+Are you starting a new project?  The [Yeoman Guide][] will help you build an
 app from scratch.
 
-## Sever Integration
+## Server Integration
 
 This module requires Stormpath on your back-end to work properly. At the moment we
 have a fully-featured integration for **Express.js**, [express-stormpath][].

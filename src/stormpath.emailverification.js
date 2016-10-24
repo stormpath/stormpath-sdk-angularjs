@@ -42,6 +42,9 @@ angular.module('stormpath')
         $scope.posting = false;
       });
   };
+  $scope.login = function(){
+    $location.path('/login')
+  };
 }])
 
 /**

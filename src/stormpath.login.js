@@ -2,7 +2,7 @@
 
 angular.module('stormpath')
 
-.controller('SpLoginFormCtrl', ['$scope','$auth','$viewModel',function ($scope,$auth,$viewModel) {
+.controller('SpLoginFormCtrl', ['$scope','$auth','$location','$viewModel',function ($scope,$auth,$location,$viewModel) {
   $scope.viewModel = null;
 
   $viewModel.getLoginModel().then(function (model) {
@@ -29,6 +29,9 @@ angular.module('stormpath')
         $scope.posting = false;
         $scope.error = err.message;
       });
+  };
+  $scope.forgot = function(){
+    $location.path('/forgot')
   };
 }])
 

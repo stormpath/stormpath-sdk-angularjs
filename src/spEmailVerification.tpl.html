@@ -3,7 +3,7 @@
     <p ng-show="verifying" class="alert alert-warning">We are verifying your account</p>
     <p ng-show="verified" class="alert alert-success">
       Your account has has been verified!
-      <a href="login">Login Now.</a>
+      <a href="" ng-click="login()">Login Now.</a>
     </p>
     <p ng-show="reVerificationSent" class="alert alert-success">
       We have sent a new verification message to your email address, please check your email for this message.
@@ -25,7 +25,7 @@
       <div class="form-group">
         <label for="spEmail" class="col-xs-12 col-sm-4 control-label">Email or Username</label>
         <div class="col-xs-12 col-sm-4">
-          <input class="form-control" id="spUsername" ng-model="formModel.username" placeholder="Username or Email" ng-disabled="posting">
+          <input class="form-control" id="spEmail" ng-model="formModel.username" placeholder="Username or Email" ng-disabled="posting">
         </div>
       </div>
       <div class="form-group">

@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2016
  * 
- * @version v1.1.0-dev-2016-08-17
+ * @version v1.1.0-dev-2016-10-24
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -1914,6 +1914,9 @@ angular.module('stormpath')
         $scope.posting = false;
       });
   };
+  $scope.login = function(){
+    $location.path('/login')
+  };
 }])
 
 /**
@@ -2126,7 +2129,7 @@ angular.module('stormpath')
 
 angular.module('stormpath')
 
-.controller('SpLoginFormCtrl', ['$scope','$auth','$viewModel',function ($scope,$auth,$viewModel) {
+.controller('SpLoginFormCtrl', ['$scope','$auth','$location','$viewModel',function ($scope,$auth,$location,$viewModel) {
   $scope.viewModel = null;
 
   $viewModel.getLoginModel().then(function (model) {
@@ -2153,6 +2156,9 @@ angular.module('stormpath')
         $scope.posting = false;
         $scope.error = err.message;
       });
+  };
+  $scope.forgot = function(){
+    $location.path('/forgot')
   };
 }])
 
@@ -2206,7 +2212,7 @@ angular.module('stormpath')
 'use strict';
 
 angular.module('stormpath')
-.controller('SpPasswordResetRequestCtrl', ['$scope','$user',function ($scope,$user) {
+.controller('SpPasswordResetRequestCtrl', ['$scope','$location','$user',function ($scope,$location,$user) {
   $scope.sent = false;
   $scope.posting = false;
   $scope.formModel = {
@@ -2225,6 +2231,12 @@ angular.module('stormpath')
       }).finally(function(){
         $scope.posting = false;
       });
+  };
+  $scope.forgot = function(){
+    $location.path('/forgot');
+  };
+  $scope.login = function(){
+    $location.path('/login');
   };
 }])
 
@@ -2276,7 +2288,9 @@ angular.module('stormpath')
         $scope.posting = false;
       });
   };
-
+  $scope.login = function(){
+    $location.path('/login');
+  };
 }])
 
 /**
@@ -2427,6 +2441,9 @@ angular.module('stormpath')
         $scope.error = err.message;
       });
   };
+  $scope.login = function(){
+    $location.path('/login');
+  };
 }])
 
 
@@ -2544,6 +2561,7 @@ angular.module('stormpath')
     }
   };
 });
+
 (function() {
   'use strict';
 
@@ -3183,14 +3201,9 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
        * verified and can be used for login.  If rejected the token is expired
        * or has already been used.
        *
-       * @param  {Object} data Data object
+       * @param  {String} sptoken
        *
-       * An object literal for passing the email verification token.
-       * Must follow this format:
-       * ```
-       * {
-       *   sptoken: '<token from email>'
-       * }```
+       * The value of the `sptoken` that was sent by email to the user
        *
        * @description
        *

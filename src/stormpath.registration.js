@@ -61,6 +61,9 @@ angular.module('stormpath')
         $scope.error = err.message;
       });
   };
+  $scope.login = function(){
+    $location.path('/login');
+  };
 }])
 
 

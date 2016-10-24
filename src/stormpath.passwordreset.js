@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('stormpath')
-.controller('SpPasswordResetRequestCtrl', ['$scope','$user',function ($scope,$user) {
+.controller('SpPasswordResetRequestCtrl', ['$scope','$location','$user',function ($scope,$location,$user) {
   $scope.sent = false;
   $scope.posting = false;
   $scope.formModel = {
@@ -20,6 +20,12 @@ angular.module('stormpath')
       }).finally(function(){
         $scope.posting = false;
       });
+  };
+  $scope.forgot = function(){
+    $location.path('/forgot');
+  };
+  $scope.login = function(){
+    $location.path('/login');
   };
 }])
 
@@ -71,7 +77,9 @@ angular.module('stormpath')
         $scope.posting = false;
       });
   };
-
+  $scope.login = function(){
+    $location.path('/login');
+  };
 }])
 
 /**

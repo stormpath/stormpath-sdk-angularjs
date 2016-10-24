@@ -1914,9 +1914,6 @@ angular.module('stormpath')
         $scope.posting = false;
       });
   };
-  $scope.login = function(){
-    $location.path('/login')
-  };
 }])
 
 /**
@@ -2129,7 +2126,7 @@ angular.module('stormpath')
 
 angular.module('stormpath')
 
-.controller('SpLoginFormCtrl', ['$scope','$auth','$location','$viewModel',function ($scope,$auth,$location,$viewModel) {
+.controller('SpLoginFormCtrl', ['$scope','$auth','$viewModel',function ($scope,$auth,$viewModel) {
   $scope.viewModel = null;
 
   $viewModel.getLoginModel().then(function (model) {
@@ -2156,9 +2153,6 @@ angular.module('stormpath')
         $scope.posting = false;
         $scope.error = err.message;
       });
-  };
-  $scope.forgot = function(){
-    $location.path('/forgot')
   };
 }])
 
@@ -2212,7 +2206,7 @@ angular.module('stormpath')
 'use strict';
 
 angular.module('stormpath')
-.controller('SpPasswordResetRequestCtrl', ['$scope','$location','$user',function ($scope,$location,$user) {
+.controller('SpPasswordResetRequestCtrl', ['$scope','$user',function ($scope,$user) {
   $scope.sent = false;
   $scope.posting = false;
   $scope.formModel = {
@@ -2231,12 +2225,6 @@ angular.module('stormpath')
       }).finally(function(){
         $scope.posting = false;
       });
-  };
-  $scope.forgot = function(){
-    $location.path('/forgot');
-  };
-  $scope.login = function(){
-    $location.path('/login');
   };
 }])
 
@@ -2288,9 +2276,7 @@ angular.module('stormpath')
         $scope.posting = false;
       });
   };
-  $scope.login = function(){
-    $location.path('/login');
-  };
+
 }])
 
 /**
@@ -2441,9 +2427,6 @@ angular.module('stormpath')
         $scope.error = err.message;
       });
   };
-  $scope.login = function(){
-    $location.path('/login');
-  };
 }])
 
 
@@ -2561,7 +2544,6 @@ angular.module('stormpath')
     }
   };
 });
-
 (function() {
   'use strict';
 

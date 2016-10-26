@@ -43,6 +43,7 @@
  * the child state.  However, the controller of the abstract state will be
  * initialized AFTER any configuration rules of the child state have been met.
  *
+ *
  * @example
  *
  * <pre>
@@ -82,6 +83,21 @@
  *       });
  * });
  * </pre>
+ *
+ *  **TIP:** In order to better support UI-Router and [custom data on state objects](https://github.com/angular-ui/ui-router/wiki#attach-custom-data-to-state-objects),
+ *  we recently added support for using `data.authorities` to limit access to certain groups. For example:
+ *
+ *  <pre>
+ *     // Require a user to be in the admins group in order to see this state
+ *     $stateProvider
+ *       .state('secrets', {
+ *         url: '/admin',
+ *         controller: 'AdminCtrl',
+ *         data: {
+ *           authorities: ['admins']
+ *         }
+ *       });
+ *  </pre>
  */
 
  /**

@@ -385,6 +385,13 @@ angular.module('stormpath', [
         var sp = spStateConfig;
         if(sp && sp.authorize && sp.authorize.group) {
           return $user.currentUser.inGroup(sp.authorize.group);
+        }else if(sp && sp.data && sp.data.authorities){
+          // add support for reading from JHipster's data: { authorities: ['ROLE_ADMIN'] }
+          // https://github.com/stormpath/stormpath-sdk-angularjs/issues/190
+          var roles = sp.data.authorities.filter(function(authority){
+            return $user.currentUser.inGroup(authority);
+          });
+          return roles.size() > 0;
         }else{
           console.error('Unknown authorize configuration for spStateConfig',spStateConfig);
           return false;

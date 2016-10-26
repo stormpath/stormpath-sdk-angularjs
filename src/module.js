@@ -43,7 +43,6 @@
  * the child state.  However, the controller of the abstract state will be
  * initialized AFTER any configuration rules of the child state have been met.
  *
- *
  * @example
  *
  * <pre>

@@ -349,11 +349,11 @@ angular.module('stormpath', [
           var sp = toState.sp || {}; // Grab the sp config for this state
           var authorities = (toState.data && toState.data.authorities) ? toState.data.authorities : undefined;
 
-          if((sp.authenticate || sp.authorize || authorities) && (!$user.currentUser)){
+          if((sp.authenticate || sp.authorize || (authorities && authorities.length)) && (!$user.currentUser)){
             e.preventDefault();
             $user.get().then(function(){
               // The user is authenticated, continue to the requested state
-              if(sp.authorize || authorities){
+              if(sp.authorize || authorities.length){
                 if(authorizeStateConfig(sp, authorities)){
                   $state.go(toState.name,toParams);
                 }else{
@@ -372,8 +372,8 @@ angular.module('stormpath', [
               $state.go(toState.name,toParams);
             });
           }
-          else if($user.currentUser && sp.authorize){
-            if(!authorizeStateConfig(sp)){
+          else if($user.currentUser && (sp.authorize || (authorities && authorities.length))){
+            if(!authorizeStateConfig(sp, authorities)){
               e.preventDefault();
               stateChangeUnauthorizedEvent(toState,toParams);
             }

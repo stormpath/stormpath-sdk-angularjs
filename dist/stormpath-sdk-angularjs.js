@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2016
  * 
- * @version v1.1.0-dev-2016-08-17
+ * @version v1.1.0-dev-2016-10-27
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -2895,7 +2895,7 @@ angular.module('stormpath')
  * Currently, this provider does not have any configuration methods.
  */
 
-angular.module('stormpath.userService',['stormpath.CONFIG'])
+angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.util'])
 .provider('$user', [function $userProvider(){
 
   /**
@@ -2948,8 +2948,8 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
   };
 
   this.$get = [
-    '$q','$http','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer',
-    function userServiceFactory($q,$http,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer){
+    '$q','$http','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer', '$verifyResponse',
+    function userServiceFactory($q,$http,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer, $verifyResponse){
       function UserService(){
         this.cachedUserOp = null;
 
@@ -3117,6 +3117,13 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
           self.cachedUserOp = op;
 
           $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI'),{withCredentials:true}).then(function(response){
+            var responseStatus = $verifyResponse(response);
+
+            if (!responseStatus.valid) {
+              self.currentUser = false;
+              return op.reject(responseStatus.error);
+            }
+
             self.cachedUserOp = null;
             self.currentUser = new User(response.data.account || response.data);
             currentUserEvent(self.currentUser);
@@ -3183,14 +3190,9 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
        * verified and can be used for login.  If rejected the token is expired
        * or has already been used.
        *
-       * @param  {Object} data Data object
+       * @param  {String} sptoken
        *
-       * An object literal for passing the email verification token.
-       * Must follow this format:
-       * ```
-       * {
-       *   sptoken: '<token from email>'
-       * }```
+       * The value of the `sptoken` that was sent by email to the user
        *
        * @description
        *
@@ -3431,38 +3433,86 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
   ];
 }]);
 
+'use strict';
+
+angular.module('stormpath.util', [])
+.factory('$verifyResponse', function() {
+  return function verifyResponse(response) {
+    if (!response || typeof response.headers !== 'function') {
+      return {
+        valid: false,
+        error: {
+          message: 'Invalid response object format'
+        }
+      };
+    }
+
+    var contentType = response.headers('Content-Type');
+
+    if (!contentType.startsWith('application/json')) {
+      return {
+        valid: false,
+        error: {
+          message: 'Incorrect current user API endpoint response content type: ' + contentType
+        }
+      };
+    }
+
+    return {
+      valid: true
+    };
+  };
+});
+
 (function () {
   'use strict';
 
-  function ViewModelService($http, STORMPATH_CONFIG) {
+  function ViewModelService($http, $verifyResponse, STORMPATH_CONFIG) {
     this.$http = $http;
+    this.$verifyResponse = $verifyResponse;
     this.STORMPATH_CONFIG = STORMPATH_CONFIG;
   }
 
   ViewModelService.prototype.getLoginModel = function getLoginModel() {
+    var self = this;
+
     return this.$http.get(this.STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'), {
       headers: {
         'Accept': 'application/json'
       }
     }).then(function (response) {
+      var responseStatus = self.$verifyResponse(response);
+
+      if (!responseStatus.valid) {
+        throw responseStatus.error;
+      }
+
       return response.data;
     });
   };
 
   ViewModelService.prototype.getRegisterModel = function getRegisterModel() {
+    var self = this;
+
     return this.$http.get(this.STORMPATH_CONFIG.getUrl('REGISTER_URI'), {
       headers: {
         'Accept': 'application/json'
       }
     }).then(function (response) {
+      var responseStatus = self.$verifyResponse(response);
+
+      if (!responseStatus.valid) {
+        throw responseStatus.error;
+      }
+
       return response.data;
     });
   };
 
-  angular.module('stormpath.viewModelService', [])
+  angular.module('stormpath.viewModelService', ['stormpath.util'])
   .provider('$viewModel', function () {
-    this.$get = ['$http', 'STORMPATH_CONFIG', function viewModelFactory($http, STORMPATH_CONFIG) {
-      return new ViewModelService($http, STORMPATH_CONFIG);
+    this.$get = ['$http', '$verifyResponse', 'STORMPATH_CONFIG', function viewModelFactory($http, $verifyResponse, STORMPATH_CONFIG) {
+      return new ViewModelService($http, $verifyResponse, STORMPATH_CONFIG);
     }];
   });
 }());

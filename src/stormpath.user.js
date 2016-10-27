@@ -21,7 +21,7 @@
  * Currently, this provider does not have any configuration methods.
  */
 
-angular.module('stormpath.userService',['stormpath.CONFIG'])
+angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.util'])
 .provider('$user', [function $userProvider(){
 
   /**
@@ -74,8 +74,8 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
   };
 
   this.$get = [
-    '$q','$http','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer',
-    function userServiceFactory($q,$http,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer){
+    '$q','$http','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer', '$verifyResponse',
+    function userServiceFactory($q,$http,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer, $verifyResponse){
       function UserService(){
         this.cachedUserOp = null;
 
@@ -243,6 +243,13 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
           self.cachedUserOp = op;
 
           $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI'),{withCredentials:true}).then(function(response){
+            var responseStatus = $verifyResponse(response);
+
+            if (!responseStatus.valid) {
+              self.currentUser = false;
+              return op.reject(responseStatus.error);
+            }
+
             self.cachedUserOp = null;
             self.currentUser = new User(response.data.account || response.data);
             currentUserEvent(self.currentUser);

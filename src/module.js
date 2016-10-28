@@ -353,7 +353,7 @@ angular.module('stormpath', [
             e.preventDefault();
             $user.get().then(function(){
               // The user is authenticated, continue to the requested state
-              if(sp.authorize || authorities.length){
+              if(sp.authorize || (authorities && authorities.length)){
                 if(authorizeStateConfig(sp, authorities)){
                   $state.go(toState.name,toParams);
                 }else{

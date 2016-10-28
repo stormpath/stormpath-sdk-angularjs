@@ -43,6 +43,13 @@
  * the child state.  However, the controller of the abstract state will be
  * initialized AFTER any configuration rules of the child state have been met.
  *
+ * # Support for `data.authorities`
+ *
+ * If you have used [JHipster](https://jhipster.github.io/) to generate your
+ * project, you are likely using the `data.authorities` property to define
+ * authorization for your views. This library will look for the `data.authorities`
+ * property and apply the same logic as our own `sp.authorize` property.
+ *
  * @example
  *
  * <pre>
@@ -83,8 +90,7 @@
  * });
  * </pre>
  *
- *  **TIP:** In order to better support UI-Router and [custom data on state objects](https://github.com/angular-ui/ui-router/wiki#attach-custom-data-to-state-objects),
- *  we recently added support for using `data.authorities` to limit access to certain groups. For example:
+ * If using JHipster generated code:
  *
  *  <pre>
  *     // Require a user to be in the admins group in order to see this state

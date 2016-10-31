@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2016
  * 
- * @version v1.1.0-dev-2016-10-27
+ * @version v1.1.1-dev-2016-10-31
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -58,6 +58,13 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
  * the child state.  However, the controller of the abstract state will be
  * initialized AFTER any configuration rules of the child state have been met.
  *
+ * # Support for `data.authorities`
+ *
+ * If you have used [JHipster](https://jhipster.github.io/) to generate your
+ * project, you are likely using the `data.authorities` property to define
+ * authorization for your views. This library will look for the `data.authorities`
+ * property and apply the same logic as our own `sp.authorize` property.
+ *
  * @example
  *
  * <pre>
@@ -97,6 +104,20 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
  *       });
  * });
  * </pre>
+ *
+ * If using JHipster generated code:
+ *
+ *  <pre>
+ *     // Require a user to be in the admins group in order to see this state
+ *     $stateProvider
+ *       .state('secrets', {
+ *         url: '/admin',
+ *         controller: 'AdminCtrl',
+ *         data: {
+ *           authorities: ['admins']
+ *         }
+ *       });
+ *  </pre>
  */
 
  /**
@@ -217,7 +238,7 @@ angular.module('stormpath', [
     var b = $window.location;
     if (a.host === b.host){
       // The placeholders in the value are replaced by the `grunt dist` command.
-      config.headers['X-Stormpath-Agent'] = 'stormpath-sdk-angularjs/1.1.0' + ' angularjs/' + angular.version.full;
+      config.headers['X-Stormpath-Agent'] = 'stormpath-sdk-angularjs/1.1.1' + ' angularjs/' + angular.version.full;
     }
     return config;
   };
@@ -347,13 +368,14 @@ angular.module('stormpath', [
       StormpathService.prototype.stateChangeInterceptor = function stateChangeInterceptor(config) {
         $rootScope.$on('$stateChangeStart', function(e,toState,toParams){
           var sp = toState.sp || {}; // Grab the sp config for this state
+          var authorities = (toState.data && toState.data.authorities) ? toState.data.authorities : undefined;
 
-          if((sp.authenticate || sp.authorize) && (!$user.currentUser)){
+          if((sp.authenticate || sp.authorize || (authorities && authorities.length)) && (!$user.currentUser)){
             e.preventDefault();
             $user.get().then(function(){
               // The user is authenticated, continue to the requested state
-              if(sp.authorize){
-                if(authorizeStateConfig(sp)){
+              if(sp.authorize || (authorities && authorities.length)){
+                if(authorizeStateConfig(sp, authorities)){
                   $state.go(toState.name,toParams);
                 }else{
                   stateChangeUnauthorizedEvent(toState,toParams);
@@ -371,8 +393,8 @@ angular.module('stormpath', [
               $state.go(toState.name,toParams);
             });
           }
-          else if($user.currentUser && sp.authorize){
-            if(!authorizeStateConfig(sp)){
+          else if($user.currentUser && (sp.authorize || (authorities && authorities.length))){
+            if(!authorizeStateConfig(sp, authorities)){
               e.preventDefault();
               stateChangeUnauthorizedEvent(toState,toParams);
             }
@@ -396,15 +418,21 @@ angular.module('stormpath', [
         });
       };
 
-      function authorizeStateConfig(spStateConfig){
+      function authorizeStateConfig(spStateConfig, authorities){
         var sp = spStateConfig;
         if(sp && sp.authorize && sp.authorize.group) {
           return $user.currentUser.inGroup(sp.authorize.group);
+        }else if(authorities){
+          // add support for reading from JHipster's data: { authorities: ['ROLE_ADMIN'] }
+          // https://github.com/stormpath/stormpath-sdk-angularjs/issues/190
+          var roles = authorities.filter(function(authority){
+            return $user.currentUser.inGroup(authority);
+          });
+          return roles.length > 0;
         }else{
           console.error('Unknown authorize configuration for spStateConfig',spStateConfig);
           return false;
         }
-
       }
 
       function routeChangeUnauthenticatedEvent(toRoute) {
@@ -3435,8 +3463,41 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.util'])
 
 'use strict';
 
+/**
+* @ngdoc overview
+*
+* @name stormpath.util
+*
+* @description
+* This module provides general utility functions.
+*/
+
+/**
+* @ngdoc object
+*
+* @name stormpath.util.$verifyResponse
+*
+* @description
+* A factory that creates a {@link stormpath.util.$verifyResponse#$verifyResponse $verifyResponse}
+* function.
+*/
 angular.module('stormpath.util', [])
 .factory('$verifyResponse', function() {
+  /**
+  * @ngdoc function
+  *
+  * @name stormpath.util.$verifyResponse#$verifyResponse
+  * @methodOf stormpath.util.$verifyResponse
+  *
+  * @param {Object} response The response returned from a $http.get() request
+  * @returns {Object} Object containing the validation result. It has a boolean field `value`
+  * that is true if the request passes validation, and otherwise false. If validate is false,
+  * it will return an error field, containing an object with the error message in `retVal.error.message`
+  *
+  * @description
+  * Checks whether the response has a valid format. Currently, to be valid, it
+  * has to be a well-formed response and have the 'application/json' content type.
+  */
   return function verifyResponse(response) {
     if (!response || typeof response.headers !== 'function') {
       return {

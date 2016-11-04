@@ -188,7 +188,8 @@ angular.module('stormpath', [
   'stormpath.viewModelService',
   'stormpath.socialLogin',
   'stormpath.facebookLogin',
-  'stormpath.googleLogin'
+  'stormpath.googleLogin',
+  'stormpath.oauth'
 ])
 .factory('SpAuthInterceptor',[function(){
   function SpAuthInterceptor(){

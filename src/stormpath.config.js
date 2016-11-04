@@ -391,6 +391,46 @@ angular.module('stormpath.CONFIG',[])
     */
     ROUTE_CHANGE_UNAUTHORIZED: '$routeChangeUnauthorized',
 
+    /**
+    * @ngdoc property
+    *
+    * @name OAUTH_REQUEST_ERROR
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `$oAuthRequestError`
+    *
+    * The name of the event that is fired when the user attempts OAuth-based
+    * authentication, and fails due to an OAuth issue.
+    */
+    OAUTH_REQUEST_ERROR: '$oAuthRequestError',
+
+    /**
+    * @ngdoc property
+    *
+    * @name OAUTH_AUTHENTICATION_ENDPOINT
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `/oauth/token`
+    *
+    * The endpoint that is used to authenticate and refresh using OAuth tokens.
+    * This endpoint MUST support Stormpath password and refresh_token grant
+    * authentication types.
+    */
+    OAUTH_AUTHENTICATION_ENDPOINT: '/oauth/token',
+
+    /** TODO describe me */
+    OAUTH_REVOKE_ENDPOINT: '/oauth/revoke',
+
+    /** TODO describe me */
+    OAUTH_TOKEN_STORAGE_NAME: 'stormpath:token',
+
+    OAUTH_DEFAULT_TOKEN_STORE_TYPE: 'localStorage',
 
     /**
     * @ngdoc property

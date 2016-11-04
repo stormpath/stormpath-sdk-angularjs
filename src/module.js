@@ -191,6 +191,14 @@ angular.module('stormpath', [
   'stormpath.googleLogin',
   'stormpath.oauth'
 ])
+.factory('$isCurrentDomain', ['$window', function($window) {
+  return function(url) {
+    var link = $window.document.createElement('a');
+    link.href = url;
+
+    return $window.location.host === link.host;
+  }
+}])
 .factory('SpAuthInterceptor',[function(){
   function SpAuthInterceptor(){
 
@@ -202,13 +210,7 @@ angular.module('stormpath', [
 
   return new SpAuthInterceptor();
 }])
-.factory('StormpathAgentInterceptor',['$window',function($window){
-  function getLocation (href) {
-    var l = $window.document.createElement('a');
-    l.href = href;
-    return l;
-  }
-
+.factory('StormpathAgentInterceptor',['$isCurrentDomain', function($isCurrentDomain){
   function StormpathAgentInterceptor(){
 
   }
@@ -220,9 +222,7 @@ angular.module('stormpath', [
    * @return {Object} config $http config object.
    */
   StormpathAgentInterceptor.prototype.request = function(config){
-    var a = getLocation(config.url);
-    var b = $window.location;
-    if (a.host === b.host){
+    if ($isCurrentDomain(config.url)){
       // The placeholders in the value are replaced by the `grunt dist` command.
       config.headers['X-Stormpath-Agent'] = '@@PACKAGE_NAME/@@PACKAGE_VERSION' + ' angularjs/' + angular.version.full;
     }
@@ -231,9 +231,53 @@ angular.module('stormpath', [
 
   return new StormpathAgentInterceptor();
 }])
+.factory('StormpathOAuthInterceptor', ['$isCurrentDomain', '$rootScope', '$q', 'OAUthToken', 'STORMPATH_CONFIG',
+function($isCurrentDomain, $rooteScope, $q, OAuthToken, STORMPATH_CONFIG) {
+
+  function StormpathOAuthInterceptor() {}
+
+  StormpathOAuthInterceptor.prototype.request = function request(config) {
+    if ($isSameDomain(config.url)) {
+      return config;
+    }
+
+    config.headers = config.headers || {};
+
+    return OAuthToken.getAuthorizationHeader().then(function(authHeader) {
+      // Only set it if it is both present and *no* Authorization header was
+      // set (not even `undefined`)
+      if (!config.headers.hasOwnProperty('Authorization') && authHeader) {
+        config.headers.Authorization = authHeader;
+      }
+
+      return config;
+    });
+  };
+
+  StormpathOAuthInterceptor.prototype.responseError = function responseError(response) {
+    var error = response.data ? response.data.error : null;
+
+    // Ensures that the token is removed in case of invalid_grant or invalid_request
+    // responses
+    if (response.status === 400 && (error === 'invalid_grant' || error === 'invalid_request')) {
+      OAuthToken.removeToken();
+
+      $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
+    }
+
+    // Does not remove the token so that it can be refreshed in the handler
+    if (response.status === 401 && error === 'invalid_token') {
+      $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
+    }
+
+    return $q.reject(response);
+  };
+
+}])
 .config(['$httpProvider',function($httpProvider){
   $httpProvider.interceptors.push('SpAuthInterceptor');
   $httpProvider.interceptors.push('StormpathAgentInterceptor');
+  $httpProvider.interceptors.push('StormpathOAuthInterceptor');
 }])
 .provider('$stormpath', [function $stormpathProvider(){
   /**

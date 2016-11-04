@@ -2,7 +2,7 @@
 
 angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
 
-.provider('TokenStoreProvider', ['STORMPATH_CONFIG', function(STORMPATH_CONFIG) {
+.provider('TokenStore', ['STORMPATH_CONFIG', function(STORMPATH_CONFIG) {
   var self = this;
 
   this.tokenStores = {};
@@ -26,7 +26,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   };
 }])
 
-.provider('LocalStorageTokenStoreProvider', function() {
+.provider('LocalStorageTokenStore', function() {
   this.$get = function($q) {
     function LocalStorageTokenStore() {
       this._checkAvailability();

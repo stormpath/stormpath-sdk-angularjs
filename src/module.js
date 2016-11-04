@@ -231,8 +231,8 @@ angular.module('stormpath', [
 
   return new StormpathAgentInterceptor();
 }])
-.factory('StormpathOAuthInterceptor', ['$isCurrentDomain', '$rootScope', '$q', 'OAUthToken', 'STORMPATH_CONFIG',
-function($isCurrentDomain, $rooteScope, $q, OAuthToken, STORMPATH_CONFIG) {
+.factory('StormpathOAuthInterceptor', ['$isCurrentDomain', '$rootScope', '$q', 'StormpathOAuthToken', 'STORMPATH_CONFIG',
+function($isCurrentDomain, $rooteScope, $q, StormpathOAuthToken, STORMPATH_CONFIG) {
 
   function StormpathOAuthInterceptor() {}
 
@@ -243,7 +243,7 @@ function($isCurrentDomain, $rooteScope, $q, OAuthToken, STORMPATH_CONFIG) {
 
     config.headers = config.headers || {};
 
-    return OAuthToken.getAuthorizationHeader().then(function(authHeader) {
+    return StormpathOAuthToken.getAuthorizationHeader().then(function(authHeader) {
       // Only set it if it is both present and *no* Authorization header was
       // set (not even `undefined`)
       if (!config.headers.hasOwnProperty('Authorization') && authHeader) {
@@ -260,7 +260,7 @@ function($isCurrentDomain, $rooteScope, $q, OAuthToken, STORMPATH_CONFIG) {
     // Ensures that the token is removed in case of invalid_grant or invalid_request
     // responses
     if (response.status === 400 && (error === 'invalid_grant' || error === 'invalid_request')) {
-      OAuthToken.removeToken();
+      StormpathOAuthToken.removeToken();
 
       $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
     }
@@ -273,6 +273,7 @@ function($isCurrentDomain, $rooteScope, $q, OAuthToken, STORMPATH_CONFIG) {
     return $q.reject(response);
   };
 
+  return StormpathOAuthInterceptor;
 }])
 .config(['$httpProvider',function($httpProvider){
   $httpProvider.interceptors.push('SpAuthInterceptor');

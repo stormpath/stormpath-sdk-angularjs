@@ -2,7 +2,7 @@
 
 angular.module('stormpath.oauth', ['stormpath.CONFIG', 'storpath.tokenStore'])
 
-.provider('StormpathOAuthTokenProvider', ['STORMPATH_CONFIG',
+.provider('StormpathOAuthToken', ['STORMPATH_CONFIG',
 function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   var self = this;
 
@@ -69,16 +69,15 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
       });
     };
 
-    return StormpathOAuthToken;
+    return new StormpathOAuthToken();
   };
 
-  this.$get.$inject = ['$q', 'STORMPATH_CONFIG'];
+  this.$get.$inject = ['$q', 'TokenStore'];
 }])
 
-.provider('StormpathOAuthProvider', ['STORMPATH_CONFIG', function StormpathOAuthProvider(STORMPATH_CONFIG) {
+.provider('StormpathOAuth', ['STORMPATH_CONFIG', function StormpathOAuthProvider(STORMPATH_CONFIG) {
   this.$get = function($http, StormpathOAuthToken) {
-    function StormpathOAuth() {
-    }
+    function StormpathOAuth() {}
 
     StormpathOAuth.prototype.authenticate = function authenticate(requestData, opts) {
       var data = angular.extend({
@@ -135,7 +134,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
       });
     };
 
-    return StormpathOAuth;
+    return new StormpathOAuth();
   };
 
   this.$get.$inject = ['$http', 'StormpathOAuthToken'];

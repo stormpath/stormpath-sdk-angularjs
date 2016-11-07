@@ -183,14 +183,14 @@
  */
 angular.module('stormpath', [
   'stormpath.CONFIG',
+  'stormpath.utils',
   'stormpath.auth',
   'stormpath.userService',
   'stormpath.viewModelService',
   'stormpath.socialLogin',
   'stormpath.facebookLogin',
   'stormpath.googleLogin',
-  'stormpath.oauth',
-  'stormpath.domainUtils'
+  'stormpath.oauth'
 ])
 .factory('SpAuthInterceptor',[function(){
   function SpAuthInterceptor(){

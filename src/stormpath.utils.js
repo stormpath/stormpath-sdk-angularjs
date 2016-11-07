@@ -1,6 +1,58 @@
 'use strict';
 
-angular.module('stormpath')
+/**
+ * This module and factory are intentionally excluded from NG Docs.
+ *
+ * The factory is an internal utility used to check whether an URL is on the
+ * same domain on which the SPA is hosted.
+ */
+
+angular.module('stormpath.utils', ['stormpath.CONFIG'])
+.factory('$isCurrentDomain', ['$window', function($window) {
+  return function(url) {
+    var link = $window.document.createElement('a');
+    link.href = url;
+
+    return $window.location.host === link.host;
+  };
+}])
+.provider('$spErrorTransformer', [function $spErrorTransformer(){
+  /**
+   * This service is intentionally excluded from NG Docs.
+   *
+   * It is an internal utility for producing error objects from $http response
+   * errors.
+   */
+
+  this.$get = [
+    function formEncoderServiceFactory(){
+
+      function ErrorTransformerService(){
+
+      }
+
+      ErrorTransformerService.prototype.transformError = function transformError(httpResponse){
+        var errorMessage = null;
+
+        if (httpResponse.data) {
+          errorMessage = httpResponse.data.message || httpResponse.data.error;
+        }
+
+        if (!errorMessage) {
+          errorMessage = 'An error occured when communicating with the server.';
+        }
+
+        var error = new Error(errorMessage);
+
+        error.httpResponse = httpResponse;
+        error.statusCode = httpResponse.status;
+        return error;
+      };
+
+      return new ErrorTransformerService();
+    }
+  ];
+}])
 .provider('$spFormEncoder', [function $spFormEncoder(){
   /**
    * This service is intentionally excluded from NG Docs.

@@ -27,7 +27,7 @@ function camelCaseProps(obj) {
 * and {@link stormpath.oauth.StormpathOAuthToken StormpathOAuthToken} services,
 * implementing a client-side OAuth2 workflow.
 */
-angular.module('stormpath.oauth', ['stormpath.CONFIG', 'storpath.tokenStore'])
+angular.module('stormpath.oauth', ['stormpath.CONFIG', 'stormpath.utils', 'storpath.tokenStore'])
 
 /**
 * @ngdoc service
@@ -281,7 +281,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   * offers methods for authenticating via the `password` grant type, refreshing
   * access tokens via refresh tokens, and revoking the current token.
   */
-  this.$get = function($http, StormpathOAuthToken) {
+  this.$get = function($http, $spFormEncoder, StormpathOAuthToken) {
     function StormpathOAuth() {}
 
     /**
@@ -300,23 +300,26 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * successful, automatically stores the token using
     * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}.
     */
-    StormpathOAuth.prototype.authenticate = function authenticate(requestData, opts) {
+    StormpathOAuth.prototype.authenticate = function authenticate(requestData, extraHeaders) {
       var data = angular.extend({
         grant_type: 'password'
       }, requestData);
 
-      var options = angular.extend({
-        headers: {
-          Authorization: undefined
-        }
-      }, opts);
+      var headers = angular.extend({
+        Accept: 'application/json'
+      }, extraHeaders);
 
-      return $http.post(STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'), data, options)
-        .then(function(response) {
-          StormpathOAuthToken.setToken(response.data);
+      return $http($spFormEncoder.formPost({
+        url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
+        method: 'POST',
+        headers: headers,
+        data: data,
+        withCredentials: true
+      })).then(function(response) {
+        StormpathOAuthToken.setToken(response.data);
 
-          return response;
-        });
+        return response;
+      });
     };
 
     /**
@@ -334,21 +337,28 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * the token from storage, using
     * {@link stormpath.oauth.StormpathOAuthToken#removeToken StormpathOAuthToken.removeToken}.
     */
-    StormpathOAuth.prototype.revoke = function revoke(requestData, opts) {
+    StormpathOAuth.prototype.revoke = function revoke(requestData, extraHeaders) {
       return StormpathOAuthToken.getToken().then(function(token) {
         var data = angular.extend({
           token: token.refreshToken || token.accessToken,
           token_type_hint: token.refreshToken ? 'refresh_token' : 'access_token'
         }, requestData);
 
-        var options = angular.extend({}, opts);
+        var headers = angular.extend({
+          Accept: 'application/json'
+        }, extraHeaders);
 
-        return $http.post(STORMPATH_CONFIG.getUrl('OAUTH_REVOKE_ENDPOINT'), data, options)
-          .then(function(response) {
-            StormpathOAuthToken.removeToken();
+        return $http($spFormEncoder.formPost({
+          url: STORMPATH_CONFIG.getUrl('OAUTH_REVOKE_ENDPOINT'),
+          method: 'POST',
+          headers: headers,
+          data: data,
+          withCredentials: true
+        })).then(function(response) {
+          StormpathOAuthToken.removeToken();
 
-            return response;
-          });
+          return response;
+        });
       });
     };
 
@@ -368,30 +378,33 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}
     * with the response data.
     */
-    StormpathOAuth.prototype.refresh = function(requestData, opts) {
+    StormpathOAuth.prototype.refresh = function(requestData, extraHeaders) {
       return StormpathOAuthToken.getRefreshToken().then(function(refreshToken) {
         var data = angular.extend({
           grant_type: 'refresh_token',
           refresh_token: refreshToken
         }, requestData);
 
-        var options = angular.extend({
-          headers: {
-            Authorization: undefined
-          }
-        }, opts);
+        var headers = angular.extend({
+          Accept: 'application/json'
+        }, extraHeaders);
 
-        return $http.post(STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'), data, options)
-          .then(function(response) {
-            StormpathOAuthToken.setToken(response.data);
+        return $http($spFormEncoder.formPost({
+          url: STORMPATH_CONFIG.getUrl('OAUTH_REVOKE_ENDPOINT'),
+          method: 'POST',
+          headers: headers,
+          data: data,
+          withCredentials: true
+        })).then(function(response) {
+          StormpathOAuthToken.setToken(response.data);
 
-            return response;
-          });
+          return response;
+        });
       });
     };
 
     return new StormpathOAuth();
   };
 
-  this.$get.$inject = ['$http', 'StormpathOAuthToken'];
+  this.$get.$inject = ['$http', '$spFormEncoder', 'StormpathOAuthToken'];
 }]);

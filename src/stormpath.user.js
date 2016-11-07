@@ -21,7 +21,7 @@
  * Currently, this provider does not have any configuration methods.
  */
 
-angular.module('stormpath.userService',['stormpath.CONFIG'])
+angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
 .provider('$user', [function $userProvider(){
 
   /**

@@ -21,7 +21,7 @@
  *
  * Currently, this provider does not have any configuration methods.
  */
-angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpath.domainUtils'])
+angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpath.utils'])
 .config(['$injector','STORMPATH_CONFIG',function $authProvider($injector,STORMPATH_CONFIG){
   /**
    * @ngdoc object

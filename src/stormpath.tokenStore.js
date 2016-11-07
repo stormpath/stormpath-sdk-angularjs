@@ -71,6 +71,15 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   */
   this.$get = function $get() {
     return {
+      /**
+      * @ngdoc method
+      * @name stormpath.tokenStore.TokenStore#registerTokenStore
+      *
+      * @methodOf stormpath.tokenStore.TokenStore
+      *
+      * @param {String} name The name under which to store the token store implementation
+      * @param {Object} tokenStore
+      */
       registerTokenStore: function registerTokenStore(name, tokenStore) {
         var requiredMethods = ['get', 'put', 'remove'];
 

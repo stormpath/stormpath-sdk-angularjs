@@ -419,18 +419,40 @@ angular.module('stormpath.CONFIG',[])
     * Default: `/oauth/token`
     *
     * The endpoint that is used to authenticate and refresh using OAuth tokens.
-    * This endpoint MUST support Stormpath password and refresh_token grant
-    * authentication types.
+    * This endpoint MUST support password and refresh_token grant authentication
+    * flows.
     */
     OAUTH_AUTHENTICATION_ENDPOINT: '/oauth/token',
 
-    /** TODO describe me */
+    /**
+    * @ngdoc property
+    * @name OAUTH_REVOKE_ENDPOINT
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `/oauth/revoke`
+    *
+    * The endpoint that is used to revoke OAuth tokens.
+    */
     OAUTH_REVOKE_ENDPOINT: '/oauth/revoke',
 
-    /** TODO describe me */
+    /**
+    * @ngdoc property
+    * @name OAUTH_REVOKE_ENDPOINT
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * The name under which tokens are stored in the token storage mechanism.
+    * Might not be relevant if the underlying storage mechanism is not key-value
+    * based.
+    *
+    * See {@link stormpath.tokenStore.TokenStore TokenStore} for more detail.
+    */
     OAUTH_TOKEN_STORAGE_NAME: 'stormpath:token',
-
-    OAUTH_DEFAULT_TOKEN_STORE_TYPE: 'localStorage',
 
     /**
     * @ngdoc property

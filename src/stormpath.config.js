@@ -489,6 +489,22 @@ angular.module('stormpath.CONFIG',[])
     */
     REGISTERED_EVENT_NAME: '$registered',
 
+    /**
+    * @ngdoc property
+    *
+    * @name OAUTH_DEFAULT_TOKEN_STORE_TYPE,
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `localStorage`
+    *
+    * The default type of local storage used by
+    * {@link stormpath.oauth.StormpathOAuthTokenProvider}.
+    */
+    OAUTH_DEFAULT_TOKEN_STORE_TYPE: 'localStorage'
+
   };
   c.getUrl = function(key) {
     return this.ENDPOINT_PREFIX + this[key];

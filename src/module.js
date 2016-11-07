@@ -244,6 +244,8 @@ function($isCurrentDomain, $rooteScope, $q, $injector, StormpathOAuthToken, STOR
       }
 
       return config;
+    }).catch(function() {
+      return config;
     });
   };
 

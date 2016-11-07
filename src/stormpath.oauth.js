@@ -154,19 +154,31 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
 
     StormpathOAuthToken.prototype.getAccessToken = function getAccessToken() {
       return this.getToken().then(function(token) {
-        return token ? token.accessToken : null;
+        if (token) {
+          return token.accessToken;
+        }
+
+        return $q.reject();
       });
     };
 
     StormpathOAuthToken.prototype.getRefreshToken = function getRefreshToken() {
       return this.getToken().then(function(token) {
-        return token ? token.refreshToken : null;
+        if (token) {
+          return token.refreshToken;
+        }
+
+        return $q.reject();
       });
     };
 
     StormpathOAuthToken.prototype.getTokenType = function getTokenType() {
       return this.getToken().then(function(token) {
-        return token ? token.tokenType : null;
+        if (token) {
+          return token.tokenType;
+        }
+
+        return $q.reject();
       });
     };
 
@@ -181,7 +193,6 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           return;
         }
 
-        console.log(tokenType, accessToken);
         var tokenTypeName = tokenType.charAt(0).toUpperCase() + tokenType.substr(1);
 
         return tokenTypeName + ' ' + accessToken;

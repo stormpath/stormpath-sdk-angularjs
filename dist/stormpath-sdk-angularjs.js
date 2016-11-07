@@ -259,12 +259,13 @@ function($isCurrentDomain, $rooteScope, $q, $injector, StormpathOAuthToken, STOR
       }
 
       return config;
+    }).catch(function() {
+      return config;
     });
   };
 
   StormpathOAuthInterceptor.prototype.responseError = function responseError(response) {
     var error = response.data ? response.data.error : null;
-    console.log(response);
 
     // Ensures that the token is removed in case of invalid_grant or invalid_request
     // responses
@@ -276,7 +277,9 @@ function($isCurrentDomain, $rooteScope, $q, $injector, StormpathOAuthToken, STOR
 
     // Does not remove the token so that it can be refreshed in the handler
     if (response.status === 401 && error === 'invalid_token') {
-      var grantType = response.config.data ? response.config.data.grant_type : null;
+      var grantType = response.config && response.config.data
+                    ? response.config.data.grant_type
+                    : null;
 
       if (grantType && grantType !== 'refresh_token') {
         var StormpathOAuth = $injector.get('StormpathOAuth');
@@ -2507,19 +2510,31 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
 
     StormpathOAuthToken.prototype.getAccessToken = function getAccessToken() {
       return this.getToken().then(function(token) {
-        return token ? token.accessToken : null;
+        if (token) {
+          return token.accessToken;
+        }
+
+        return $q.reject();
       });
     };
 
     StormpathOAuthToken.prototype.getRefreshToken = function getRefreshToken() {
       return this.getToken().then(function(token) {
-        return token ? token.refreshToken : null;
+        if (token) {
+          return token.refreshToken;
+        }
+
+        return $q.reject();
       });
     };
 
     StormpathOAuthToken.prototype.getTokenType = function getTokenType() {
       return this.getToken().then(function(token) {
-        return token ? token.tokenType : null;
+        if (token) {
+          return token.tokenType;
+        }
+
+        return $q.reject();
       });
     };
 
@@ -2534,7 +2549,6 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           return;
         }
 
-        console.log(tokenType, accessToken);
         var tokenTypeName = tokenType.charAt(0).toUpperCase() + tokenType.substr(1);
 
         return tokenTypeName + ' ' + accessToken;

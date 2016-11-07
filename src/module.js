@@ -189,16 +189,9 @@ angular.module('stormpath', [
   'stormpath.socialLogin',
   'stormpath.facebookLogin',
   'stormpath.googleLogin',
-  'stormpath.oauth'
+  'stormpath.oauth',
+  'stormpath.domainUtils'
 ])
-.factory('$isCurrentDomain', ['$window', function($window) {
-  return function(url) {
-    var link = $window.document.createElement('a');
-    link.href = url;
-
-    return $window.location.host === link.host;
-  }
-}])
 .factory('SpAuthInterceptor',[function(){
   function SpAuthInterceptor(){
 
@@ -231,13 +224,13 @@ angular.module('stormpath', [
 
   return new StormpathAgentInterceptor();
 }])
-.factory('StormpathOAuthInterceptor', ['$isCurrentDomain', '$rootScope', '$q', 'StormpathOAuthToken', 'STORMPATH_CONFIG',
-function($isCurrentDomain, $rooteScope, $q, StormpathOAuthToken, STORMPATH_CONFIG) {
+.factory('StormpathOAuthInterceptor', ['$isCurrentDomain', '$rootScope', '$q', '$injector', 'StormpathOAuthToken', 'STORMPATH_CONFIG',
+function($isCurrentDomain, $rooteScope, $q, $injector, StormpathOAuthToken, STORMPATH_CONFIG) {
 
   function StormpathOAuthInterceptor() {}
 
   StormpathOAuthInterceptor.prototype.request = function request(config) {
-    if ($isSameDomain(config.url)) {
+    if ($isCurrentDomain(config.url)) {
       return config;
     }
 
@@ -267,13 +260,22 @@ function($isCurrentDomain, $rooteScope, $q, StormpathOAuthToken, STORMPATH_CONFI
 
     // Does not remove the token so that it can be refreshed in the handler
     if (response.status === 401 && error === 'invalid_token') {
+      var grantType = response.config && response.config.data
+                    ? response.config.data.grant_type
+                    : null;
+
+      if (grantType && grantType !== 'refresh_token') {
+        var StormpathOAuth = $injector.get('StormpathOAuth');
+        StormpathOAuth.refresh();
+      }
+
       $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
     }
 
     return $q.reject(response);
   };
 
-  return StormpathOAuthInterceptor;
+  return new StormpathOAuthInterceptor();
 }])
 .config(['$httpProvider',function($httpProvider){
   $httpProvider.interceptors.push('SpAuthInterceptor');

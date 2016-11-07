@@ -21,7 +21,7 @@
  *
  * Currently, this provider does not have any configuration methods.
  */
-angular.module('stormpath.auth',['stormpath.CONFIG'])
+angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpath.domainUtils'])
 .config(['$injector','STORMPATH_CONFIG',function $authProvider($injector,STORMPATH_CONFIG){
   /**
    * @ngdoc object
@@ -34,7 +34,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
    * "logging in" the user.
    */
   var authServiceProvider = {
-    $get: ['$http','$user','$rootScope','$spFormEncoder','$q','$spErrorTransformer', function authServiceFactory($http,$user,$rootScope,$spFormEncoder,$q, $spErrorTransformer){
+    $get: ['$http','$user','$rootScope','$spFormEncoder','$q','$spErrorTransformer', '$isCurrentDomain', 'StormpathOAuth', function authServiceFactory($http,$user,$rootScope,$spFormEncoder,$q, $spErrorTransformer, $isCurrentDomain, StormpathOAuth){
 
       function AuthService(){
         return this;
@@ -124,20 +124,34 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
             authenticatedEvent(httpResponse);
           });
         }
+
         function error(httpResponse){
           authenticationFailureEvent(httpResponse);
           return $q.reject($spErrorTransformer.transformError(httpResponse));
         }
-        return $http($spFormEncoder.formPost({
-            url: STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'),
-            method: 'POST',
-            headers: {
-              'Accept': 'application/json'
-            },
-            withCredentials: true,
-            data: data
-          })
-        ).then(success, error);
+
+        var options = {
+          headers: {
+            Accept: 'application/json'
+          }
+        };
+
+        if ($isCurrentDomain) {
+          return $http($spFormEncoder.formPost({
+              url: STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'),
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json'
+              },
+              withCredentials: true,
+              data: data
+            })
+          ).then(success, error);
+        } else {
+          StormpathOAuth.authenticate(data, options).then(success, error);
+        }
+
+
 
       };
 

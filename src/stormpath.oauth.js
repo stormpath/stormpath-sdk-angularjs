@@ -152,6 +152,19 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
       return this.tokenStore.remove(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME);
     };
 
+    /**
+    * @ngdoc method
+    * @name stormpath.oauth.StormpathOAuthToken#getAccessToken
+    * @methodOf stormpath.oauth.StormpathOAuthToken
+    *
+    * @returns {Promise} Promise containing the access token, or a rejection in case of failure
+    *
+    * @description
+    *
+    * Retrieves the access token from storage, relying on the token store for implementation.
+    * In case there of storage failure or there being no access token, the result is instead
+    * a rejected promise.
+    */
     StormpathOAuthToken.prototype.getAccessToken = function getAccessToken() {
       return this.getToken().then(function(token) {
         if (token) {
@@ -162,6 +175,19 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
       });
     };
 
+    /**
+    * @ngdoc method
+    * @name stormpath.oauth.StormpathOAuthToken#getRefreshToken
+    * @methodOf stormpath.oauth.StormpathOAuthToken
+    *
+    * @returns {Promise} Promise containing the refresh token, or a rejection in case of failure
+    *
+    * @description
+    *
+    * Retrieves the refresh token from storage, relying on the token store for implementation.
+    * In case there of storage failure or there being no refresh token, the result is instead
+    * a rejected promise.
+    */
     StormpathOAuthToken.prototype.getRefreshToken = function getRefreshToken() {
       return this.getToken().then(function(token) {
         if (token) {
@@ -172,6 +198,19 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
       });
     };
 
+    /**
+    * @ngdoc method
+    * @name stormpath.oauth.StormpathOAuthToken#getTokenType
+    * @methodOf stormpath.oauth.StormpathOAuthToken
+    *
+    * @returns {Promise} Promise containing the token type, or a rejection in case of failure
+    *
+    * @description
+    *
+    * Retrieves the token type from storage, relying on the token store for implementation.
+    * In case there of storage failure or there being no token type, the result is instead
+    * a rejected promise.
+    */
     StormpathOAuthToken.prototype.getTokenType = function getTokenType() {
       return this.getToken().then(function(token) {
         if (token) {
@@ -182,6 +221,19 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
       });
     };
 
+    /**
+    * @ngdoc method
+    * @name stormpath.oauth.StormpathOAuthToken#getAuthorizationHeader
+    * @methodOf stormpath.oauth.StormpathOAuthToken
+    *
+    * @returns {Promise} Promise containing the value for the HTTP authorization header, or a rejection
+    *
+    * @description
+    *
+    * Constructs a proper HTTP authorization header value for the token in storage. If there is no
+    * token currently stored, or an error happens while communicating with the token storage, a rejected
+    * promise is returned instead.
+    */
     StormpathOAuthToken.prototype.getAuthorizationHeader = function getAuthorizationHeader() {
       return $q
       .all([this.getTokenType(), this.getAccessToken()])
@@ -205,10 +257,49 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   this.$get.$inject = ['$q', 'TokenStore'];
 }])
 
+/**
+* @ngdoc service
+*
+* @name stormpath.oauth.StormpathOAuthProvider
+* @requires stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+* @description
+*
+* Provides the {@link stormpath.oauth.StormpathOAuth StormpathOAuth}
+* service.
+*/
 .provider('StormpathOAuth', ['STORMPATH_CONFIG', function StormpathOAuthProvider(STORMPATH_CONFIG) {
+
+  /**
+  * @ngdoc service
+  * @name stormpath.oauth.StormpathOAuth
+  * @requires $q
+  * @requires stormpath.oauth.StormpathOAuthToken
+  *
+  * @description
+  *
+  * A service for managing the OAuth client-side authentication flow logic. It
+  * offers methods for authenticating via the `password` grant type, refreshing
+  * access tokens via refresh tokens, and revoking the current token.
+  */
   this.$get = function($http, StormpathOAuthToken) {
     function StormpathOAuth() {}
 
+    /**
+    * @ngdoc method
+    * @name stormpath.oauth.StormpathOAuth#authenticate
+    *
+    * @param {Object} requestData Authentication data object. Expects a username and a password field.
+    * @param {Object} opts Additional request options, (e.g. headers), optional.
+    *
+    * @returns {Promise} A promise containing the authentication response
+    *
+    * @description
+    *
+    * Attempts to authenticate the user, using the password grant flow by default,
+    * although the method can be overriden via the `requestOpts` parameter. If
+    * successful, automatically stores the token using
+    * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}.
+    */
     StormpathOAuth.prototype.authenticate = function authenticate(requestData, opts) {
       var data = angular.extend({
         grant_type: 'password'
@@ -228,6 +319,21 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         });
     };
 
+    /**
+    * @ngdoc method
+    * @name stormpath.oauth.StormpathOAuth#revoke
+    *
+    * @param {Object} requestData Additional data to send with the revoke request, optional.
+    * @param {Object} opts Additional request options, (e.g. headers), optional.
+    *
+    * @returns {Promise} A promise containing the revokation response
+    *
+    * @description
+    *
+    * Attempts to revoke the currently active token. If successful, also removes
+    * the token from storage, using
+    * {@link stormpath.oauth.StormpathOAuthToken#removeToken StormpathOAuthToken.removeToken}.
+    */
     StormpathOAuth.prototype.revoke = function revoke(requestData, opts) {
       return StormpathOAuthToken.getToken().then(function(token) {
         var data = angular.extend({
@@ -246,6 +352,22 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
       });
     };
 
+    /**
+    * @ngdoc method
+    * @name stormpath.oauth.StormpathOAuth#refresh
+    *
+    * @param {Object} requestData Additional data to add to the refresh POST request, optional.
+    * @param {Object} opts Additional request options, (e.g. headers), optional.
+    *
+    * @returns {Promise} A promise containing the refresh attempt response
+    *
+    * @description
+    *
+    * Attempts to refresh the current token, using its refresh token. If successful,
+    * updates the currently stored token using
+    * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}
+    * with the response data.
+    */
     StormpathOAuth.prototype.refresh = function(requestData, opts) {
       return StormpathOAuthToken.getRefreshToken().then(function(refreshToken) {
         var data = angular.extend({

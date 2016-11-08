@@ -235,14 +235,13 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * promise is returned instead.
     */
     StormpathOAuthToken.prototype.getAuthorizationHeader = function getAuthorizationHeader() {
-      return $q
-      .all([this.getTokenType(), this.getAccessToken()])
-      .then(function(tokenData) {
-        var tokenType = tokenData[0];
-        var accessToken = tokenData[1];
+      return this.getToken()
+      .then(function(token) {
+        var tokenType = token && token.tokenType;
+        var accessToken = token && token.accessToken;
 
         if (!tokenType || !accessToken) {
-          return;
+          return $q.reject();
         }
 
         var tokenTypeName = tokenType.charAt(0).toUpperCase() + tokenType.substr(1);
@@ -288,7 +287,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * @ngdoc method
     * @name stormpath.oauth.StormpathOAuth#authenticate
     *
-    * @param {Object} requestData Authentication data object. Expects a username and a password field.
+    * @param {Object} requestData Authentication data object. Expects an email/username and a password field.
     * @param {Object} opts Additional request options, (e.g. headers), optional.
     *
     * @returns {Promise} A promise containing the authentication response

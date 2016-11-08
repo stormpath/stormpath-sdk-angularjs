@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2016
  * 
- * @version v1.1.1-dev-2016-11-07
+ * @version v1.1.1-dev-2016-11-08
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -244,6 +244,14 @@ function($isCurrentDomain, $rooteScope, $q, $injector, StormpathOAuthToken, STOR
 
   function StormpathOAuthInterceptor() {}
 
+  /**
+  * Adds the Authorization header on all outgoing request that are going to a
+  * different domain, do not already have an Authorization header, and only if
+  * there is currently a token in the token store.
+  *
+  * @param {Object} config $http config object.
+  * @return {Object} config $http config object.
+  */
   StormpathOAuthInterceptor.prototype.request = function request(config) {
     if ($isCurrentDomain(config.url)) {
       return config;
@@ -252,8 +260,7 @@ function($isCurrentDomain, $rooteScope, $q, $injector, StormpathOAuthToken, STOR
     config.headers = config.headers || {};
 
     return StormpathOAuthToken.getAuthorizationHeader().then(function(authHeader) {
-      // Only set it if it is both present and *no* Authorization header was
-      // set (not even `undefined`)
+      // Only set it if it is both present and *no* Authorization header was set
       if (!config.headers.hasOwnProperty('Authorization') && authHeader) {
         config.headers.Authorization = authHeader;
       }
@@ -2450,14 +2457,13 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * promise is returned instead.
     */
     StormpathOAuthToken.prototype.getAuthorizationHeader = function getAuthorizationHeader() {
-      return $q
-      .all([this.getTokenType(), this.getAccessToken()])
-      .then(function(tokenData) {
-        var tokenType = tokenData[0];
-        var accessToken = tokenData[1];
+      return this.getToken()
+      .then(function(token) {
+        var tokenType = token && token.tokenType;
+        var accessToken = token && token.accessToken;
 
         if (!tokenType || !accessToken) {
-          return;
+          return $q.reject();
         }
 
         var tokenTypeName = tokenType.charAt(0).toUpperCase() + tokenType.substr(1);
@@ -2503,7 +2509,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * @ngdoc method
     * @name stormpath.oauth.StormpathOAuth#authenticate
     *
-    * @param {Object} requestData Authentication data object. Expects a username and a password field.
+    * @param {Object} requestData Authentication data object. Expects an email/username and a password field.
     * @param {Object} opts Additional request options, (e.g. headers), optional.
     *
     * @returns {Promise} A promise containing the authentication response
@@ -3306,6 +3312,55 @@ angular.module('stormpath')
 * store mechanisms, as employed by the {@link stormpath.oauth} module.
 */
 
+/**
+* @ngdoc object
+* @interface stormpath.tokenStore.TokenStoreImpl
+*
+* @description
+* A token store implementation. It allows simple key-value pair storing, fetching,
+* and deleting. Its methods may be synchronous, but must always return promises.
+*/
+
+/**
+* @ngdoc method
+* @name stormpath.tokenStore.TokenStoreImpl#put
+* @methodOf stormpath.tokenStore.TokenStoreImpl
+*
+* @param {String} name The name under which to store a value.
+* @param {String} value The string representation of a value.
+* @returns {Promise} Indication of success
+*
+* @description
+*
+* Stores a string value in a key-value store.
+*/
+
+/**
+* @ngdoc method
+* @name stormpath.tokenStore.TokenStoreImpl#get
+* @methodOf stormpath.tokenStore.TokenStoreImpl
+*
+* @param {String} name The name for which to retrieve a value.
+* @returns {Promise} The resolved value retrieved from the store, or a rejection with a reason.
+*
+* @description
+*
+* Retrieves a value from a key-value store.
+*/
+
+/**
+* @ngdoc method
+* @name stormpath.tokenStore.TokenStoreImpl#remove
+* @methodOf stormpath.tokenStore.TokenStoreImpl
+*
+* @param {String} name The name for which to remove a value.
+* @returns {Promise} Indication of success. Should resolve if there is no value to remove.
+*
+* @description
+*
+* Remove a value from a key-value store.
+*/
+
 angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
 
 /**
@@ -3330,6 +3385,9 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   * This service provides methods for registering token stores (with duck-typed
   * validation), as well as retrieving them by name.
   *
+  * Token store implementations must implement the
+  * {@link stormpath.tokenStore.TokenStoreImpl TokenStoreImpl interface}.
+  *
   * All token stores are expected to satisfy the following contract:
   *   - Instances must have a `put` method that takes a key and a value, stores them, and returns a promise indicating success
   *   - Instances must have a `get` method that takes a key and returns a promise containing the value for the given key, or a rejection with a reason
@@ -3343,6 +3401,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   * <pre>
   *   angular.module('app')
   *     .run(['$q', 'TokenStore', function($q, TokenStore) {
+  *       // Can also be provided by a service/factory for better code organisation
   *       var myStore = {
   *         data: {},
   *         get: function get(key) {
@@ -3373,7 +3432,9 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
       * @methodOf stormpath.tokenStore.TokenStore
       *
       * @param {String} name The name under which to store the token store implementation
-      * @param {Object} tokenStore
+      * @param {TokenStoreImpl} tokenStore A concrete {@link stormpath.tokenStore.TokenStoreImpl TokenStoreImpl}
+      *
+      * @throws {Error} tokenStore must satisfy the token store contract methods (get, put, remove).
       */
       registerTokenStore: function registerTokenStore(name, tokenStore) {
         var requiredMethods = ['get', 'put', 'remove'];
@@ -3388,9 +3449,19 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
 
         tokenStores[name] = tokenStore;
       },
+      /**
+      * @ngdoc method
+      * @name stormpath.tokenStore.TokenStore#getTokenStore
+      *
+      * @methodOf stormpath.tokenStore.TokenStore
+      *
+      * @param {String} name The name of the token store implementation.
+      * @returns {TokenStoreImpl} The token store implementation stored under that name
+      * @throws {Error} When no token store is present for that name.
+      */
       getTokenStore: function getTokenStore(name) {
         if (angular.isUndefined(tokenStores[name])) {
-          throw new Error('Undefined token store: ' + name);
+          throw new Error('Unrecognised token store: ' + name);
         }
 
         return tokenStores[name];

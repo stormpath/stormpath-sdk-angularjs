@@ -229,6 +229,14 @@ function($isCurrentDomain, $rooteScope, $q, $injector, StormpathOAuthToken, STOR
 
   function StormpathOAuthInterceptor() {}
 
+  /**
+  * Adds the Authorization header on all outgoing request that are going to a
+  * different domain, do not already have an Authorization header, and only if
+  * there is currently a token in the token store.
+  *
+  * @param {Object} config $http config object.
+  * @return {Object} config $http config object.
+  */
   StormpathOAuthInterceptor.prototype.request = function request(config) {
     if ($isCurrentDomain(config.url)) {
       return config;
@@ -237,8 +245,7 @@ function($isCurrentDomain, $rooteScope, $q, $injector, StormpathOAuthToken, STOR
     config.headers = config.headers || {};
 
     return StormpathOAuthToken.getAuthorizationHeader().then(function(authHeader) {
-      // Only set it if it is both present and *no* Authorization header was
-      // set (not even `undefined`)
+      // Only set it if it is both present and *no* Authorization header was set
       if (!config.headers.hasOwnProperty('Authorization') && authHeader) {
         config.headers.Authorization = authHeader;
       }

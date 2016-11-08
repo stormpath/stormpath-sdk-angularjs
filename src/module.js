@@ -225,7 +225,7 @@ angular.module('stormpath', [
   return new StormpathAgentInterceptor();
 }])
 .factory('StormpathOAuthInterceptor', ['$isCurrentDomain', '$rootScope', '$q', '$injector', 'StormpathOAuthToken', 'STORMPATH_CONFIG',
-function($isCurrentDomain, $rooteScope, $q, $injector, StormpathOAuthToken, STORMPATH_CONFIG) {
+function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORMPATH_CONFIG) {
 
   function StormpathOAuthInterceptor() {}
 

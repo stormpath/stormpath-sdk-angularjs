@@ -240,7 +240,7 @@ angular.module('stormpath', [
   return new StormpathAgentInterceptor();
 }])
 .factory('StormpathOAuthInterceptor', ['$isCurrentDomain', '$rootScope', '$q', '$injector', 'StormpathOAuthToken', 'STORMPATH_CONFIG',
-function($isCurrentDomain, $rooteScope, $q, $injector, StormpathOAuthToken, STORMPATH_CONFIG) {
+function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORMPATH_CONFIG) {
 
   function StormpathOAuthInterceptor() {}
 
@@ -1418,23 +1418,24 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
           }
         };
 
-        if ($isCurrentDomain) {
-          return $http($spFormEncoder.formPost({
-              url: STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'),
-              method: 'POST',
-              headers: {
-                'Accept': 'application/json'
-              },
-              withCredentials: true,
-              data: data
-            })
-          ).then(success, error);
+        var authEndpoint = STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT');
+        var op;
+
+        if ($isCurrentDomain(authEndpoint)) {
+          op = $http($spFormEncoder.formPost({
+            url: authEndpoint,
+            method: 'POST',
+            headers: {
+              Accept: 'application/json'
+            },
+            withCredentials: true,
+            data: data
+          }));
         } else {
-          StormpathOAuth.authenticate(data, options).then(success, error);
+          op = StormpathOAuth.authenticate(data, options);
         }
 
-
-
+        return op.then(success, error);
       };
 
       /**
@@ -1478,12 +1479,19 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
        * event will be emitted after a successful logout.
        */
       AuthService.prototype.endSession = function endSession(){
-        var op = $http.post(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'), null, {
+        var destroyEndpoint = STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT');
+        var op;
+
+        if ($isCurrentDomain(destroyEndpoint)) {
+          op = $http.post(destroyEndpoint, null, {
             headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/x-www-form-urlencoded'
+              'Accept': 'application/json',
+              'Content-Type': 'application/x-www-form-urlencoded'
             }
-        });
+          });
+        } else {
+          op = StormpathOAuth.revoke();
+        }
 
         op.then(function(){
           endSessionEvent();

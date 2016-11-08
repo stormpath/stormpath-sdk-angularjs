@@ -130,10 +130,8 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
           return $q.reject($spErrorTransformer.transformError(httpResponse));
         }
 
-        var options = {
-          headers: {
-            Accept: 'application/json'
-          }
+        var headers = {
+          Accept: 'application/json'
         };
 
         var authEndpoint = STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT');
@@ -143,14 +141,17 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
           op = $http($spFormEncoder.formPost({
             url: authEndpoint,
             method: 'POST',
-            headers: {
-              Accept: 'application/json'
-            },
+            headers: headers,
             withCredentials: true,
             data: data
           }));
         } else {
-          op = StormpathOAuth.authenticate(data, options);
+          var remoteData = {
+            username: data.login,
+            password: data.password
+          };
+
+          op = StormpathOAuth.authenticate(remoteData, headers);
         }
 
         return op.then(success, error);

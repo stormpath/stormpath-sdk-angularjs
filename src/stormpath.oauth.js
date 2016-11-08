@@ -297,8 +297,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
         method: 'POST',
         headers: headers,
-        data: data,
-        withCredentials: true
+        data: data
       })).then(function(response) {
         StormpathOAuthToken.setToken(response.data);
 
@@ -336,8 +335,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           url: STORMPATH_CONFIG.getUrl('OAUTH_REVOKE_ENDPOINT'),
           method: 'POST',
           headers: headers,
-          data: data,
-          withCredentials: true
+          data: data
         })).then(function(response) {
           StormpathOAuthToken.removeToken();
 
@@ -377,8 +375,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           url: STORMPATH_CONFIG.getUrl('OAUTH_REVOKE_ENDPOINT'),
           method: 'POST',
           headers: headers,
-          data: data,
-          withCredentials: true
+          data: data
         })).then(function(response) {
           StormpathOAuthToken.setToken(response.data);
 

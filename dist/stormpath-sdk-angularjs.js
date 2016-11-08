@@ -1412,10 +1412,8 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
           return $q.reject($spErrorTransformer.transformError(httpResponse));
         }
 
-        var options = {
-          headers: {
-            Accept: 'application/json'
-          }
+        var headers = {
+          Accept: 'application/json'
         };
 
         var authEndpoint = STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT');
@@ -1425,14 +1423,17 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
           op = $http($spFormEncoder.formPost({
             url: authEndpoint,
             method: 'POST',
-            headers: {
-              Accept: 'application/json'
-            },
+            headers: headers,
             withCredentials: true,
             data: data
           }));
         } else {
-          op = StormpathOAuth.authenticate(data, options);
+          var remoteData = {
+            username: data.login,
+            password: data.password
+          };
+
+          op = StormpathOAuth.authenticate(remoteData, headers);
         }
 
         return op.then(success, error);
@@ -1494,6 +1495,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
         }
 
         op.then(function(){
+          console.log('Ending session');
           endSessionEvent();
         },function(response){
           console.error('logout error',response);
@@ -2527,8 +2529,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
         method: 'POST',
         headers: headers,
-        data: data,
-        withCredentials: true
+        data: data
       })).then(function(response) {
         StormpathOAuthToken.setToken(response.data);
 
@@ -2566,8 +2567,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           url: STORMPATH_CONFIG.getUrl('OAUTH_REVOKE_ENDPOINT'),
           method: 'POST',
           headers: headers,
-          data: data,
-          withCredentials: true
+          data: data
         })).then(function(response) {
           StormpathOAuthToken.removeToken();
 
@@ -2607,8 +2607,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           url: STORMPATH_CONFIG.getUrl('OAUTH_REVOKE_ENDPOINT'),
           method: 'POST',
           headers: headers,
-          data: data,
-          withCredentials: true
+          data: data
         })).then(function(response) {
           StormpathOAuthToken.setToken(response.data);
 

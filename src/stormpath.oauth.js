@@ -1,21 +1,5 @@
 'use strict';
 
-function camelCaseProps(obj) {
-  var camelCasedObj = {};
-
-  Object.keys(obj).forEach(function(key) {
-    if (obj.hasOwnProperty(key)) {
-      var camelCasedKey = key.replace(/_([A-Za-z])/g, function(all, char) {
-        return char.toUpperCase();
-      });
-
-      camelCasedObj[camelCasedKey] = obj[key];
-    }
-  });
-
-  return camelCasedObj;
-}
-
 /**
 * @ngdoc overview
 *
@@ -55,7 +39,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   * @description
   *
   * Sets the name of the token store type that the tokens use to store and load its data.
-  * See {@link stormpath.tokenStore.TokenStore#getTokenStore TokenStore.getTokenStore}
+  * See {@link stormpath.tokenStore.TokenStoreManager#getTokenStore TokenStoreManager.getTokenStore}
   * for details.
   */
   this.setTokenStoreType = function setTokenStoreType(tokenStoreType) {
@@ -66,22 +50,23 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   * @ngdoc service
   * @name stormpath.oauth.StormpathOAuthToken
   * @requires $q
-  * @requires stormpath.tokenStore.TokenStore
+  * @requires stormpath.tokenStore.TokenStoreManager
   *
   * @description
   *
   * A service for managing OAuth tokens. It offers a simple interface for storing
   * and reading tokens into a generic storage (backed by
-  * {@link stormpath.tokenStore.TokenStore}), as well as utility methods for
-  * getting specific components of the token - the access token, refresh token,
-  * token type, as well as the Authorization header constructed from the token.
+  * {@link stormpath.tokenStore.TokenStoreManager TokenStoreManager}), as well
+  * as utility methods for getting specific components of the token - the access
+  * token, refresh token, token type, as well as the Authorization header
+  * constructed from the token.
   *
   * It uses the token store type set in the provider, unless overrided via
   * {@link stormpath.oauth.StormpathOAuthToken#setTokenStoreType StormpathOAuthToken.setTokenStoreType}.
   */
-  this.$get = function $get($q, TokenStore) {
+  this.$get = function $get($q, $normalizeObjectKeys, TokenStoreManager) {
     function StormpathOAuthToken() {
-      this.tokenStore = TokenStore.getTokenStore(self._tokenStoreType);
+      this.tokenStore = TokenStoreManager.getTokenStore(self._tokenStoreType);
     }
 
     /**
@@ -93,11 +78,11 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * @description
     *
     * Sets the name of the token store type that this token uses to store and load its data.
-    * See {@link stormpath.tokenStore.TokenStore#getTokenStore TokenStore.getTokenStore}
+    * See {@link stormpath.tokenStore.TokenStoreManager#getTokenStore TokenStoreManager.getTokenStore}
     * for details.
     */
     StormpathOAuthToken.prototype.setTokenStoreType = function setTokenStoreType(tokenStoreType) {
-      this.tokenStore = TokenStore.getTokenStore(tokenStoreType);
+      this.tokenStore = TokenStoreManager.getTokenStore(tokenStoreType);
     };
 
     /**
@@ -114,7 +99,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * returned from the API into camel-cased keys when storing the token.
     */
     StormpathOAuthToken.prototype.setToken = function setToken(token) {
-      var canonicalToken = camelCaseProps(token);
+      var canonicalToken = $normalizeObjectKeys(token);
       return this.tokenStore.put(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME, canonicalToken);
     };
 
@@ -253,7 +238,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     return new StormpathOAuthToken();
   };
 
-  this.$get.$inject = ['$q', 'TokenStore'];
+  this.$get.$inject = ['$q', '$normalizeObjectKeys', 'TokenStoreManager'];
 }])
 
 /**
@@ -288,7 +273,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * @name stormpath.oauth.StormpathOAuth#authenticate
     *
     * @param {Object} requestData Authentication data object. Expects an email/username and a password field.
-    * @param {Object} opts Additional request options, (e.g. headers), optional.
+    * @param {Object=} opts Additional request options, (e.g. headers), optional.
     *
     * @returns {Promise} A promise containing the authentication response
     *
@@ -325,8 +310,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * @ngdoc method
     * @name stormpath.oauth.StormpathOAuth#revoke
     *
-    * @param {Object} requestData Additional data to send with the revoke request, optional.
-    * @param {Object} opts Additional request options, (e.g. headers), optional.
+    * @param {Object=} requestData Additional data to send with the revoke request, optional.
+    * @param {Object=} opts Additional request options, (e.g. headers), optional.
     *
     * @returns {Promise} A promise containing the revokation response
     *
@@ -365,8 +350,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * @ngdoc method
     * @name stormpath.oauth.StormpathOAuth#refresh
     *
-    * @param {Object} requestData Additional data to add to the refresh POST request, optional.
-    * @param {Object} opts Additional request options, (e.g. headers), optional.
+    * @param {Object=} requestData Additional data to add to the refresh POST request, optional.
+    * @param {Object=} opts Additional request options, (e.g. headers), optional.
     *
     * @returns {Promise} A promise containing the refresh attempt response
     *

@@ -169,4 +169,26 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
       return new FormEncoderService();
     }
   ];
-}]);
+}])
+/**
+* Intentionally excluded from the NG Docs.
+*
+* Shallow-transforms snake-cased keys in an object into camelCased keys
+*/
+.factory('$normalizeObjectKeys', function() {
+  return function normalizeObjectKeys(obj) {
+    var camelCasedObj = {};
+
+    Object.keys(obj).forEach(function(key) {
+      if (obj.hasOwnProperty(key)) {
+        var camelCasedKey = key.replace(/_([A-Za-z])/g, function(all, char) {
+          return char.toUpperCase();
+        });
+
+        camelCasedObj[camelCasedKey] = obj[key];
+      }
+    });
+
+    return camelCasedObj;
+  };
+});

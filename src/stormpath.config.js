@@ -450,7 +450,7 @@ angular.module('stormpath.CONFIG',[])
     * Might not be relevant if the underlying storage mechanism is not key-value
     * based.
     *
-    * See {@link stormpath.tokenStore.TokenStore TokenStore} for more detail.
+    * See {@link stormpath.tokenStore.TokenStoreManager TokenStoreManager} for more detail.
     */
     OAUTH_TOKEN_STORAGE_NAME: 'stormpath:token',
 

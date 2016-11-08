@@ -13,7 +13,7 @@
 
 /**
 * @ngdoc object
-* @interface stormpath.tokenStore.TokenStoreImpl
+* @interface stormpath.tokenStore.TokenStore
 *
 * @description
 * A token store implementation. It allows simple key-value pair storing, fetching,
@@ -22,11 +22,11 @@
 
 /**
 * @ngdoc method
-* @name stormpath.tokenStore.TokenStoreImpl#put
-* @methodOf stormpath.tokenStore.TokenStoreImpl
+* @name stormpath.tokenStore.TokenStore#put
+* @methodOf stormpath.tokenStore.TokenStore
 *
 * @param {String} name The name under which to store a value.
-* @param {String} value The string representation of a value.
+* @param {Any} value The string representation of a value.
 * @returns {Promise} Indication of success
 *
 * @description
@@ -36,8 +36,8 @@
 
 /**
 * @ngdoc method
-* @name stormpath.tokenStore.TokenStoreImpl#get
-* @methodOf stormpath.tokenStore.TokenStoreImpl
+* @name stormpath.tokenStore.TokenStore#get
+* @methodOf stormpath.tokenStore.TokenStore
 *
 * @param {String} name The name for which to retrieve a value.
 * @returns {Promise} The resolved value retrieved from the store, or a rejection with a reason.
@@ -49,8 +49,8 @@
 
 /**
 * @ngdoc method
-* @name stormpath.tokenStore.TokenStoreImpl#remove
-* @methodOf stormpath.tokenStore.TokenStoreImpl
+* @name stormpath.tokenStore.TokenStore#remove
+* @methodOf stormpath.tokenStore.TokenStore
 *
 * @param {String} name The name for which to remove a value.
 * @returns {Promise} Indication of success. Should resolve if there is no value to remove.
@@ -65,19 +65,19 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
 /**
 * @ngdoc service
 *
-* @name stormpath.tokenStore.TokenStoreProvider
+* @name stormpath.tokenStore.TokenStoreManagerProvider
 *
 * @description
 *
-* Provides the {@link stormpath.tokenStore.TokenStore TokenStore} service.
+* Provides the {@link stormpath.tokenStore.TokenStoreManager TokenStoreManager} service.
 */
-.provider('TokenStore', function() {
+.provider('TokenStoreManager', function() {
   var tokenStores = {};
 
   /**
   * @ngdoc object
   *
-  * @name stormpath.tokenStore.TokenStore
+  * @name stormpath.tokenStore.TokenStoreManager
   *
   * @description
   *
@@ -85,7 +85,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   * validation), as well as retrieving them by name.
   *
   * Token store implementations must implement the
-  * {@link stormpath.tokenStore.TokenStoreImpl TokenStoreImpl interface}.
+  * {@link stormpath.tokenStore.TokenStore TokenStore interface}.
   *
   * All token stores are expected to satisfy the following contract:
   *   - Instances must have a `put` method that takes a key and a value, stores them, and returns a promise indicating success
@@ -99,7 +99,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   *
   * <pre>
   *   angular.module('app')
-  *     .run(['$q', 'TokenStore', function($q, TokenStore) {
+  *     .run(['$q', 'TokenStoreManager', function($q, TokenStoreManager) {
   *       // Can also be provided by a service/factory for better code organisation
   *       var myStore = {
   *         data: {},
@@ -116,9 +116,9 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   *         }
   *       };
   *
-  *       TokenStore.registerTokenStore('basicStore', myStore);
+  *       TokenStoreManager.registerTokenStore('basicStore', myStore);
   *
-  *       var alsoMyStore = TokenStore.getTokenStore('basicStore');
+  *       var alsoMyStore = TokenStoreManager.getTokenStore('basicStore');
   *     }]);
   * </pre>
   */
@@ -126,12 +126,12 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
     return {
       /**
       * @ngdoc method
-      * @name stormpath.tokenStore.TokenStore#registerTokenStore
+      * @name stormpath.tokenStore.TokenStoreManager#registerTokenStore
       *
-      * @methodOf stormpath.tokenStore.TokenStore
+      * @methodOf stormpath.tokenStore.TokenStoreManager
       *
       * @param {String} name The name under which to store the token store implementation
-      * @param {TokenStoreImpl} tokenStore A concrete {@link stormpath.tokenStore.TokenStoreImpl TokenStoreImpl}
+      * @param {TokenStore} tokenStore A concrete {@link stormpath.tokenStore.TokenStore TokenStore}
       *
       * @throws {Error} tokenStore must satisfy the token store contract methods (get, put, remove).
       */
@@ -150,12 +150,12 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
       },
       /**
       * @ngdoc method
-      * @name stormpath.tokenStore.TokenStore#getTokenStore
+      * @name stormpath.tokenStore.TokenStoreManager#getTokenStore
       *
-      * @methodOf stormpath.tokenStore.TokenStore
+      * @methodOf stormpath.tokenStore.TokenStoreManager
       *
       * @param {String} name The name of the token store implementation.
-      * @returns {TokenStoreImpl} The token store implementation stored under that name
+      * @returns {TokenStore} The token store implementation stored under that name
       * @throws {Error} When no token store is present for that name.
       */
       getTokenStore: function getTokenStore(name) {
@@ -169,11 +169,22 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   };
 })
 
+/**
+* @ngdoc service
+* @name stormpath.tokenStore.LocalStorageTokenStore
+* @augments stormpath.tokenStore.TokenStore
+*
+* @description
+*
+* Implements token storage via browser localStorage.
+*/
 .factory('LocalStorageTokenStore', ['$q', function($q) {
   function LocalStorageTokenStore() {
     this._checkAvailability();
   }
 
+  // Checks whether the current environment supports localStorage and sets the
+  // internal state accordingly
   LocalStorageTokenStore.prototype._checkAvailability = function _checkAvailability() {
     if (typeof localStorage === undefined) {
       this.hasLocalStorage = false;
@@ -193,6 +204,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
     }
   };
 
+  // Provides uniform rejection method for when localStorage is not supported
   LocalStorageTokenStore.prototype._reject = function _reject() {
     return $q.reject({
       error: {
@@ -201,23 +213,80 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
     });
   };
 
+  /**
+  * @ngdoc method
+  * @name stormpath.tokenStore.LocalStorageTokenStore#put
+  * @methodOf stormpath.tokenStore.LocalStorageTokenStore
+  *
+  * @param {String} name The name under which to store a value.
+  * @param {Any} value The string representation of a value.
+  * @returns {Promise} Indication of success
+  *
+  * @description
+  *
+  * Attempts to store a key-value pair using the localStorage API.
+  */
   LocalStorageTokenStore.prototype.put = function put(key, value) {
     if (!this.hasLocalStorage) {
       return this._reject();
     }
 
-    localStorage.setItem(key, value);
+    var stringValue;
+
+    try {
+      stringValue = JSON.stringify(value);
+    } catch (e) {
+      console.error(value);
+      console.error(e);
+      $q.reject(e);
+    }
+
+    localStorage.setItem(key, stringValue);
     return $q.resolve();
   };
 
+  /**
+  * @ngdoc method
+  * @name stormpath.tokenStore.LocalStorageTokenStore#get
+  * @methodOf stormpath.tokenStore.LocalStorageTokenStore
+  *
+  * @param {String} name The name for which to retrieve a value.
+  * @returns {Promise} Resolved with value or rejected if local storage is unsupported, or value not present.
+  *
+  * @description
+  *
+  * Attempts to retrieve a value for a given key using the localStorage API.
+  */
   LocalStorageTokenStore.prototype.get = function get(key) {
     if (!this.hasLocalStorage) {
       return this._reject();
     }
 
-    return $q.resolve(localStorage.getItem(key));
+    var value = localStorage.getItem(key);
+
+    if (angular.isDefined(value)) {
+      try {
+        return $q.resolve(JSON.parse(value));
+      } catch (e) {
+        return $q.reject(e);
+      }
+    }
+
+    return $q.reject();
   };
 
+  /**
+  * @ngdoc method
+  * @name stormpath.tokenStore.LocalStorageTokenStore#remove
+  * @methodOf stormpath.tokenStore.LocalStorageTokenStore
+  *
+  * @param {String} name The name for which to remove the value.
+  * @returns {Promise} Indication of success
+  *
+  * @description
+  *
+  * Attempts to remove a value for a key from store using the localStorage API.
+  */
   LocalStorageTokenStore.prototype.remove = function remove(key) {
     if (!this.hasLocalStorage) {
       return this._reject();
@@ -231,7 +300,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
 }])
 
 // Register the basic localStorage provider when run
-.run(['TokenStore', 'LocalStorageTokenStore',
-function(TokenStore, LocalStorageTokenStore) {
-  TokenStore.registerTokenStore('localStorage', LocalStorageTokenStore);
+.run(['TokenStoreManager', 'LocalStorageTokenStore',
+function(TokenStoreManager, LocalStorageTokenStore) {
+  TokenStoreManager.registerTokenStore('localStorage', LocalStorageTokenStore);
 }]);

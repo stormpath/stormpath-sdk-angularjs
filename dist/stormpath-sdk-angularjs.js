@@ -2458,8 +2458,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
       }, requestData);
 
       var headers = angular.extend({
-        Accept: 'application/json',
-        'Content-Type': STORMPATH_CONFIG.FORM_CONTENT_TYPE
+        Accept: 'application/json'
       }, extraHeaders);
 
       return $http($spFormEncoder.formPost({
@@ -2497,8 +2496,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         }, requestData);
 
         var headers = angular.extend({
-          Accept: 'application/json',
-          'Content-Type': STORMPATH_CONFIG.FORM_CONTENT_TYPE
+          Accept: 'application/json'
         }, extraHeaders);
 
         return $http($spFormEncoder.formPost({
@@ -2538,8 +2536,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         }, requestData);
 
         var headers = angular.extend({
-          Accept: 'application/json',
-          'Content-Type': STORMPATH_CONFIG.FORM_CONTENT_TYPE
+          Accept: 'application/json'
         }, extraHeaders);
 
         return $http($spFormEncoder.formPost({
@@ -2560,18 +2557,34 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
 
   this.$get.$inject = ['$http', '$spFormEncoder', 'StormpathOAuthToken'];
 }])
+/**
+* @ngdoc service
+* @name stormpath.utils.StormpathOAuthInterceptor
+*
+* @description
+*
+* Processes requests and response errors to avoid manual OAuth flow integration.
+* Adds property Authorization headers to outgoing requests to external domains
+* and handles specific OAuth-based response errors.
+*/
 .factory('StormpathOAuthInterceptor', ['$isCurrentDomain', '$rootScope', '$q', '$injector', 'StormpathOAuthToken', 'STORMPATH_CONFIG',
 function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORMPATH_CONFIG) {
 
   function StormpathOAuthInterceptor() {}
 
   /**
+  * @ngdoc method
+  * @name stormpath.utils.StormpathOAuthInterceptor#request
+  * @methodOf stormpath.utils.StormpathOAuthInterceptor
+  *
+  * @param {Object} config $http config object.
+  * @return {Promise} config Promise containing $http config object.
+  *
+  * @description
+  *
   * Adds the Authorization header on all outgoing request that are going to a
   * different domain, do not already have an Authorization header, and only if
   * there is currently a token in the token store.
-  *
-  * @param {Object} config $http config object.
-  * @return {Object} config $http config object.
   */
   StormpathOAuthInterceptor.prototype.request = function request(config) {
     if ($isCurrentDomain(config.url)) {
@@ -2592,6 +2605,21 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
     });
   };
 
+  /**
+  * @ngdoc method
+  * @name stormpath.utils.StormpathOAuthInterceptor#responseError
+  * @methodOf stormpath.utils.StormpathOAuthInterceptor
+  *
+  * @param {Object} response $http response error object.
+  * @return {Promise} Promise containing either the error or the result of a retry after refreshing the OAuth token
+  *
+  * @description
+  *
+  * Handles basic OAuth errors. In case of a token expiration, it will try to
+  * refresh it. In case of invalid request or token format, it will remove the
+  * token instead. Finally, in all cases where a fallback process cannot be made
+  * successfully, an {@link OAUTH_REQUEST_ERROR} event is broadcast.
+  */
   StormpathOAuthInterceptor.prototype.responseError = function responseError(response) {
     var error = response.data ? response.data.error : null;
 
@@ -2603,7 +2631,9 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
       $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
     }
 
-    // Does not remove the token so that it can be refreshed in the handler
+    // Does not remove the token so that it can be refreshed in the handler,
+    // retrying the request instead after refreshing the access token.
+    // Gives up if a refresh fails.
     if (response.status === 401 && error === 'invalid_token') {
       var grantType = response.config && response.config.data
                     ? response.config.data.grant_type
@@ -2611,7 +2641,13 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
 
       if (grantType && grantType !== 'refresh_token') {
         var StormpathOAuth = $injector.get('StormpathOAuth');
-        StormpathOAuth.refresh();
+        return StormpathOAuth.refresh().then(function() {
+          var $http = $injector.get('$http');
+          return $http(response.config);
+        }).catch(function() {
+          $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
+          $q.reject(response);
+        });
       }
 
       $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);

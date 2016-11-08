@@ -3569,10 +3569,10 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
     try {
       stringValue = JSON.stringify(value);
     } catch (e) {
-      console.error(value);
-      console.error(e);
-      $q.reject(e);
+      return $q.reject(e);
     }
+
+    console.log('Setting', key, value);
 
     localStorage.setItem(key, stringValue);
     return $q.resolve();
@@ -3599,6 +3599,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
 
     if (angular.isDefined(value)) {
       try {
+        console.log('Returning', key, JSON.parse(value));
         return $q.resolve(JSON.parse(value));
       } catch (e) {
         return $q.reject(e);
@@ -3624,7 +3625,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
     if (!this.hasLocalStorage) {
       return this._reject();
     }
-
+    console.log('Removing', key);
     localStorage.removeItem(key);
     return $q.resolve();
   };

@@ -236,9 +236,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
     try {
       stringValue = JSON.stringify(value);
     } catch (e) {
-      console.error(value);
-      console.error(e);
-      $q.reject(e);
+      return $q.reject(e);
     }
 
     localStorage.setItem(key, stringValue);

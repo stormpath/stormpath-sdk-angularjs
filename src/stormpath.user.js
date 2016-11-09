@@ -74,8 +74,8 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
   };
 
   this.$get = [
-    '$q','$http','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer',
-    function userServiceFactory($q,$http,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer){
+    '$q','$spHttp','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer',
+    function userServiceFactory($q,$spHttp,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer){
       function UserService(){
         this.cachedUserOp = null;
 
@@ -163,7 +163,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
          * </pre>
          */
 
-        return $http($spFormEncoder.formPost({
+        return $spHttp($spFormEncoder.formPost({
           url: STORMPATH_CONFIG.getUrl('REGISTER_URI'),
           method: 'POST',
           data: accountData
@@ -242,7 +242,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
         }else{
           self.cachedUserOp = op;
 
-          $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI'),{withCredentials:true}).then(function(response){
+          $spHttp.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI'),{withCredentials:true}).then(function(response){
             self.cachedUserOp = null;
             self.currentUser = new User(response.data.account || response.data);
             currentUserEvent(self.currentUser);
@@ -288,7 +288,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        * ```
        */
       UserService.prototype.resendVerificationEmail = function resendVerificationEmail(data){
-        return $http({
+        return $spHttp({
           method: 'POST',
           url: STORMPATH_CONFIG.getUrl('EMAIL_VERIFICATION_ENDPOINT'),
           data: data
@@ -319,7 +319,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        * by email.
        */
       UserService.prototype.verify = function verify(token){
-        return $http({
+        return $spHttp({
           url: STORMPATH_CONFIG.getUrl('EMAIL_VERIFICATION_ENDPOINT') + '?sptoken='+token
         });
       };
@@ -351,7 +351,9 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        * The `sptoken` that was delivered to the user by email
        */
       UserService.prototype.verifyPasswordResetToken = function verifyPasswordResetToken(token){
-        return $http.get(STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT')+'?sptoken='+token);
+        return $spHttp({
+          url: STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT')+'?sptoken='+token
+        });
       };
 
       /**
@@ -381,7 +383,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        * ```
        */
       UserService.prototype.passwordResetRequest = function passwordResetRequest(data){
-        return $http($spFormEncoder.formPost({
+        return $spHttp($spFormEncoder.formPost({
           method: 'POST',
           url: STORMPATH_CONFIG.getUrl('FORGOT_PASSWORD_ENDPOINT'),
           data: data
@@ -425,7 +427,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        */
       UserService.prototype.resetPassword = function resetPassword(token,data){
         data.sptoken = token;
-        return $http($spFormEncoder.formPost({
+        return $spHttp($spFormEncoder.formPost({
           method: 'POST',
           url:STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT'),
           data: data

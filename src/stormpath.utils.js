@@ -16,6 +16,50 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
     return $window.location.host === link.host;
   };
 }])
+.constant('$spHeaders', {
+  // The placeholders in the value are replaced by the `grunt dist` command.
+  'X-Stormpath-Agent': '@@PACKAGE_NAME/@@PACKAGE_VERSION' + ' angularjs/' + angular.version.full
+})
+.factory('$adjustHeaders', ['STORMPATH_CONFIG', '$spHeaders', function(STORMPATH_CONFIG, $spHeaders) {
+  return function(url, headers) {
+    return STORMPATH_CONFIG.ENDPOINT_PREFIX
+         ? angular.extend({}, $spHeaders, headers)
+         : headers;
+  };
+}])
+.factory('$spHttp', ['$http', '$adjustHeaders', function($http, $adjustHeaders) {
+  function $spHttp(config) {
+    var spConfig = config || {};
+    spConfig.headers = $adjustHeaders(spConfig.url, spConfig.header || {});
+
+    return $http(spConfig);
+  }
+
+  //Offer the same interface as Angular itself for request decorators
+
+  // Requests with no payload
+  ['get', 'delete', 'head', 'jsonp'].forEach(function(method) {
+    $spHttp[method] = function(url, config) {
+      return $spHttp(angular.extend({}, config || {}, {
+        url: url,
+        method: method
+      }));
+    };
+  });
+
+  // Requests with payload
+  ['post', 'put', 'patch'].forEach(function(method) {
+    $spHttp[method] = function(url, data, config) {
+      return $spHttp(angular.extend({}, config || {}, {
+        url: url,
+        method: method,
+        data: data
+      }));
+    };
+  });
+
+  return $spHttp;
+}])
 .provider('$spErrorTransformer', [function $spErrorTransformer(){
   /**
    * This service is intentionally excluded from NG Docs.

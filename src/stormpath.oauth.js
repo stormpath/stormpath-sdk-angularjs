@@ -265,7 +265,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   * offers methods for authenticating via the `password` grant type, refreshing
   * access tokens via refresh tokens, and revoking the current token.
   */
-  this.$get = function($http, $spFormEncoder, StormpathOAuthToken) {
+  this.$get = function($spHttp, $spFormEncoder, StormpathOAuthToken) {
     function StormpathOAuth() {}
 
     /**
@@ -293,7 +293,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         Accept: 'application/json'
       }, extraHeaders);
 
-      return $http($spFormEncoder.formPost({
+      return $spHttp($spFormEncoder.formPost({
         url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
         method: 'POST',
         headers: headers,
@@ -331,7 +331,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           Accept: 'application/json'
         }, extraHeaders);
 
-        return $http($spFormEncoder.formPost({
+        return $spHttp($spFormEncoder.formPost({
           url: STORMPATH_CONFIG.getUrl('OAUTH_REVOKE_ENDPOINT'),
           method: 'POST',
           headers: headers,
@@ -371,8 +371,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           Accept: 'application/json'
         }, extraHeaders);
 
-        return $http($spFormEncoder.formPost({
-          url: STORMPATH_CONFIG.getUrl('OAUTH_REVOKE_ENDPOINT'),
+        return $spHttp($spFormEncoder.formPost({
+          url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
           method: 'POST',
           headers: headers,
           data: data
@@ -387,7 +387,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     return new StormpathOAuth();
   };
 
-  this.$get.$inject = ['$http', '$spFormEncoder', 'StormpathOAuthToken'];
+  this.$get.$inject = ['$spHttp', '$spFormEncoder', 'StormpathOAuthToken'];
 }])
 /**
 * @ngdoc service
@@ -466,16 +466,16 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
     // Does not remove the token so that it can be refreshed in the handler,
     // retrying the request instead after refreshing the access token.
     // Gives up if a refresh fails.
-    if (response.status === 401 && error === 'invalid_token') {
+    if (response.status === 401 && (error === 'invalid_token' || error === 'invalid_client')) {
       var grantType = response.config && response.config.data
                     ? response.config.data.grant_type
                     : null;
 
-      if (grantType && grantType !== 'refresh_token') {
+      if (!grantType || grantType !== 'refresh_token') {
         var StormpathOAuth = $injector.get('StormpathOAuth');
         return StormpathOAuth.refresh().then(function() {
-          var $http = $injector.get('$http');
-          return $http(response.config);
+          var $spHttp = $injector.get('$spHttp');
+          return $spHttp(response.config);
         }).catch(function() {
           $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
           $q.reject(response);
@@ -490,6 +490,6 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
 
   return new StormpathOAuthInterceptor();
 }])
-.config(['$httpProvider',function($httpProvider){
+.config(['$httpProvider', function($httpProvider) {
   $httpProvider.interceptors.push('StormpathOAuthInterceptor');
 }]);

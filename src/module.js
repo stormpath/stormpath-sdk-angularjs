@@ -203,7 +203,7 @@ angular.module('stormpath', [
 
   return new SpAuthInterceptor();
 }])
-.factory('StormpathAgentInterceptor',['$isCurrentDomain', function($isCurrentDomain){
+.factory('StormpathAgentInterceptor',['$isCurrentDomain', '$spHeaders', function($isCurrentDomain, $spHeaders){
   function StormpathAgentInterceptor(){
 
   }
@@ -216,8 +216,7 @@ angular.module('stormpath', [
    */
   StormpathAgentInterceptor.prototype.request = function(config){
     if ($isCurrentDomain(config.url)){
-      // The placeholders in the value are replaced by the `grunt dist` command.
-      config.headers['X-Stormpath-Agent'] = '@@PACKAGE_NAME/@@PACKAGE_VERSION' + ' angularjs/' + angular.version.full;
+      config.headers = angular.extend(config.headers, $spHeaders);
     }
     return config;
   };

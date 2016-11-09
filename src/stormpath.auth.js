@@ -34,7 +34,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
    * "logging in" the user.
    */
   var authServiceProvider = {
-    $get: ['$http','$user','$rootScope','$spFormEncoder','$q','$spErrorTransformer', '$isCurrentDomain', 'StormpathOAuth', function authServiceFactory($http,$user,$rootScope,$spFormEncoder,$q, $spErrorTransformer, $isCurrentDomain, StormpathOAuth){
+    $get: ['$spHttp','$user','$rootScope','$spFormEncoder','$q','$spErrorTransformer', '$isCurrentDomain', 'StormpathOAuth', function authServiceFactory($spHttp,$user,$rootScope,$spFormEncoder,$q, $spErrorTransformer, $isCurrentDomain, StormpathOAuth){
 
       function AuthService(){
         return this;
@@ -138,7 +138,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
         var op;
 
         if ($isCurrentDomain(authEndpoint)) {
-          op = $http($spFormEncoder.formPost({
+          op = $spHttp($spFormEncoder.formPost({
             url: authEndpoint,
             method: 'POST',
             headers: headers,
@@ -202,7 +202,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
         var op;
 
         if ($isCurrentDomain(destroyEndpoint)) {
-          op = $http.post(destroyEndpoint, null, {
+          op = $spHttp.post(destroyEndpoint, null, {
             headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/x-www-form-urlencoded'

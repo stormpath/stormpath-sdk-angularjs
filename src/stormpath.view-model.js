@@ -1,13 +1,13 @@
 (function () {
   'use strict';
 
-  function ViewModelService($http, STORMPATH_CONFIG) {
-    this.$http = $http;
+  function ViewModelService($spHttp, STORMPATH_CONFIG) {
+    this.$spHttp = $spHttp;
     this.STORMPATH_CONFIG = STORMPATH_CONFIG;
   }
 
   ViewModelService.prototype.getLoginModel = function getLoginModel() {
-    return this.$http.get(this.STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'), {
+    return this.$spHttp.get(this.STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'), {
       headers: {
         'Accept': 'application/json'
       }
@@ -17,7 +17,7 @@
   };
 
   ViewModelService.prototype.getRegisterModel = function getRegisterModel() {
-    return this.$http.get(this.STORMPATH_CONFIG.getUrl('REGISTER_URI'), {
+    return this.$spHttp.get(this.STORMPATH_CONFIG.getUrl('REGISTER_URI'), {
       headers: {
         'Accept': 'application/json'
       }
@@ -26,10 +26,10 @@
     });
   };
 
-  angular.module('stormpath.viewModelService', [])
+  angular.module('stormpath.viewModelService', ['stormpath.utils'])
   .provider('$viewModel', function () {
-    this.$get = ['$http', 'STORMPATH_CONFIG', function viewModelFactory($http, STORMPATH_CONFIG) {
-      return new ViewModelService($http, STORMPATH_CONFIG);
+    this.$get = ['$spHttp', 'STORMPATH_CONFIG', function viewModelFactory($spHttp, STORMPATH_CONFIG) {
+      return new ViewModelService($spHttp, STORMPATH_CONFIG);
     }];
   });
 }());

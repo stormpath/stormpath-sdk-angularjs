@@ -13,7 +13,8 @@
 
 /**
 * @ngdoc object
-* @interface stormpath.tokenStore.TokenStore
+* @interface
+* @name stormpath.tokenStore.TokenStore
 *
 * @description
 * A token store implementation. It allows simple key-value pair storing, fetching,

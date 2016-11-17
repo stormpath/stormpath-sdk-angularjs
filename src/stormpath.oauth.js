@@ -270,7 +270,9 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
 
     /**
     * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuth#authenticate
+    * @methodOf stormpath.oauth.StormpathOAuth
+    * @name #authenticate
+    *
     *
     * @param {Object} requestData Authentication data object. Expects an email/username and a password field.
     * @param {Object=} opts Additional request options, (e.g. headers), optional.
@@ -307,7 +309,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
 
     /**
     * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuth#revoke
+    * @methodOf stormpath.oauth.StormpathOAuth
+    * @name revoke
     *
     * @param {Object=} requestData Additional data to send with the revoke request, optional.
     * @param {Object=} opts Additional request options, (e.g. headers), optional.
@@ -345,8 +348,9 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     };
 
     /**
-    * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuth#refresh
+     * @ngdoc method
+    * @methodOf stormpath.oauth.StormpathOAuth
+    * @name refresh
     *
     * @param {Object=} requestData Additional data to add to the refresh POST request, optional.
     * @param {Object=} opts Additional request options, (e.g. headers), optional.

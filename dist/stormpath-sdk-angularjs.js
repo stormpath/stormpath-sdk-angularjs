@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2016
  * 
- * @version v1.1.1-dev-2016-11-09
+ * @version v1.1.1-dev-2016-11-18
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -207,17 +207,7 @@ angular.module('stormpath', [
   'stormpath.googleLogin',
   'stormpath.oauth'
 ])
-.factory('SpAuthInterceptor',[function(){
-  function SpAuthInterceptor(){
 
-  }
-  SpAuthInterceptor.prototype.request = function(config){
-    config.withCredentials=true;
-    return config;
-  };
-
-  return new SpAuthInterceptor();
-}])
 .factory('StormpathAgentInterceptor',['$isCurrentDomain', '$spHeaders', function($isCurrentDomain, $spHeaders){
   function StormpathAgentInterceptor(){
 
@@ -239,7 +229,6 @@ angular.module('stormpath', [
   return new StormpathAgentInterceptor();
 }])
 .config(['$httpProvider',function($httpProvider){
-  $httpProvider.interceptors.push('SpAuthInterceptor');
   $httpProvider.interceptors.push('StormpathAgentInterceptor');
 }])
 .provider('$stormpath', [function $stormpathProvider(){
@@ -864,6 +853,12 @@ angular.module('stormpath', [
   $rootScope.$on(STORMPATH_CONFIG.SESSION_END_EVENT,function(){
     $rootScope.user = $user.currentUser;
   });
+  $rootScope.$on(STORMPATH_CONFIG.SESSION_END_ERROR_EVENT,function(event, error){
+    console.error('Logout error', error);
+  });
+  $rootScope.$on(STORMPATH_CONFIG.UNAUTHENTICATED_EVENT,function(event, error){
+    console.error('UNAUTHENTICATED_EVENT');
+  });
 }])
 
 /**
@@ -1252,7 +1247,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
    * "logging in" the user.
    */
   var authServiceProvider = {
-    $get: ['$spHttp','$user','$rootScope','$spFormEncoder','$q','$spErrorTransformer', '$isCurrentDomain', 'StormpathOAuth', function authServiceFactory($spHttp,$user,$rootScope,$spFormEncoder,$q, $spErrorTransformer, $isCurrentDomain, StormpathOAuth){
+    $get: ['$http','$user','$rootScope','$spFormEncoder','$q','$spErrorTransformer', '$isCurrentDomain', 'StormpathOAuth', function authServiceFactory($http,$user,$rootScope,$spFormEncoder,$q, $spErrorTransformer, $isCurrentDomain, StormpathOAuth){
 
       function AuthService(){
         return this;
@@ -1356,7 +1351,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
         var op;
 
         if ($isCurrentDomain(authEndpoint)) {
-          op = $spHttp($spFormEncoder.formPost({
+          op = $http($spFormEncoder.formPost({
             url: authEndpoint,
             method: 'POST',
             headers: headers,
@@ -1368,7 +1363,6 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
             username: data.login,
             password: data.password
           };
-
           op = StormpathOAuth.authenticate(remoteData, headers);
         }
 
@@ -1420,7 +1414,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
         var op;
 
         if ($isCurrentDomain(destroyEndpoint)) {
-          op = $spHttp.post(destroyEndpoint, null, {
+          op = $http.post(destroyEndpoint, null, {
             headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/x-www-form-urlencoded'
@@ -1430,10 +1424,10 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
           op = StormpathOAuth.revoke();
         }
 
-        op.then(function(){
+        op.finally(function(){
           endSessionEvent();
-        },function(response){
-          console.error('logout error',response);
+        }).catch(function(httpResponse){
+          $rootScope.$broadcast(STORMPATH_CONFIG.SESSION_END_ERROR_EVENT, httpResponse);
         });
 
         return op;
@@ -1696,22 +1690,6 @@ angular.module('stormpath.CONFIG',[])
     /**
     * @ngdoc property
     *
-    * @name FORM_CONTENT_TYPE
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `'application/x-www-form-urlencoded'`
-    *
-    * The content type that is used for form posts.
-    */
-    FORM_CONTENT_TYPE: 'application/x-www-form-urlencoded',
-
-
-    /**
-    * @ngdoc property
-    *
     * @name GET_USER_EVENT
     *
     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
@@ -1798,6 +1776,8 @@ angular.module('stormpath.CONFIG',[])
     * directive
     */
     SESSION_END_EVENT: '$sessionEnd',
+
+    SESSION_END_ERROR_EVENT: '$sessionEndError',
 
 
     /**
@@ -1972,7 +1952,7 @@ angular.module('stormpath.CONFIG',[])
     /**
     * @ngdoc property
     *
-    * @name OAUTH_DEFAULT_TOKEN_STORE_TYPE,
+    * @name OAUTH_DEFAULT_TOKEN_STORE_TYPE
     *
     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
     *
@@ -2285,7 +2265,9 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}.
     */
     StormpathOAuthToken.prototype.getToken = function getToken() {
-      return this.tokenStore.get(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME);
+      return this.tokenStore.get(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME).then(function(data) {
+        return data;
+      });
     };
 
     /**
@@ -2420,6 +2402,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
 */
 .provider('StormpathOAuth', ['STORMPATH_CONFIG', function StormpathOAuthProvider(STORMPATH_CONFIG) {
 
+  var oauthInstance;
+
   /**
   * @ngdoc service
   * @name stormpath.oauth.StormpathOAuth
@@ -2432,12 +2416,16 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   * offers methods for authenticating via the `password` grant type, refreshing
   * access tokens via refresh tokens, and revoking the current token.
   */
-  this.$get = function($spHttp, $spFormEncoder, StormpathOAuthToken) {
-    function StormpathOAuth() {}
+  this.$get = function($http, $spFormEncoder, StormpathOAuthToken) {
+    function StormpathOAuth() {
+      this.attemptedRefresh = false;
+    }
 
     /**
     * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuth#authenticate
+    * @methodOf stormpath.oauth.StormpathOAuth
+    * @name #authenticate
+    *
     *
     * @param {Object} requestData Authentication data object. Expects an email/username and a password field.
     * @param {Object=} opts Additional request options, (e.g. headers), optional.
@@ -2452,6 +2440,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}.
     */
     StormpathOAuth.prototype.authenticate = function authenticate(requestData, extraHeaders) {
+      var self = this;
       var data = angular.extend({
         grant_type: 'password'
       }, requestData);
@@ -2460,12 +2449,13 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         Accept: 'application/json'
       }, extraHeaders);
 
-      return $spHttp($spFormEncoder.formPost({
+      return $http($spFormEncoder.formPost({
         url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
         method: 'POST',
         headers: headers,
         data: data
       })).then(function(response) {
+        self.attemptedRefresh = false;
         StormpathOAuthToken.setToken(response.data);
 
         return response;
@@ -2474,7 +2464,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
 
     /**
     * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuth#revoke
+    * @methodOf stormpath.oauth.StormpathOAuth
+    * @name revoke
     *
     * @param {Object=} requestData Additional data to send with the revoke request, optional.
     * @param {Object=} opts Additional request options, (e.g. headers), optional.
@@ -2487,33 +2478,31 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * the token from storage, using
     * {@link stormpath.oauth.StormpathOAuthToken#removeToken StormpathOAuthToken.removeToken}.
     */
-    StormpathOAuth.prototype.revoke = function revoke(requestData, extraHeaders) {
+    StormpathOAuth.prototype.revoke = function revoke() {
+      var self = this;
+
       return StormpathOAuthToken.getToken().then(function(token) {
-        var data = angular.extend({
+        var data = {
           token: token.refreshToken || token.accessToken,
           token_type_hint: token.refreshToken ? 'refresh_token' : 'access_token'
-        }, requestData);
+        };
 
-        var headers = angular.extend({
-          Accept: 'application/json'
-        }, extraHeaders);
-
-        return $spHttp($spFormEncoder.formPost({
+        return $http($spFormEncoder.formPost({
           url: STORMPATH_CONFIG.getUrl('OAUTH_REVOKE_ENDPOINT'),
           method: 'POST',
-          headers: headers,
           data: data
-        })).then(function(response) {
+        })).finally(function(response) {
           StormpathOAuthToken.removeToken();
-
+          self.attemptedRefresh = false;
           return response;
         });
       });
     };
 
     /**
-    * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuth#refresh
+     * @ngdoc method
+    * @methodOf stormpath.oauth.StormpathOAuth
+    * @name refresh
     *
     * @param {Object=} requestData Additional data to add to the refresh POST request, optional.
     * @param {Object=} opts Additional request options, (e.g. headers), optional.
@@ -2528,6 +2517,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * with the response data.
     */
     StormpathOAuth.prototype.refresh = function(requestData, extraHeaders) {
+      var self = this;
+
       return StormpathOAuthToken.getRefreshToken().then(function(refreshToken) {
         var data = angular.extend({
           grant_type: 'refresh_token',
@@ -2538,7 +2529,9 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           Accept: 'application/json'
         }, extraHeaders);
 
-        return $spHttp($spFormEncoder.formPost({
+        self.attemptedRefresh = true;
+
+        return $http($spFormEncoder.formPost({
           url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
           method: 'POST',
           headers: headers,
@@ -2551,10 +2544,14 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
       });
     };
 
-    return new StormpathOAuth();
+    if (!oauthInstance) {
+      oauthInstance = new StormpathOAuth();
+    }
+
+    return oauthInstance;
   };
 
-  this.$get.$inject = ['$spHttp', '$spFormEncoder', 'StormpathOAuthToken'];
+  this.$get.$inject = ['$http', '$spFormEncoder', 'StormpathOAuthToken'];
 }])
 /**
 * @ngdoc service
@@ -2585,16 +2582,38 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
   * different domain, do not already have an Authorization header, and only if
   * there is currently a token in the token store.
   */
+
+  /**
+   * TODO - make nice and available for developer extension of `testArray`
+   *
+   */
+  function isBlacklisted(url) {
+    url = url || '';
+    var matched = false;
+    var testArray = [
+      '/oauth/token$',
+      '/oauth/revoke$',
+      '/login$',
+      '/register$',
+    ];
+    testArray.forEach(function (expr){
+      if (matched) {
+        return;
+      }
+      matched = new RegExp(expr).test(url);
+    });
+    return matched;
+  }
+
   StormpathOAuthInterceptor.prototype.request = function request(config) {
-    if ($isCurrentDomain(config.url)) {
+    if ($isCurrentDomain(config.url) || isBlacklisted(config.url)) {
       return config;
     }
 
     config.headers = config.headers || {};
 
     return StormpathOAuthToken.getAuthorizationHeader().then(function(authHeader) {
-      // Only set it if it is both present and *no* Authorization header was set
-      if (!config.headers.hasOwnProperty('Authorization') && authHeader) {
+      if (authHeader) {
         config.headers.Authorization = authHeader;
       }
 
@@ -2634,15 +2653,12 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
     // retrying the request instead after refreshing the access token.
     // Gives up if a refresh fails.
     if (response.status === 401 && (error === 'invalid_token' || error === 'invalid_client')) {
-      var grantType = response.config && response.config.data
-                    ? response.config.data.grant_type
-                    : null;
+      var StormpathOAuth = $injector.get('StormpathOAuth');
 
-      if (!grantType || grantType !== 'refresh_token') {
-        var StormpathOAuth = $injector.get('StormpathOAuth');
+      if (!StormpathOAuth.attemptedRefresh) {
         return StormpathOAuth.refresh().then(function() {
-          var $spHttp = $injector.get('$spHttp');
-          return $spHttp(response.config);
+          var $http = $injector.get('$http');
+          return $http(response.config);
         }).catch(function() {
           $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
           $q.reject(response);
@@ -3340,12 +3356,13 @@ angular.module('stormpath')
 * @description
 *
 * This module provides a global access point for registering and fetching token
-* store mechanisms, as employed by the {@link stormpath.oauth} module.
+* store mechanisms, as used by the {@link stormpath.oauth} module.
 */
 
 /**
 * @ngdoc object
-* @interface stormpath.tokenStore.TokenStore
+* @interface
+* @name stormpath.tokenStore.TokenStore
 *
 * @description
 * A token store implementation. It allows simple key-value pair storing, fetching,
@@ -3475,7 +3492,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
         }, true);
 
         if (!isValid) {
-          throw new Error('Invalid token store. `get`, `put` and `remove` methods must be supported');
+          throw new Error('Invalid token store. `get`, `put` and `remove` methods must be implemented');
         }
 
         tokenStores[name] = tokenStore;
@@ -3537,10 +3554,10 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   };
 
   // Provides uniform rejection method for when localStorage is not supported
-  LocalStorageTokenStore.prototype._reject = function _reject() {
+  LocalStorageTokenStore.prototype._notImplementedError = function _notImplementedError() {
     return $q.reject({
       error: {
-        message: 'Local storage not supported'
+        message: 'Local storage not supported in this environment'
       }
     });
   };
@@ -3560,7 +3577,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   */
   LocalStorageTokenStore.prototype.put = function put(key, value) {
     if (!this.hasLocalStorage) {
-      return this._reject();
+      return this._notImplementedError();
     }
 
     var stringValue;
@@ -3589,7 +3606,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   */
   LocalStorageTokenStore.prototype.get = function get(key) {
     if (!this.hasLocalStorage) {
-      return this._reject();
+      return this._notImplementedError();
     }
 
     var value = localStorage.getItem(key);
@@ -3602,7 +3619,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
       }
     }
 
-    return $q.reject();
+    return $q.reject(new Error('Token not found'));
   };
 
   /**
@@ -3619,7 +3636,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   */
   LocalStorageTokenStore.prototype.remove = function remove(key) {
     if (!this.hasLocalStorage) {
-      return this._reject();
+      return this._notImplementedError();
     }
 
     localStorage.removeItem(key);
@@ -3711,8 +3728,8 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
   };
 
   this.$get = [
-    '$q','$spHttp','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer',
-    function userServiceFactory($q,$spHttp,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer){
+    '$q','$http','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer',
+    function userServiceFactory($q,$http,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer){
       function UserService(){
         this.cachedUserOp = null;
 
@@ -3800,7 +3817,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
          * </pre>
          */
 
-        return $spHttp($spFormEncoder.formPost({
+        return $http($spFormEncoder.formPost({
           url: STORMPATH_CONFIG.getUrl('REGISTER_URI'),
           method: 'POST',
           data: accountData
@@ -3879,7 +3896,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
         }else{
           self.cachedUserOp = op;
 
-          $spHttp.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI'),{withCredentials:true}).then(function(response){
+          $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI')).then(function(response){
             self.cachedUserOp = null;
             self.currentUser = new User(response.data.account || response.data);
             currentUserEvent(self.currentUser);
@@ -3925,7 +3942,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        * ```
        */
       UserService.prototype.resendVerificationEmail = function resendVerificationEmail(data){
-        return $spHttp({
+        return $http({
           method: 'POST',
           url: STORMPATH_CONFIG.getUrl('EMAIL_VERIFICATION_ENDPOINT'),
           data: data
@@ -3956,7 +3973,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        * by email.
        */
       UserService.prototype.verify = function verify(token){
-        return $spHttp({
+        return $http({
           url: STORMPATH_CONFIG.getUrl('EMAIL_VERIFICATION_ENDPOINT') + '?sptoken='+token
         });
       };
@@ -3988,7 +4005,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        * The `sptoken` that was delivered to the user by email
        */
       UserService.prototype.verifyPasswordResetToken = function verifyPasswordResetToken(token){
-        return $spHttp({
+        return $http({
           url: STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT')+'?sptoken='+token
         });
       };
@@ -4020,7 +4037,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        * ```
        */
       UserService.prototype.passwordResetRequest = function passwordResetRequest(data){
-        return $spHttp($spFormEncoder.formPost({
+        return $http($spFormEncoder.formPost({
           method: 'POST',
           url: STORMPATH_CONFIG.getUrl('FORGOT_PASSWORD_ENDPOINT'),
           data: data
@@ -4064,7 +4081,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        */
       UserService.prototype.resetPassword = function resetPassword(token,data){
         data.sptoken = token;
-        return $spHttp($spFormEncoder.formPost({
+        return $http($spFormEncoder.formPost({
           method: 'POST',
           url:STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT'),
           data: data
@@ -4213,46 +4230,6 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
   // The placeholders in the value are replaced by the `grunt dist` command.
   'X-Stormpath-Agent': 'stormpath-sdk-angularjs/1.1.1' + ' angularjs/' + angular.version.full
 })
-.factory('$adjustHeaders', ['STORMPATH_CONFIG', '$spHeaders', function(STORMPATH_CONFIG, $spHeaders) {
-  return function(url, headers) {
-    return STORMPATH_CONFIG.ENDPOINT_PREFIX
-         ? angular.extend({}, $spHeaders, headers)
-         : headers;
-  };
-}])
-.factory('$spHttp', ['$http', '$adjustHeaders', function($http, $adjustHeaders) {
-  function $spHttp(config) {
-    var spConfig = config || {};
-    spConfig.headers = $adjustHeaders(spConfig.url, spConfig.header || {});
-
-    return $http(spConfig);
-  }
-
-  //Offer the same interface as Angular itself for request decorators
-
-  // Requests with no payload
-  ['get', 'delete', 'head', 'jsonp'].forEach(function(method) {
-    $spHttp[method] = function(url, config) {
-      return $spHttp(angular.extend({}, config || {}, {
-        url: url,
-        method: method
-      }));
-    };
-  });
-
-  // Requests with payload
-  ['post', 'put', 'patch'].forEach(function(method) {
-    $spHttp[method] = function(url, data, config) {
-      return $spHttp(angular.extend({}, config || {}, {
-        url: url,
-        method: method,
-        data: data
-      }));
-    };
-  });
-
-  return $spHttp;
-}])
 .provider('$spErrorTransformer', [function $spErrorTransformer(){
   /**
    * This service is intentionally excluded from NG Docs.
@@ -4297,8 +4274,7 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
    */
 
   this.$get = [
-    'STORMPATH_CONFIG',
-    function formEncoderServiceFactory(STORMPATH_CONFIG){
+    function formEncoderServiceFactory(){
 
       function FormEncoderService(){
         var encoder = new UrlEncodedFormParser();
@@ -4307,11 +4283,9 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
       }
 
       FormEncoderService.prototype.formPost = function formPost(httpRequest){
-        if(STORMPATH_CONFIG.FORM_CONTENT_TYPE==='application/x-www-form-urlencoded'){
-          var h = httpRequest.headers ? httpRequest.headers : (httpRequest.headers = {});
-          h['Content-Type'] = STORMPATH_CONFIG.FORM_CONTENT_TYPE;
-          httpRequest.data = this.encodeUrlForm(httpRequest.data);
-        }
+        var h = httpRequest.headers ? httpRequest.headers : (httpRequest.headers = {});
+        h['Content-Type'] = 'application/x-www-form-urlencoded';
+        httpRequest.data = this.encodeUrlForm(httpRequest.data);
         return httpRequest;
       };
 
@@ -4433,13 +4407,13 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
 (function () {
   'use strict';
 
-  function ViewModelService($spHttp, STORMPATH_CONFIG) {
-    this.$spHttp = $spHttp;
+  function ViewModelService($http, STORMPATH_CONFIG) {
+    this.$http = $http;
     this.STORMPATH_CONFIG = STORMPATH_CONFIG;
   }
 
   ViewModelService.prototype.getLoginModel = function getLoginModel() {
-    return this.$spHttp.get(this.STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'), {
+    return this.$http.get(this.STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'), {
       headers: {
         'Accept': 'application/json'
       }
@@ -4449,7 +4423,7 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
   };
 
   ViewModelService.prototype.getRegisterModel = function getRegisterModel() {
-    return this.$spHttp.get(this.STORMPATH_CONFIG.getUrl('REGISTER_URI'), {
+    return this.$http.get(this.STORMPATH_CONFIG.getUrl('REGISTER_URI'), {
       headers: {
         'Accept': 'application/json'
       }
@@ -4460,8 +4434,8 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
 
   angular.module('stormpath.viewModelService', ['stormpath.utils'])
   .provider('$viewModel', function () {
-    this.$get = ['$spHttp', 'STORMPATH_CONFIG', function viewModelFactory($spHttp, STORMPATH_CONFIG) {
-      return new ViewModelService($spHttp, STORMPATH_CONFIG);
+    this.$get = ['$http', 'STORMPATH_CONFIG', function viewModelFactory($http, STORMPATH_CONFIG) {
+      return new ViewModelService($http, STORMPATH_CONFIG);
     }];
   });
 }());

@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2016
  * 
- * @version v1.1.1-dev-2016-11-09
+ * @version v1.1.1-dev-2016-11-18
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */

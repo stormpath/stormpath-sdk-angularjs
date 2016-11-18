@@ -253,6 +253,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
 */
 .provider('StormpathOAuth', ['STORMPATH_CONFIG', function StormpathOAuthProvider(STORMPATH_CONFIG) {
 
+  var oauthInstance;
+
   /**
   * @ngdoc service
   * @name stormpath.oauth.StormpathOAuth
@@ -287,6 +289,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}.
     */
     StormpathOAuth.prototype.authenticate = function authenticate(requestData, extraHeaders) {
+      var self = this;
       var data = angular.extend({
         grant_type: 'password'
       }, requestData);
@@ -301,6 +304,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         headers: headers,
         data: data
       })).then(function(response) {
+        self.attemptedRefresh = false;
         StormpathOAuthToken.setToken(response.data);
 
         return response;
@@ -324,6 +328,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * {@link stormpath.oauth.StormpathOAuthToken#removeToken StormpathOAuthToken.removeToken}.
     */
     StormpathOAuth.prototype.revoke = function revoke() {
+      var self = this;
+
       return StormpathOAuthToken.getToken().then(function(token) {
         var data = {
           token: token.refreshToken || token.accessToken,
@@ -336,6 +342,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           data: data
         })).finally(function(response) {
           StormpathOAuthToken.removeToken();
+          self.attemptedRefresh = false;
           return response;
         });
       });
@@ -359,6 +366,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * with the response data.
     */
     StormpathOAuth.prototype.refresh = function(requestData, extraHeaders) {
+      var self = this;
+
       return StormpathOAuthToken.getRefreshToken().then(function(refreshToken) {
         var data = angular.extend({
           grant_type: 'refresh_token',
@@ -368,6 +377,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         var headers = angular.extend({
           Accept: 'application/json'
         }, extraHeaders);
+
+        self.attemptedRefresh = true;
 
         return $http($spFormEncoder.formPost({
           url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
@@ -382,7 +393,11 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
       });
     };
 
-    return new StormpathOAuth();
+    if (!oauthInstance) {
+      oauthInstance = new StormpathOAuth();
+    }
+
+    return oauthInstance;
   };
 
   this.$get.$inject = ['$http', '$spFormEncoder', 'StormpathOAuthToken'];
@@ -447,8 +462,7 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
     config.headers = config.headers || {};
 
     return StormpathOAuthToken.getAuthorizationHeader().then(function(authHeader) {
-      // Only set it if it is both present and *no* Authorization header was set
-      if (!config.headers.hasOwnProperty('Authorization') && authHeader) {
+      if (authHeader) {
         config.headers.Authorization = authHeader;
       }
 
@@ -488,12 +502,9 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
     // retrying the request instead after refreshing the access token.
     // Gives up if a refresh fails.
     if (response.status === 401 && (error === 'invalid_token' || error === 'invalid_client')) {
-      var grantType = response.config && response.config.data
-                    ? response.config.data.grant_type
-                    : null;
+      var StormpathOAuth = $injector.get('StormpathOAuth');
 
-      if (!grantType || grantType !== 'refresh_token') {
-        var StormpathOAuth = $injector.get('StormpathOAuth');
+      if (!StormpathOAuth.attemptedRefresh) {
         return StormpathOAuth.refresh().then(function() {
           var $http = $injector.get('$http');
           return $http(response.config);

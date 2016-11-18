@@ -34,7 +34,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
    * "logging in" the user.
    */
   var authServiceProvider = {
-    $get: ['$spHttp','$user','$rootScope','$spFormEncoder','$q','$spErrorTransformer', '$isCurrentDomain', 'StormpathOAuth', function authServiceFactory($spHttp,$user,$rootScope,$spFormEncoder,$q, $spErrorTransformer, $isCurrentDomain, StormpathOAuth){
+    $get: ['$http','$user','$rootScope','$spFormEncoder','$q','$spErrorTransformer', '$isCurrentDomain', 'StormpathOAuth', function authServiceFactory($http,$user,$rootScope,$spFormEncoder,$q, $spErrorTransformer, $isCurrentDomain, StormpathOAuth){
 
       function AuthService(){
         return this;
@@ -138,7 +138,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
         var op;
 
         if ($isCurrentDomain(authEndpoint)) {
-          op = $spHttp($spFormEncoder.formPost({
+          op = $http($spFormEncoder.formPost({
             url: authEndpoint,
             method: 'POST',
             headers: headers,
@@ -150,7 +150,6 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
             username: data.login,
             password: data.password
           };
-
           op = StormpathOAuth.authenticate(remoteData, headers);
         }
 
@@ -202,7 +201,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
         var op;
 
         if ($isCurrentDomain(destroyEndpoint)) {
-          op = $spHttp.post(destroyEndpoint, null, {
+          op = $http.post(destroyEndpoint, null, {
             headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/x-www-form-urlencoded'
@@ -212,10 +211,10 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
           op = StormpathOAuth.revoke();
         }
 
-        op.then(function(){
+        op.finally(function(){
           endSessionEvent();
-        },function(response){
-          console.error('logout error',response);
+        }).catch(function(httpResponse){
+          $rootScope.$broadcast(STORMPATH_CONFIG.SESSION_END_ERROR_EVENT, httpResponse);
         });
 
         return op;

@@ -216,22 +216,6 @@ angular.module('stormpath.CONFIG',[])
     /**
     * @ngdoc property
     *
-    * @name FORM_CONTENT_TYPE
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `'application/x-www-form-urlencoded'`
-    *
-    * The content type that is used for form posts.
-    */
-    FORM_CONTENT_TYPE: 'application/x-www-form-urlencoded',
-
-
-    /**
-    * @ngdoc property
-    *
     * @name GET_USER_EVENT
     *
     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
@@ -318,6 +302,8 @@ angular.module('stormpath.CONFIG',[])
     * directive
     */
     SESSION_END_EVENT: '$sessionEnd',
+
+    SESSION_END_ERROR_EVENT: '$sessionEndError',
 
 
     /**
@@ -492,7 +478,7 @@ angular.module('stormpath.CONFIG',[])
     /**
     * @ngdoc property
     *
-    * @name OAUTH_DEFAULT_TOKEN_STORE_TYPE,
+    * @name OAUTH_DEFAULT_TOKEN_STORE_TYPE
     *
     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
     *

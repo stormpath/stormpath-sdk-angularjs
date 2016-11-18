@@ -265,7 +265,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   * offers methods for authenticating via the `password` grant type, refreshing
   * access tokens via refresh tokens, and revoking the current token.
   */
-  this.$get = function($spHttp, $spFormEncoder, StormpathOAuthToken) {
+  this.$get = function($http, $spFormEncoder, StormpathOAuthToken) {
     function StormpathOAuth() {}
 
     /**
@@ -295,7 +295,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         Accept: 'application/json'
       }, extraHeaders);
 
-      return $spHttp($spFormEncoder.formPost({
+      return $http($spFormEncoder.formPost({
         url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
         method: 'POST',
         headers: headers,
@@ -323,25 +323,19 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * the token from storage, using
     * {@link stormpath.oauth.StormpathOAuthToken#removeToken StormpathOAuthToken.removeToken}.
     */
-    StormpathOAuth.prototype.revoke = function revoke(requestData, extraHeaders) {
+    StormpathOAuth.prototype.revoke = function revoke() {
       return StormpathOAuthToken.getToken().then(function(token) {
-        var data = angular.extend({
+        var data = {
           token: token.refreshToken || token.accessToken,
           token_type_hint: token.refreshToken ? 'refresh_token' : 'access_token'
-        }, requestData);
+        };
 
-        var headers = angular.extend({
-          Accept: 'application/json'
-        }, extraHeaders);
-
-        return $spHttp($spFormEncoder.formPost({
+        return $http($spFormEncoder.formPost({
           url: STORMPATH_CONFIG.getUrl('OAUTH_REVOKE_ENDPOINT'),
           method: 'POST',
-          headers: headers,
           data: data
-        })).then(function(response) {
+        })).finally(function(response) {
           StormpathOAuthToken.removeToken();
-
           return response;
         });
       });
@@ -375,7 +369,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           Accept: 'application/json'
         }, extraHeaders);
 
-        return $spHttp($spFormEncoder.formPost({
+        return $http($spFormEncoder.formPost({
           url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
           method: 'POST',
           headers: headers,
@@ -391,7 +385,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     return new StormpathOAuth();
   };
 
-  this.$get.$inject = ['$spHttp', '$spFormEncoder', 'StormpathOAuthToken'];
+  this.$get.$inject = ['$http', '$spFormEncoder', 'StormpathOAuthToken'];
 }])
 /**
 * @ngdoc service
@@ -422,8 +416,31 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
   * different domain, do not already have an Authorization header, and only if
   * there is currently a token in the token store.
   */
+
+  /**
+   * TODO - make nice and available for developer extension of `testArray`
+   *
+   */
+  function isBlacklisted(url) {
+    url = url || '';
+    var matched = false;
+    var testArray = [
+      '/oauth/token$',
+      '/oauth/revoke$',
+      '/login$',
+      '/register$',
+    ];
+    testArray.forEach(function (expr){
+      if (matched) {
+        return;
+      }
+      matched = new RegExp(expr).test(url);
+    });
+    return matched;
+  }
+
   StormpathOAuthInterceptor.prototype.request = function request(config) {
-    if ($isCurrentDomain(config.url)) {
+    if ($isCurrentDomain(config.url) || isBlacklisted(config.url)) {
       return config;
     }
 
@@ -478,8 +495,8 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
       if (!grantType || grantType !== 'refresh_token') {
         var StormpathOAuth = $injector.get('StormpathOAuth');
         return StormpathOAuth.refresh().then(function() {
-          var $spHttp = $injector.get('$spHttp');
-          return $spHttp(response.config);
+          var $http = $injector.get('$http');
+          return $http(response.config);
         }).catch(function() {
           $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
           $q.reject(response);

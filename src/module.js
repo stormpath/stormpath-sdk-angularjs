@@ -192,17 +192,7 @@ angular.module('stormpath', [
   'stormpath.googleLogin',
   'stormpath.oauth'
 ])
-.factory('SpAuthInterceptor',[function(){
-  function SpAuthInterceptor(){
 
-  }
-  SpAuthInterceptor.prototype.request = function(config){
-    config.withCredentials=true;
-    return config;
-  };
-
-  return new SpAuthInterceptor();
-}])
 .factory('StormpathAgentInterceptor',['$isCurrentDomain', '$spHeaders', function($isCurrentDomain, $spHeaders){
   function StormpathAgentInterceptor(){
 
@@ -224,7 +214,6 @@ angular.module('stormpath', [
   return new StormpathAgentInterceptor();
 }])
 .config(['$httpProvider',function($httpProvider){
-  $httpProvider.interceptors.push('SpAuthInterceptor');
   $httpProvider.interceptors.push('StormpathAgentInterceptor');
 }])
 .provider('$stormpath', [function $stormpathProvider(){
@@ -848,6 +837,12 @@ angular.module('stormpath', [
   });
   $rootScope.$on(STORMPATH_CONFIG.SESSION_END_EVENT,function(){
     $rootScope.user = $user.currentUser;
+  });
+  $rootScope.$on(STORMPATH_CONFIG.SESSION_END_ERROR_EVENT,function(event, error){
+    console.error('Logout error', error);
+  });
+  $rootScope.$on(STORMPATH_CONFIG.UNAUTHENTICATED_EVENT,function(event, error){
+    console.error('UNAUTHENTICATED_EVENT');
   });
 }])
 

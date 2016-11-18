@@ -20,46 +20,6 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
   // The placeholders in the value are replaced by the `grunt dist` command.
   'X-Stormpath-Agent': '@@PACKAGE_NAME/@@PACKAGE_VERSION' + ' angularjs/' + angular.version.full
 })
-.factory('$adjustHeaders', ['STORMPATH_CONFIG', '$spHeaders', function(STORMPATH_CONFIG, $spHeaders) {
-  return function(url, headers) {
-    return STORMPATH_CONFIG.ENDPOINT_PREFIX
-         ? angular.extend({}, $spHeaders, headers)
-         : headers;
-  };
-}])
-.factory('$spHttp', ['$http', '$adjustHeaders', function($http, $adjustHeaders) {
-  function $spHttp(config) {
-    var spConfig = config || {};
-    spConfig.headers = $adjustHeaders(spConfig.url, spConfig.header || {});
-
-    return $http(spConfig);
-  }
-
-  //Offer the same interface as Angular itself for request decorators
-
-  // Requests with no payload
-  ['get', 'delete', 'head', 'jsonp'].forEach(function(method) {
-    $spHttp[method] = function(url, config) {
-      return $spHttp(angular.extend({}, config || {}, {
-        url: url,
-        method: method
-      }));
-    };
-  });
-
-  // Requests with payload
-  ['post', 'put', 'patch'].forEach(function(method) {
-    $spHttp[method] = function(url, data, config) {
-      return $spHttp(angular.extend({}, config || {}, {
-        url: url,
-        method: method,
-        data: data
-      }));
-    };
-  });
-
-  return $spHttp;
-}])
 .provider('$spErrorTransformer', [function $spErrorTransformer(){
   /**
    * This service is intentionally excluded from NG Docs.
@@ -104,8 +64,7 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
    */
 
   this.$get = [
-    'STORMPATH_CONFIG',
-    function formEncoderServiceFactory(STORMPATH_CONFIG){
+    function formEncoderServiceFactory(){
 
       function FormEncoderService(){
         var encoder = new UrlEncodedFormParser();
@@ -114,11 +73,9 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
       }
 
       FormEncoderService.prototype.formPost = function formPost(httpRequest){
-        if(STORMPATH_CONFIG.FORM_CONTENT_TYPE==='application/x-www-form-urlencoded'){
-          var h = httpRequest.headers ? httpRequest.headers : (httpRequest.headers = {});
-          h['Content-Type'] = STORMPATH_CONFIG.FORM_CONTENT_TYPE;
-          httpRequest.data = this.encodeUrlForm(httpRequest.data);
-        }
+        var h = httpRequest.headers ? httpRequest.headers : (httpRequest.headers = {});
+        h['Content-Type'] = 'application/x-www-form-urlencoded';
+        httpRequest.data = this.encodeUrlForm(httpRequest.data);
         return httpRequest;
       };
 

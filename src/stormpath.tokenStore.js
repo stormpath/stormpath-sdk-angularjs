@@ -8,7 +8,7 @@
 * @description
 *
 * This module provides a global access point for registering and fetching token
-* store mechanisms, as employed by the {@link stormpath.oauth} module.
+* store mechanisms, as used by the {@link stormpath.oauth} module.
 */
 
 /**
@@ -144,7 +144,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
         }, true);
 
         if (!isValid) {
-          throw new Error('Invalid token store. `get`, `put` and `remove` methods must be supported');
+          throw new Error('Invalid token store. `get`, `put` and `remove` methods must be implemented');
         }
 
         tokenStores[name] = tokenStore;
@@ -206,10 +206,10 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   };
 
   // Provides uniform rejection method for when localStorage is not supported
-  LocalStorageTokenStore.prototype._reject = function _reject() {
+  LocalStorageTokenStore.prototype._notImplementedError = function _notImplementedError() {
     return $q.reject({
       error: {
-        message: 'Local storage not supported'
+        message: 'Local storage not supported in this environment'
       }
     });
   };
@@ -229,7 +229,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   */
   LocalStorageTokenStore.prototype.put = function put(key, value) {
     if (!this.hasLocalStorage) {
-      return this._reject();
+      return this._notImplementedError();
     }
 
     var stringValue;
@@ -258,7 +258,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   */
   LocalStorageTokenStore.prototype.get = function get(key) {
     if (!this.hasLocalStorage) {
-      return this._reject();
+      return this._notImplementedError();
     }
 
     var value = localStorage.getItem(key);
@@ -271,7 +271,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
       }
     }
 
-    return $q.reject();
+    return $q.reject(new Error('Token not found'));
   };
 
   /**
@@ -288,7 +288,7 @@ angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
   */
   LocalStorageTokenStore.prototype.remove = function remove(key) {
     if (!this.hasLocalStorage) {
-      return this._reject();
+      return this._notImplementedError();
     }
 
     localStorage.removeItem(key);

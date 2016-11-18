@@ -405,6 +405,107 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
 }])
 /**
 * @ngdoc service
+*
+* @name stormpath.oauth.$spOAuthBlacklistProvider
+* @description
+*
+* Provides the {@link stormpath.oauth.$spOAuthBlacklist $spOAuthBlacklist}
+* service. Additionally, it can be used to add URLs to the default list of
+* blacklisted URLs (i.e. URLs that the SDK will not attach an Authorized
+* header when making requests to), via the
+* {@link stormpath.oauth.$spOAuthBlacklistProvider#addUrl $spOAuthBlacklistProvider.addUrl}
+* method.
+*
+* By default, the authentication (`/oauth/*`, `login` and `register`) endpoints are included
+* in the blacklist.
+*/
+.provider('$spOAuthBlacklist', [function() {
+
+  var blacklist = [
+    '/oauth/token$',
+    '/oauth/revoke$',
+    '/login$',
+    '/register$'
+  ];
+
+  /**
+  * @ngdoc method
+  *
+  * @name #addUrl
+  * @methodOf stormpath.oauth.$spOAuthBlacklistProvider
+  *
+  * @param {String} url
+  * A regex-like string (passed to the Regex constructor) used to test URLs
+  * to verify whether they are blacklisted.
+  *
+  * @description
+  *
+  * Adds an URL to the OAuth blacklist. The blacklist is a list of URLs for which
+  * the SDK will never append the Authorization header.
+  *
+  * @example
+  * <pre>
+  *  .config(['$spOAuthBlacklistProvider'], function ($spOAuthBlacklistProvider) {
+  *   $spOAuthBlacklistProvider.addUrl('/about/.*$');
+  * });
+  * </pre>
+  */
+  this.addUrl = function blacklistUrl(url) {
+    if (angular.isString(url)) {
+      blacklist.push(url);
+    }
+  };
+
+  /**
+  * @ngdoc service
+  *
+  * @name stormpath.oauth.$spOAuthBlacklist
+  * @description
+  *
+  * A utility service that is used internally to determine calls to which URLs
+  * should not have an `Authorized` header appended to by the SDK. For
+  * configuration, see
+  * {@link stormpath.oauth.$spOAuthBlacklistProvider $spOAuthBlacklistProvider}.
+  */
+  this.$get = function() {
+    return {
+
+      /**
+      * @ngdoc method
+      *
+      * @name #isBlacklisted
+      * @methodOf stormpath.oauth.$spOAuthBlacklist
+      *
+      * @param {String} url The URL for which to check whether it is blacklisted
+      * @return {Boolean} Does the string match a blacklisted URL
+      *
+      * @description
+      *
+      * Checks whether a given URL matches one of the expressions for blacklisted
+      * routes.
+      */
+      isBlacklisted: function isBlacklisted(url) {
+        url = url || '';
+        var matched = false;
+
+        blacklist.forEach(function(expr) {
+          if (matched) {
+            return;
+          }
+
+          matched = new RegExp(expr).test(url);
+        });
+
+        return matched;
+      }
+    };
+  };
+
+  this.$get.$inject = [];
+
+}])
+/**
+* @ngdoc service
 * @name stormpath.utils.StormpathOAuthInterceptor
 *
 * @description
@@ -413,8 +514,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
 * Adds property Authorization headers to outgoing requests to external domains
 * and handles specific OAuth-based response errors.
 */
-.factory('StormpathOAuthInterceptor', ['$isCurrentDomain', '$rootScope', '$q', '$injector', 'StormpathOAuthToken', 'STORMPATH_CONFIG',
-function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORMPATH_CONFIG) {
+.factory('StormpathOAuthInterceptor', ['$isCurrentDomain', '$spOAuthBlacklist', '$rootScope', '$q', '$injector', 'StormpathOAuthToken', 'STORMPATH_CONFIG',
+function($isCurrentDomain, $spOAuthBlacklist, $rootScope, $q, $injector, StormpathOAuthToken, STORMPATH_CONFIG) {
 
   function StormpathOAuthInterceptor() {}
 
@@ -433,30 +534,8 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
   * there is currently a token in the token store.
   */
 
-  /**
-   * TODO - make nice and available for developer extension of `testArray`
-   *
-   */
-  function isBlacklisted(url) {
-    url = url || '';
-    var matched = false;
-    var testArray = [
-      '/oauth/token$',
-      '/oauth/revoke$',
-      '/login$',
-      '/register$',
-    ];
-    testArray.forEach(function (expr){
-      if (matched) {
-        return;
-      }
-      matched = new RegExp(expr).test(url);
-    });
-    return matched;
-  }
-
   StormpathOAuthInterceptor.prototype.request = function request(config) {
-    if ($isCurrentDomain(config.url) || isBlacklisted(config.url)) {
+    if ($isCurrentDomain(config.url) || $spOAuthBlacklist.isBlacklisted(config.url)) {
       return config;
     }
 

@@ -2265,9 +2265,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}.
     */
     StormpathOAuthToken.prototype.getToken = function getToken() {
-      return this.tokenStore.get(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME).then(function(data) {
-        return data;
-      });
+      return this.tokenStore.get(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME);
     };
 
     /**
@@ -2417,9 +2415,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   * access tokens via refresh tokens, and revoking the current token.
   */
   this.$get = function($http, $spFormEncoder, StormpathOAuthToken) {
-    function StormpathOAuth() {
-      this.attemptedRefresh = false;
-    }
+    function StormpathOAuth() {}
 
     /**
     * @ngdoc method
@@ -2538,6 +2534,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           data: data
         })).then(function(response) {
           StormpathOAuthToken.setToken(response.data);
+          self.attemptedRefresh = false;
 
           return response;
         });

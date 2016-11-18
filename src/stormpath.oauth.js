@@ -387,6 +387,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           data: data
         })).then(function(response) {
           StormpathOAuthToken.setToken(response.data);
+          self.attemptedRefresh = false;
 
           return response;
         });

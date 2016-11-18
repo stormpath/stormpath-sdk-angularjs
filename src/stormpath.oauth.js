@@ -304,7 +304,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         headers: headers,
         data: data
       })).then(function(response) {
-        self.attemptedRefresh = false;
+        self.attemptingRefresh = false;
         StormpathOAuthToken.setToken(response.data);
 
         return response;
@@ -342,7 +342,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           data: data
         })).finally(function(response) {
           StormpathOAuthToken.removeToken();
-          self.attemptedRefresh = false;
+          self.attemptingRefresh = false;
           return response;
         });
       });
@@ -378,7 +378,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           Accept: 'application/json'
         }, extraHeaders);
 
-        self.attemptedRefresh = true;
+        self.attemptingRefresh = true;
 
         return $http($spFormEncoder.formPost({
           url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
@@ -387,7 +387,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           data: data
         })).then(function(response) {
           StormpathOAuthToken.setToken(response.data);
-          self.attemptedRefresh = false;
+          self.attemptingRefresh = false;
 
           return response;
         });
@@ -505,7 +505,7 @@ function($isCurrentDomain, $rootScope, $q, $injector, StormpathOAuthToken, STORM
     if (response.status === 401 && (error === 'invalid_token' || error === 'invalid_client')) {
       var StormpathOAuth = $injector.get('StormpathOAuth');
 
-      if (!StormpathOAuth.attemptedRefresh) {
+      if (!StormpathOAuth.attemptingRefresh) {
         return StormpathOAuth.refresh().then(function() {
           var $http = $injector.get('$http');
           return $http(response.config);

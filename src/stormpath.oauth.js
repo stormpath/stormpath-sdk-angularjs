@@ -268,7 +268,10 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   * access tokens via refresh tokens, and revoking the current token.
   */
   this.$get = function($http, $spFormEncoder, StormpathOAuthToken) {
-    function StormpathOAuth() {}
+    function StormpathOAuth() {
+      this.refreshPromise = null;
+      return this;
+    }
 
     /**
     * @ngdoc method
@@ -304,7 +307,6 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         headers: headers,
         data: data
       })).then(function(response) {
-        self.attemptingRefresh = false;
         StormpathOAuthToken.setToken(response.data);
 
         return response;
@@ -328,7 +330,6 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * {@link stormpath.oauth.StormpathOAuthToken#removeToken StormpathOAuthToken.removeToken}.
     */
     StormpathOAuth.prototype.revoke = function revoke() {
-      var self = this;
 
       return StormpathOAuthToken.getToken().then(function(token) {
         var data = {
@@ -342,7 +343,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           data: data
         })).finally(function(response) {
           StormpathOAuthToken.removeToken();
-          self.attemptingRefresh = false;
+
           return response;
         });
       });
@@ -366,9 +367,14 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * with the response data.
     */
     StormpathOAuth.prototype.refresh = function(requestData, extraHeaders) {
+
       var self = this;
 
-      return StormpathOAuthToken.getRefreshToken().then(function(refreshToken) {
+      if (self.refreshPromise) {
+        return self.refreshPromise;
+      }
+
+      return self.refreshPromise = StormpathOAuthToken.getRefreshToken().then(function(refreshToken) {
         var data = angular.extend({
           grant_type: 'refresh_token',
           refresh_token: refreshToken
@@ -378,8 +384,6 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           Accept: 'application/json'
         }, extraHeaders);
 
-        self.attemptingRefresh = true;
-
         return $http($spFormEncoder.formPost({
           url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
           method: 'POST',
@@ -387,9 +391,9 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           data: data
         })).then(function(response) {
           StormpathOAuthToken.setToken(response.data);
-          self.attemptingRefresh = false;
-
           return response;
+        }).finally(function (){
+          self.refreshPromise = null;
         });
       });
     };
@@ -569,7 +573,6 @@ function($isCurrentDomain, $spOAuthBlacklist, $rootScope, $q, $injector, Stormpa
   */
   StormpathOAuthInterceptor.prototype.responseError = function responseError(response) {
     var error = response.data ? response.data.error : null;
-
     // Ensures that the token is removed in case of invalid_grant or invalid_request
     // responses
     if (response.status === 400 && (error === 'invalid_grant' || error === 'invalid_request')) {
@@ -578,23 +581,16 @@ function($isCurrentDomain, $spOAuthBlacklist, $rootScope, $q, $injector, Stormpa
       $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
     }
 
-    // Does not remove the token so that it can be refreshed in the handler,
-    // retrying the request instead after refreshing the access token.
-    // Gives up if a refresh fails.
     if (response.status === 401 && (error === 'invalid_token' || error === 'invalid_client')) {
       var StormpathOAuth = $injector.get('StormpathOAuth');
 
-      if (!StormpathOAuth.attemptingRefresh) {
-        return StormpathOAuth.refresh().then(function() {
-          var $http = $injector.get('$http');
-          return $http(response.config);
-        }).catch(function() {
-          $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
-          $q.reject(response);
-        });
-      }
-
-      $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
+      return StormpathOAuth.refresh().then(function() {
+        var $http = $injector.get('$http');
+        return $http(response.config);
+      }).catch(function() {
+        $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
+        return $q.reject(response);
+      });
     }
 
     return $q.reject(response);

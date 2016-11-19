@@ -64,7 +64,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   * It uses the token store type set in the provider, unless overrided via
   * {@link stormpath.oauth.StormpathOAuthToken#setTokenStoreType StormpathOAuthToken.setTokenStoreType}.
   */
-  this.$get = function $get($q, $normalizeObjectKeys, TokenStoreManager) {
+  this.$get = function $get($q, $normalizeObjectKeys, TokenStoreManager, $injector) {
     function StormpathOAuthToken() {
       this.tokenStore = TokenStoreManager.getTokenStore(self._tokenStoreType);
     }
@@ -100,6 +100,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     */
     StormpathOAuthToken.prototype.setToken = function setToken(token) {
       var canonicalToken = $normalizeObjectKeys(token);
+      // Store a time at which we should renew the token, subtract off one second to give us some buffer of time
+      canonicalToken.exp = new Date(new Date().setMilliseconds(0)+((token.expires_in-1)*1000));
       return this.tokenStore.put(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME, canonicalToken);
     };
 
@@ -220,6 +222,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * promise is returned instead.
     */
     StormpathOAuthToken.prototype.getAuthorizationHeader = function getAuthorizationHeader() {
+      var self = this;
       return this.getToken()
       .then(function(token) {
         var tokenType = token && token.tokenType;
@@ -227,6 +230,13 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
 
         if (!tokenType || !accessToken) {
           return $q.reject();
+        }
+
+        if (new Date() >= new Date(token.exp)) {
+          var StormpathOAuth = $injector.get('StormpathOAuth');
+          return StormpathOAuth.refresh().then(function(){
+            return self.getAuthorizationHeader();
+          });
         }
 
         var tokenTypeName = tokenType.charAt(0).toUpperCase() + tokenType.substr(1);
@@ -238,7 +248,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     return new StormpathOAuthToken();
   };
 
-  this.$get.$inject = ['$q', '$normalizeObjectKeys', 'TokenStoreManager'];
+  this.$get.$inject = ['$q', '$normalizeObjectKeys', 'TokenStoreManager', '$injector'];
 }])
 
 /**
@@ -391,6 +401,9 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           data: data
         })).then(function(response) {
           StormpathOAuthToken.setToken(response.data);
+          return response;
+        }).catch(function(response){
+          StormpathOAuthToken.removeToken();
           return response;
         }).finally(function (){
           self.refreshPromise = null;
@@ -554,46 +567,6 @@ function($isCurrentDomain, $spOAuthBlacklist, $rootScope, $q, $injector, Stormpa
     }).catch(function() {
       return config;
     });
-  };
-
-  /**
-  * @ngdoc method
-  * @name stormpath.utils.StormpathOAuthInterceptor#responseError
-  * @methodOf stormpath.utils.StormpathOAuthInterceptor
-  *
-  * @param {Object} response $http response error object.
-  * @return {Promise} Promise containing either the error or the result of a retry after refreshing the OAuth token
-  *
-  * @description
-  *
-  * Handles basic OAuth errors. In case of a token expiration, it will try to
-  * refresh it. In case of invalid request or token format, it will remove the
-  * token instead. Finally, in all cases where a fallback process cannot be made
-  * successfully, an {@link OAUTH_REQUEST_ERROR} event is broadcast.
-  */
-  StormpathOAuthInterceptor.prototype.responseError = function responseError(response) {
-    var error = response.data ? response.data.error : null;
-    // Ensures that the token is removed in case of invalid_grant or invalid_request
-    // responses
-    if (response.status === 400 && (error === 'invalid_grant' || error === 'invalid_request')) {
-      StormpathOAuthToken.removeToken();
-
-      $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
-    }
-
-    if (response.status === 401 && (error === 'invalid_token' || error === 'invalid_client')) {
-      var StormpathOAuth = $injector.get('StormpathOAuth');
-
-      return StormpathOAuth.refresh().then(function() {
-        var $http = $injector.get('$http');
-        return $http(response.config);
-      }).catch(function() {
-        $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
-        return $q.reject(response);
-      });
-    }
-
-    return $q.reject(response);
   };
 
   return new StormpathOAuthInterceptor();

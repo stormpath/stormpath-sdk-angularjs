@@ -163,11 +163,11 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
          * </pre>
          */
 
-        return $http($spFormEncoder.formPost({
+        return $http({
           url: STORMPATH_CONFIG.getUrl('REGISTER_URI'),
           method: 'POST',
           data: accountData
-        }))
+        })
         .then(function(response){
           var account = response.data.account || response.data;
           registeredEvent(account);
@@ -383,11 +383,11 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        * ```
        */
       UserService.prototype.passwordResetRequest = function passwordResetRequest(data){
-        return $http($spFormEncoder.formPost({
+        return $http({
           method: 'POST',
           url: STORMPATH_CONFIG.getUrl('FORGOT_PASSWORD_ENDPOINT'),
           data: data
-        }))
+        })
         .catch(function(httpResponse){
           return $q.reject($spErrorTransformer.transformError(httpResponse));
         });
@@ -427,11 +427,11 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        */
       UserService.prototype.resetPassword = function resetPassword(token,data){
         data.sptoken = token;
-        return $http($spFormEncoder.formPost({
+        return $http({
           method: 'POST',
           url:STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT'),
           data: data
-        }))
+        })
         .catch(function(httpResponse){
           return $q.reject($spErrorTransformer.transformError(httpResponse));
         });

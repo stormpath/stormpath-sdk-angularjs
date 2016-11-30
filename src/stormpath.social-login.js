@@ -33,10 +33,6 @@
     var queryParams = this.$encodeQueryParams(requestParams);
 
     this.$window.location = this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI') + queryParams;
-
-    // return this.$http.get(
-    //   this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI') + queryParams
-    // );
   };
 
   angular.module('stormpath.socialLogin', ['stormpath.CONFIG', 'stormpath.utils'])
@@ -97,7 +93,6 @@
     return {
       link: function(scope, element, attrs) {
         var providerHref = attrs.spSocialLogin;
-        // var parentScope = scope.$parent;
         var blacklist = ['href', 'providerId', 'clientId'];
         var social = $injector.get(STORMPATH_CONFIG.SOCIAL_LOGIN_SERVICE_NAME);
 
@@ -114,20 +109,23 @@
           });
 
           social.authorize(providerHref, attrs.spName, cleanOptions);
-          // .then(function(data) {
-          //   console.log(data);
-          //   // return $auth.authenticate(data);
-          // }).catch(function(err) {
-          //   console.error(err);
-          //
-          //   if (err.message) {
-          //     parentScope.error = err.message;
-          //   } else {
-          //     parentScope.error = 'An error occured when communicating with server.';
-          //   }
-          // });
         });
       }
     };
+  }])
+
+  .run(['STORMPATH_CONFIG', '$parseUrl', '$window', '$injector', function(STORMPATH_CONFIG, $parseUrl, $window, $injector) {
+    var parsedUrl = $parseUrl($window.location.href);
+
+    // If this field is present, this means that we have been redirected here
+    // from a social login flow
+    if (parsedUrl.search.jwtResponse) {
+      var AuthService = $injector.get(STORMPATH_CONFIG.AUTH_SERVICE_NAME);
+      AuthService.authenticate({
+        grant_type: 'stormpath_social',
+        providerId: 'google',
+        accessToken: parsedUrl.search.jwtResponse
+      });
+    }
   }]);
 }());

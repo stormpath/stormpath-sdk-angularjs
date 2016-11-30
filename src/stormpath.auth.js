@@ -146,10 +146,14 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
             data: data
           }));
         } else {
-          var remoteData = {
-            username: data.login,
-            password: data.password
-          };
+          var remoteData = angular.extend({}, data);
+
+          // Handles different naming expected in local and client API login
+          if (remoteData.login) {
+            remoteData.username = remoteData.login;
+            delete remoteData.login;
+          }
+
           op = StormpathOAuth.authenticate(remoteData, headers);
         }
 

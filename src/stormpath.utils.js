@@ -208,8 +208,25 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
   };
 })
 
-.factory('$getLocalUrl', ['$location', function($location) {
-  function parseUrl(url) {
+.factory('$decodeQueryParams', function() {
+  return function decodeQueryParams(str) {
+    if (!angular.isString(str) || str.length === 0) {
+      return {};
+    }
+
+    var params = {};
+
+    str.substr(1).split('&').forEach(function(pair) {
+      var parts = pair.split('=');
+      params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
+    });
+
+    return params;
+  };
+})
+
+.factory('$parseUrl', ['$decodeQueryParams', function($decodeQueryParams) {
+  return function parseUrl(url) {
     var parser = document.createElement('a');
     parser.href = url;
 
@@ -219,14 +236,18 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
       host: parser.hostname,
       port: parser.port,
       pathname: parser.pathname,
-      search: parser.search
+      query: parser.search,
+      search: $decodeQueryParams(parser.search)
     };
-  }
+  };
+}])
+
+.factory('$getLocalUrl', ['$location', '$parseUrl', function($location, $parseUrl) {
 
   return function(uri) {
     if (uri && uri.charAt(0) !== '/') {
-      var parsedUri = parseUrl(uri);
-      uri = parsedUri.pathname + parsedUri.search + parsedUri.hash;
+      var parsedUri = $parseUrl(uri);
+      uri = parsedUri.pathname + parsedUri.query + parsedUri.hash;
     }
 
     return $location.protocol()

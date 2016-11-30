@@ -1357,10 +1357,14 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
             data: data
           }));
         } else {
-          var remoteData = {
-            username: data.login,
-            password: data.password
-          };
+          var remoteData = angular.extend({}, data);
+
+          // Handles different naming expected in local and client API login
+          if (remoteData.login) {
+            remoteData.username = remoteData.login;
+            delete remoteData.login;
+          }
+
           op = StormpathOAuth.authenticate(remoteData, headers);
         }
 
@@ -2088,7 +2092,6 @@ angular.module('stormpath')
   $scope.viewModel = null;
 
   $viewModel.getLoginModel().then(function (model) {
-    console.log('Model', model);
     var supportedProviders = ['facebook', 'google'];
 
     model.accountStores = model.accountStores.filter(function (accountStore) {
@@ -3115,10 +3118,6 @@ angular.module('stormpath')
     var queryParams = this.$encodeQueryParams(requestParams);
 
     this.$window.location = this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI') + queryParams;
-
-    // return this.$http.get(
-    //   this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI') + queryParams
-    // );
   };
 
   angular.module('stormpath.socialLogin', ['stormpath.CONFIG', 'stormpath.utils'])
@@ -3179,7 +3178,6 @@ angular.module('stormpath')
     return {
       link: function(scope, element, attrs) {
         var providerHref = attrs.spSocialLogin;
-        // var parentScope = scope.$parent;
         var blacklist = ['href', 'providerId', 'clientId'];
         var social = $injector.get(STORMPATH_CONFIG.SOCIAL_LOGIN_SERVICE_NAME);
 
@@ -3196,21 +3194,24 @@ angular.module('stormpath')
           });
 
           social.authorize(providerHref, attrs.spName, cleanOptions);
-          // .then(function(data) {
-          //   console.log(data);
-          //   // return $auth.authenticate(data);
-          // }).catch(function(err) {
-          //   console.error(err);
-          //
-          //   if (err.message) {
-          //     parentScope.error = err.message;
-          //   } else {
-          //     parentScope.error = 'An error occured when communicating with server.';
-          //   }
-          // });
         });
       }
     };
+  }])
+
+  .run(['STORMPATH_CONFIG', '$parseUrl', '$window', '$injector', function(STORMPATH_CONFIG, $parseUrl, $window, $injector) {
+    var parsedUrl = $parseUrl($window.location.href);
+
+    // If this field is present, this means that we have been redirected here
+    // from a social login flow
+    if (parsedUrl.search.jwtResponse) {
+      var AuthService = $injector.get(STORMPATH_CONFIG.AUTH_SERVICE_NAME);
+      AuthService.authenticate({
+        grant_type: 'stormpath_social',
+        providerId: 'google',
+        accessToken: parsedUrl.search.jwtResponse
+      });
+    }
   }]);
 }());
 
@@ -4286,8 +4287,25 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
   };
 })
 
-.factory('$getLocalUrl', ['$location', function($location) {
-  function parseUrl(url) {
+.factory('$decodeQueryParams', function() {
+  return function decodeQueryParams(str) {
+    if (!angular.isString(str) || str.length === 0) {
+      return {};
+    }
+
+    var params = {};
+
+    str.substr(1).split('&').forEach(function(pair) {
+      var parts = pair.split('=');
+      params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
+    });
+
+    return params;
+  };
+})
+
+.factory('$parseUrl', ['$decodeQueryParams', function($decodeQueryParams) {
+  return function parseUrl(url) {
     var parser = document.createElement('a');
     parser.href = url;
 
@@ -4297,14 +4315,18 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
       host: parser.hostname,
       port: parser.port,
       pathname: parser.pathname,
-      search: parser.search
+      query: parser.search,
+      search: $decodeQueryParams(parser.search)
     };
-  }
+  };
+}])
+
+.factory('$getLocalUrl', ['$location', '$parseUrl', function($location, $parseUrl) {
 
   return function(uri) {
     if (uri && uri.charAt(0) !== '/') {
-      var parsedUri = parseUrl(uri);
-      uri = parsedUri.pathname + parsedUri.search + parsedUri.hash;
+      var parsedUri = $parseUrl(uri);
+      uri = parsedUri.pathname + parsedUri.query + parsedUri.hash;
     }
 
     return $location.protocol()

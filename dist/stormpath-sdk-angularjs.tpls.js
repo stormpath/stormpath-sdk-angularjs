@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2016
  * 
- * @version v1.1.1-dev-2016-11-18
+ * @version v1.1.1-dev-2016-11-30
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -54,7 +54,7 @@ angular.module("spLoginForm.tpl.html", []).run(["$templateCache", function($temp
     "\n" +
     "  .sp-loading {\n" +
     "    text-align: center;\n" +
-    "  }</style><div class=row><div class=col-xs-12><div ng-show=!viewModel class=sp-loading>Loading...</div><form class=form-horizontal ng-hide=\"accepted || !viewModel\" ng-submit=submit()><div class=form-group ng-repeat=\"field in viewModel.form.fields\"><label for=sp-{{field.name}} class=\"col-xs-12 col-sm-4 control-label\">{{field.label}}</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control name={{field.name}} id=sp-{{field.name}} type={{field.type}} ng-model=formModel[field.name] placeholder={{field.placeholder}} ng-disabled=posting ng-required=field.required></div></div><div class=form-group><div class=\"col-sm-offset-4 col-sm-4\"><p class=text-danger ng-show=error ng-bind=error></p><button type=submit class=\"btn btn-primary\" ng-disabled=posting>Login</button> <a href=/forgot class=pull-right>Forgot Password</a></div></div><div class=form-group ng-show=viewModel.accountStores.length><div class=\"col-sm-offset-4 col-sm-4\"><p>Or login with:</p><button ng-repeat=\"accountStore in viewModel.accountStores\" type=button class=\"btn btn-social btn-{{accountStore.provider.providerId}}\" sp-social-login={{accountStore.provider.providerId}} sp-client-id={{accountStore.provider.clientId}} sp-scope={{accountStore.provider.scope}}>{{providerName}}</button></div></div></form></div></div>");
+    "  }</style><div class=row><div class=col-xs-12><div ng-show=!viewModel class=sp-loading>Loading...</div><form class=form-horizontal ng-hide=\"accepted || !viewModel\" ng-submit=submit()><div class=form-group ng-repeat=\"field in viewModel.form.fields\"><label for=sp-{{field.name}} class=\"col-xs-12 col-sm-4 control-label\">{{field.label}}</label><div class=\"col-xs-12 col-sm-4\"><input class=form-control name={{field.name}} id=sp-{{field.name}} type={{field.type}} ng-model=formModel[field.name] placeholder={{field.placeholder}} ng-disabled=posting ng-required=field.required></div></div><div class=form-group><div class=\"col-sm-offset-4 col-sm-4\"><p class=text-danger ng-show=error ng-bind=error></p><button type=submit class=\"btn btn-primary\" ng-disabled=posting>Login</button> <a href=/forgot class=pull-right>Forgot Password</a></div></div><div class=form-group ng-show=viewModel.accountStores.length><div class=\"col-sm-offset-4 col-sm-4\"><p>Or login with:</p><button ng-repeat=\"accountStore in viewModel.accountStores\" type=button class=\"btn btn-social btn-{{accountStore.provider.providerId}}\" sp-social-login={{accountStore.href}} sp-name={{accountStore.provider.providerId}} sp-options={{accountStore.provider}}>{{providerName}}</button></div></div></form></div></div>");
 }]);
 
 angular.module("spPasswordResetForm.tpl.html", []).run(["$templateCache", function($templateCache) {

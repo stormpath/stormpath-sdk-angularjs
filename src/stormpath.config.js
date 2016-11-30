@@ -91,6 +91,18 @@ angular.module('stormpath.CONFIG',[])
     */
     SOCIAL_LOGIN_SERVICE_NAME: '$socialLogin',
 
+    SOCIAL_LOGIN_RESPONSE_TYPE: 'stormpath_token',
+
+    SOCIAL_LOGIN_FIELDS: {
+      google: {},
+      facebook: {},
+      twitter: {},
+      linkedIn: {}
+    },
+
+    SOCIAL_LOGIN_REDIRECT_URI: '',
+
+    SOCIAL_LOGIN_AUTHORIZE_URI: '/authorize',
 
     /**
     * @ngdoc property
@@ -492,8 +504,14 @@ angular.module('stormpath.CONFIG',[])
     OAUTH_DEFAULT_TOKEN_STORE_TYPE: 'localStorage'
 
   };
+
   c.getUrl = function(key) {
     return this.ENDPOINT_PREFIX + this[key];
+  };
+
+  c.getSocialLoginConfiguration = function(key) {
+    var canonicalKey = key ? key.toLowerCase() : '';
+    return this.SOCIAL_LOGIN_FIELDS[canonicalKey] || {};
   };
   return c;
 })());

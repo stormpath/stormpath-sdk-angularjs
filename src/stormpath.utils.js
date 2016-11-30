@@ -192,4 +192,48 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
 
     return camelCasedObj;
   };
-});
+})
+
+.factory('$encodeQueryParams', function() {
+  return function encodeQueryParams(obj) {
+    if (!angular.isObject(obj)) {
+      return '';
+    }
+
+    var query = Object.keys(obj).map(function(key) {
+      return encodeURIComponent(key) + '=' + encodeURIComponent(obj[key]);
+    }).join('&');
+
+    return query ? ('?' + query) : query;
+  };
+})
+
+.factory('$getLocalUrl', ['$location', function($location) {
+  function parseUrl(url) {
+    var parser = document.createElement('a');
+    parser.href = url;
+
+    return {
+      protocol: parser.protocol,
+      hash: parser.hash,
+      host: parser.hostname,
+      port: parser.port,
+      pathname: parser.pathname,
+      search: parser.search
+    };
+  }
+
+  return function(uri) {
+    if (uri && uri.charAt(0) !== '/') {
+      var parsedUri = parseUrl(uri);
+      uri = parsedUri.pathname + parsedUri.search + parsedUri.hash;
+    }
+
+    return $location.protocol()
+      + '://'
+      + $location.host()
+      + ($location.port() ? (':' + $location.port()) : '')
+      + uri;
+
+  };
+}]);

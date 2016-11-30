@@ -188,8 +188,6 @@ angular.module('stormpath', [
   'stormpath.userService',
   'stormpath.viewModelService',
   'stormpath.socialLogin',
-  'stormpath.facebookLogin',
-  'stormpath.googleLogin',
   'stormpath.oauth'
 ])
 

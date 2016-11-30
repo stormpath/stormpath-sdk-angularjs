@@ -6,6 +6,7 @@ angular.module('stormpath')
   $scope.viewModel = null;
 
   $viewModel.getLoginModel().then(function (model) {
+    console.log('Model', model);
     var supportedProviders = ['facebook', 'google'];
 
     model.accountStores = model.accountStores.filter(function (accountStore) {

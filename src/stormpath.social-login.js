@@ -12,15 +12,34 @@
    *
    * Currently, this provider does not have any configuration methods.
    */
-  function SocialLoginService(STORMPATH_CONFIG, $injector, $http, $q) {
+  function SocialLoginService(STORMPATH_CONFIG, $encodeQueryParams, $getLocalUrl, $http, $window, $q) {
     this.providersPromise = null;
     this.STORMPATH_CONFIG = STORMPATH_CONFIG;
-    this.$injector = $injector;
+    this.$encodeQueryParams = $encodeQueryParams;
+    this.$getLocalUrl = $getLocalUrl;
     this.$http = $http;
+    this.$window = $window;
     this.$q = $q;
   }
 
-  angular.module('stormpath.socialLogin', ['stormpath.CONFIG'])
+  SocialLoginService.prototype.authorize = function(accountStoreHref, providerName, options) {
+    var requestParams = angular.extend({
+      response_type: this.STORMPATH_CONFIG.SOCIAL_LOGIN_RESPONSE_TYPE,
+      account_store_href: accountStoreHref,
+      redirect_uri: this.$getLocalUrl(this.STORMPATH_CONFIG.SOCIAL_LOGIN_REDIRECT_URI)
+    }, options
+    , this.STORMPATH_CONFIG.getSocialLoginConfiguration(providerName));
+
+    var queryParams = this.$encodeQueryParams(requestParams);
+
+    this.$window.location = this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI') + queryParams;
+
+    // return this.$http.get(
+    //   this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI') + queryParams
+    // );
+  };
+
+  angular.module('stormpath.socialLogin', ['stormpath.CONFIG', 'stormpath.utils'])
 
   /**
    * @ngdoc object
@@ -43,44 +62,11 @@
      *
      * The social login service provides methods for letting users logging in with Facebook, Google, etc.
      */
-    var socialLoginFactory = ['$http', '$q', '$injector', function socialLoginFactory($http, $q, $injector) {
-      return new SocialLoginService(STORMPATH_CONFIG, $injector, $http, $q);
+    var socialLoginFactory = ['$encodeQueryParams', '$http', '$window', '$q', '$getLocalUrl', function socialLoginFactory($encodeQueryParams, $http, $window, $q, $getLocalUrl) {
+      return new SocialLoginService(STORMPATH_CONFIG, $encodeQueryParams, $getLocalUrl, $http, $window, $q);
     }];
 
     $injector.get('$provide').factory(STORMPATH_CONFIG.SOCIAL_LOGIN_SERVICE_NAME, socialLoginFactory);
-  }])
-
-  /**
-   * @ngdoc object
-   *
-   * @name stormpath.socialLoginService.$spJsLoader
-   *
-   * @description
-   *
-   * The `$spJsLoader` provides a method for loading scripts during runtime.
-   * Used by the social provider services to load their SDKs.
-   */
-  .factory('$spJsLoader', ['$q', function($q) {
-    return {
-      load: function load(id, src, innerHTML) {
-        var deferred = $q.defer();
-        var firstJsElement = document.getElementsByTagName('script')[0];
-        var jsElement = document.createElement('script');
-
-        if (document.getElementById(id)) {
-          deferred.resolve();
-        } else {
-          jsElement.id = id;
-          jsElement.src = src;
-          jsElement.innerHTML = innerHTML;
-          jsElement.onload = deferred.resolve;
-
-          firstJsElement.parentNode.insertBefore(jsElement, firstJsElement);
-        }
-
-        return deferred.promise;
-      }
-    };
   }])
 
   /**
@@ -96,7 +82,7 @@
    * **Note:** If you are using Google+ Sign-In for server-side apps, Google recommends that you
    * leave the Authorized redirect URI field blank in the Google Developer Console. In Stormpath,
    * when creating the Google Directory, you must set the redirect URI to `postmessage`.
-   * 
+   *
    * {@link http://docs.stormpath.com/guides/social-integrations/}
    *
    * @example
@@ -107,39 +93,39 @@
    * </div>
    * </pre>
    */
-  .directive('spSocialLogin', ['$viewModel', '$auth', '$injector', function($viewModel, $auth, $injector) {
+  .directive('spSocialLogin', ['$viewModel', '$auth', '$http', '$injector', 'STORMPATH_CONFIG', function($viewModel, $auth, $http, $injector, STORMPATH_CONFIG) {
     return {
       link: function(scope, element, attrs) {
-        var providerService;
-        var parentScope = scope.$parent;
+        var providerHref = attrs.spSocialLogin;
+        // var parentScope = scope.$parent;
+        var blacklist = ['href', 'providerId', 'clientId'];
+        var social = $injector.get(STORMPATH_CONFIG.SOCIAL_LOGIN_SERVICE_NAME);
 
-        try {
-          providerService = $injector.get('$' + attrs.spSocialLogin + 'Login');
-        } catch (err) {
-          return;
-        }
-
-        providerService.clientId = attrs.spClientId;
-        providerService.init(element);
-
-        scope.providerName = providerService.name;
+        scope.providerName = attrs.spName;
 
         element.bind('click', function() {
-          var options = { scope: attrs.spScope }; // `scope` is OAuth scope, not Angular scope
+          var options = scope.$eval(attrs.spOptions);
+          var cleanOptions = {};
 
-          parentScope.posting = true;
-
-          providerService.login(options).then(function(data) {
-            return $auth.authenticate(data);
-          }).catch(function(err) {
-            parentScope.posting = false;
-
-            if (err.message) {
-              parentScope.error = err.message;
-            } else {
-              parentScope.error = 'An error occured when communicating with server.';
+          angular.forEach(options, function(value, key) {
+            if (value && !blacklist.includes(key)) {
+              cleanOptions[key] = value;
             }
           });
+
+          social.authorize(providerHref, attrs.spName, cleanOptions);
+          // .then(function(data) {
+          //   console.log(data);
+          //   // return $auth.authenticate(data);
+          // }).catch(function(err) {
+          //   console.error(err);
+          //
+          //   if (err.message) {
+          //     parentScope.error = err.message;
+          //   } else {
+          //     parentScope.error = 'An error occured when communicating with server.';
+          //   }
+          // });
         });
       }
     };

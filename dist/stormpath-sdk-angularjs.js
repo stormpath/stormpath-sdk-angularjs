@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2016
  * 
- * @version v1.1.1-dev-2016-11-18
+ * @version v1.1.1-dev-2016-11-30
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -203,8 +203,6 @@ angular.module('stormpath', [
   'stormpath.userService',
   'stormpath.viewModelService',
   'stormpath.socialLogin',
-  'stormpath.facebookLogin',
-  'stormpath.googleLogin',
   'stormpath.oauth'
 ])
 
@@ -1565,6 +1563,18 @@ angular.module('stormpath.CONFIG',[])
     */
     SOCIAL_LOGIN_SERVICE_NAME: '$socialLogin',
 
+    SOCIAL_LOGIN_RESPONSE_TYPE: 'stormpath_token',
+
+    SOCIAL_LOGIN_FIELDS: {
+      google: {},
+      facebook: {},
+      twitter: {},
+      linkedIn: {}
+    },
+
+    SOCIAL_LOGIN_REDIRECT_URI: '',
+
+    SOCIAL_LOGIN_AUTHORIZE_URI: '/authorize',
 
     /**
     * @ngdoc property
@@ -1966,8 +1976,14 @@ angular.module('stormpath.CONFIG',[])
     OAUTH_DEFAULT_TOKEN_STORE_TYPE: 'localStorage'
 
   };
+
   c.getUrl = function(key) {
     return this.ENDPOINT_PREFIX + this[key];
+  };
+
+  c.getSocialLoginConfiguration = function(key) {
+    var canonicalKey = key ? key.toLowerCase() : '';
+    return this.SOCIAL_LOGIN_FIELDS[canonicalKey] || {};
   };
   return c;
 })());
@@ -2072,6 +2088,7 @@ angular.module('stormpath')
   $scope.viewModel = null;
 
   $viewModel.getLoginModel().then(function (model) {
+    console.log('Model', model);
     var supportedProviders = ['facebook', 'google'];
 
     model.accountStores = model.accountStores.filter(function (accountStore) {
@@ -2211,7 +2228,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   * It uses the token store type set in the provider, unless overrided via
   * {@link stormpath.oauth.StormpathOAuthToken#setTokenStoreType StormpathOAuthToken.setTokenStoreType}.
   */
-  this.$get = function $get($q, $normalizeObjectKeys, TokenStoreManager) {
+  this.$get = function $get($q, $normalizeObjectKeys, TokenStoreManager, $injector) {
     function StormpathOAuthToken() {
       this.tokenStore = TokenStoreManager.getTokenStore(self._tokenStoreType);
     }
@@ -2247,6 +2264,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     */
     StormpathOAuthToken.prototype.setToken = function setToken(token) {
       var canonicalToken = $normalizeObjectKeys(token);
+      // Store a time at which we should renew the token, subtract off one second to give us some buffer of time
+      canonicalToken.exp = new Date(new Date().setMilliseconds(0)+((token.expires_in-1)*1000));
       return this.tokenStore.put(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME, canonicalToken);
     };
 
@@ -2367,6 +2386,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * promise is returned instead.
     */
     StormpathOAuthToken.prototype.getAuthorizationHeader = function getAuthorizationHeader() {
+      var self = this;
       return this.getToken()
       .then(function(token) {
         var tokenType = token && token.tokenType;
@@ -2374,6 +2394,13 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
 
         if (!tokenType || !accessToken) {
           return $q.reject();
+        }
+
+        if (new Date() >= new Date(token.exp)) {
+          var StormpathOAuth = $injector.get('StormpathOAuth');
+          return StormpathOAuth.refresh().then(function(){
+            return self.getAuthorizationHeader();
+          });
         }
 
         var tokenTypeName = tokenType.charAt(0).toUpperCase() + tokenType.substr(1);
@@ -2385,7 +2412,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     return new StormpathOAuthToken();
   };
 
-  this.$get.$inject = ['$q', '$normalizeObjectKeys', 'TokenStoreManager'];
+  this.$get.$inject = ['$q', '$normalizeObjectKeys', 'TokenStoreManager', '$injector'];
 }])
 
 /**
@@ -2415,7 +2442,10 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   * access tokens via refresh tokens, and revoking the current token.
   */
   this.$get = function($http, $spFormEncoder, StormpathOAuthToken) {
-    function StormpathOAuth() {}
+    function StormpathOAuth() {
+      this.refreshPromise = null;
+      return this;
+    }
 
     /**
     * @ngdoc method
@@ -2451,7 +2481,6 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         headers: headers,
         data: data
       })).then(function(response) {
-        self.attemptingRefresh = false;
         StormpathOAuthToken.setToken(response.data);
 
         return response;
@@ -2475,7 +2504,6 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * {@link stormpath.oauth.StormpathOAuthToken#removeToken StormpathOAuthToken.removeToken}.
     */
     StormpathOAuth.prototype.revoke = function revoke() {
-      var self = this;
 
       return StormpathOAuthToken.getToken().then(function(token) {
         var data = {
@@ -2489,7 +2517,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           data: data
         })).finally(function(response) {
           StormpathOAuthToken.removeToken();
-          self.attemptingRefresh = false;
+
           return response;
         });
       });
@@ -2513,9 +2541,14 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * with the response data.
     */
     StormpathOAuth.prototype.refresh = function(requestData, extraHeaders) {
+
       var self = this;
 
-      return StormpathOAuthToken.getRefreshToken().then(function(refreshToken) {
+      if (self.refreshPromise) {
+        return self.refreshPromise;
+      }
+
+      return self.refreshPromise = StormpathOAuthToken.getRefreshToken().then(function(refreshToken) {
         var data = angular.extend({
           grant_type: 'refresh_token',
           refresh_token: refreshToken
@@ -2525,8 +2558,6 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           Accept: 'application/json'
         }, extraHeaders);
 
-        self.attemptingRefresh = true;
-
         return $http($spFormEncoder.formPost({
           url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
           method: 'POST',
@@ -2534,9 +2565,12 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           data: data
         })).then(function(response) {
           StormpathOAuthToken.setToken(response.data);
-          self.attemptingRefresh = false;
-
           return response;
+        }).catch(function(response){
+          StormpathOAuthToken.removeToken();
+          return response;
+        }).finally(function (){
+          self.refreshPromise = null;
         });
       });
     };
@@ -2697,54 +2731,6 @@ function($isCurrentDomain, $spOAuthBlacklist, $rootScope, $q, $injector, Stormpa
     }).catch(function() {
       return config;
     });
-  };
-
-  /**
-  * @ngdoc method
-  * @name stormpath.utils.StormpathOAuthInterceptor#responseError
-  * @methodOf stormpath.utils.StormpathOAuthInterceptor
-  *
-  * @param {Object} response $http response error object.
-  * @return {Promise} Promise containing either the error or the result of a retry after refreshing the OAuth token
-  *
-  * @description
-  *
-  * Handles basic OAuth errors. In case of a token expiration, it will try to
-  * refresh it. In case of invalid request or token format, it will remove the
-  * token instead. Finally, in all cases where a fallback process cannot be made
-  * successfully, an {@link OAUTH_REQUEST_ERROR} event is broadcast.
-  */
-  StormpathOAuthInterceptor.prototype.responseError = function responseError(response) {
-    var error = response.data ? response.data.error : null;
-
-    // Ensures that the token is removed in case of invalid_grant or invalid_request
-    // responses
-    if (response.status === 400 && (error === 'invalid_grant' || error === 'invalid_request')) {
-      StormpathOAuthToken.removeToken();
-
-      $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
-    }
-
-    // Does not remove the token so that it can be refreshed in the handler,
-    // retrying the request instead after refreshing the access token.
-    // Gives up if a refresh fails.
-    if (response.status === 401 && (error === 'invalid_token' || error === 'invalid_client')) {
-      var StormpathOAuth = $injector.get('StormpathOAuth');
-
-      if (!StormpathOAuth.attemptingRefresh) {
-        return StormpathOAuth.refresh().then(function() {
-          var $http = $injector.get('$http');
-          return $http(response.config);
-        }).catch(function() {
-          $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
-          $q.reject(response);
-        });
-      }
-
-      $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
-    }
-
-    return $q.reject(response);
   };
 
   return new StormpathOAuthInterceptor();
@@ -3097,133 +3083,6 @@ angular.module('stormpath')
 (function() {
   'use strict';
 
-  function loginCallback(deferred, response) {
-    var data;
-
-    switch (response.status) {
-      case 'connected':
-        deferred.resolve({
-          providerData: {
-            providerId: 'facebook',
-            accessToken: response.authResponse.accessToken
-          }
-        });
-        break;
-
-      case 'not_authorized':
-        deferred.reject(new Error('Please log into this app'));
-        break;
-
-      default:
-        deferred.reject(new Error('Please log into Facebook.'));
-    }
-  }
-
-  function FacebookLoginService($q, $spJsLoader) {
-    this.name = 'Facebook';
-    this.clientId = null;
-    this.$q = $q;
-    this.$spJsLoader = $spJsLoader;
-  }
-
-  FacebookLoginService.prototype.init = function init() {
-    var clientId = this.clientId;
-
-    window.fbAsyncInit = function() {
-      FB.init({
-        appId: clientId,
-        status: true,
-        cookie: true,
-        xfbml: true,
-        version: 'v2.4'
-      });
-    };
-
-    if (window.FB) {
-      window.fbAsyncInit();
-    } else {
-      this.$spJsLoader.load('facebook-jssdk', '//connect.facebook.net/en_US/sdk.js');
-    }
-  };
-
-  FacebookLoginService.prototype.login = function login(options) {
-    var deferred = this.$q.defer();
-
-    FB.login(loginCallback.bind(null, deferred), options);
-
-    return deferred.promise;
-  };
-
-  angular.module('stormpath.facebookLogin', [])
-  .provider('$facebookLogin', function() {
-    this.$get = ['$q', '$spJsLoader', function facebookLoginFactory($q, $spJsLoader) {
-      return new FacebookLoginService($q, $spJsLoader);
-    }];
-  });
-}());
-
-(function() {
-  'use strict';
-
-  function GoogleLoginService($q, $spJsLoader) {
-    this.name = 'Google';
-    this.clientId = null;
-    this.googleAuth = null;
-    this.$q = $q;
-    this.$spJsLoader = $spJsLoader;
-  }
-
-  GoogleLoginService.prototype.setGoogleAuth = function setGoogleAuth(auth) {
-    this.googleAuth = auth;
-  };
-
-  GoogleLoginService.prototype.init = function init(element) {
-    var clientId = this.clientId;
-    var setGoogleAuth = this.setGoogleAuth.bind(this);
-
-    this.$spJsLoader.load('google-jssdk', '//apis.google.com/js/api:client.js').then(function() {
-      gapi.load('auth2', function() {
-        var auth2 = gapi.auth2.init({
-          client_id: clientId,
-          cookiepolicy: 'single_host_origin'
-        });
-
-        setGoogleAuth(auth2);
-      });
-    });
-  };
-
-  GoogleLoginService.prototype.login = function login(options) {
-    var deferred = this.$q.defer();
-
-    options = options || {};
-    options.redirect_uri = 'postmessage';
-
-    this.googleAuth.grantOfflineAccess(options).then(function(response) {
-      deferred.resolve({
-        providerData: {
-          providerId: 'google',
-          code: response.code
-        }
-      });
-    }, function(err) {
-      deferred.reject(err);
-    });
-
-    return deferred.promise;
-  };
-
-  angular.module('stormpath.googleLogin', [])
-  .provider('$googleLogin', function() {
-    this.$get = ['$q', '$spJsLoader', function googleLoginFactory($q, $spJsLoader) {
-      return new GoogleLoginService($q, $spJsLoader);
-    }];
-  });
-}());
-
-(function() {
-  'use strict';
-
   /**
    * @ngdoc overview
    *
@@ -3235,15 +3094,34 @@ angular.module('stormpath')
    *
    * Currently, this provider does not have any configuration methods.
    */
-  function SocialLoginService(STORMPATH_CONFIG, $injector, $http, $q) {
+  function SocialLoginService(STORMPATH_CONFIG, $encodeQueryParams, $getLocalUrl, $http, $window, $q) {
     this.providersPromise = null;
     this.STORMPATH_CONFIG = STORMPATH_CONFIG;
-    this.$injector = $injector;
+    this.$encodeQueryParams = $encodeQueryParams;
+    this.$getLocalUrl = $getLocalUrl;
     this.$http = $http;
+    this.$window = $window;
     this.$q = $q;
   }
 
-  angular.module('stormpath.socialLogin', ['stormpath.CONFIG'])
+  SocialLoginService.prototype.authorize = function(accountStoreHref, providerName, options) {
+    var requestParams = angular.extend({
+      response_type: this.STORMPATH_CONFIG.SOCIAL_LOGIN_RESPONSE_TYPE,
+      account_store_href: accountStoreHref,
+      redirect_uri: this.$getLocalUrl(this.STORMPATH_CONFIG.SOCIAL_LOGIN_REDIRECT_URI)
+    }, options
+    , this.STORMPATH_CONFIG.getSocialLoginConfiguration(providerName));
+
+    var queryParams = this.$encodeQueryParams(requestParams);
+
+    this.$window.location = this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI') + queryParams;
+
+    // return this.$http.get(
+    //   this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI') + queryParams
+    // );
+  };
+
+  angular.module('stormpath.socialLogin', ['stormpath.CONFIG', 'stormpath.utils'])
 
   /**
    * @ngdoc object
@@ -3266,44 +3144,11 @@ angular.module('stormpath')
      *
      * The social login service provides methods for letting users logging in with Facebook, Google, etc.
      */
-    var socialLoginFactory = ['$http', '$q', '$injector', function socialLoginFactory($http, $q, $injector) {
-      return new SocialLoginService(STORMPATH_CONFIG, $injector, $http, $q);
+    var socialLoginFactory = ['$encodeQueryParams', '$http', '$window', '$q', '$getLocalUrl', function socialLoginFactory($encodeQueryParams, $http, $window, $q, $getLocalUrl) {
+      return new SocialLoginService(STORMPATH_CONFIG, $encodeQueryParams, $getLocalUrl, $http, $window, $q);
     }];
 
     $injector.get('$provide').factory(STORMPATH_CONFIG.SOCIAL_LOGIN_SERVICE_NAME, socialLoginFactory);
-  }])
-
-  /**
-   * @ngdoc object
-   *
-   * @name stormpath.socialLoginService.$spJsLoader
-   *
-   * @description
-   *
-   * The `$spJsLoader` provides a method for loading scripts during runtime.
-   * Used by the social provider services to load their SDKs.
-   */
-  .factory('$spJsLoader', ['$q', function($q) {
-    return {
-      load: function load(id, src, innerHTML) {
-        var deferred = $q.defer();
-        var firstJsElement = document.getElementsByTagName('script')[0];
-        var jsElement = document.createElement('script');
-
-        if (document.getElementById(id)) {
-          deferred.resolve();
-        } else {
-          jsElement.id = id;
-          jsElement.src = src;
-          jsElement.innerHTML = innerHTML;
-          jsElement.onload = deferred.resolve;
-
-          firstJsElement.parentNode.insertBefore(jsElement, firstJsElement);
-        }
-
-        return deferred.promise;
-      }
-    };
   }])
 
   /**
@@ -3319,7 +3164,7 @@ angular.module('stormpath')
    * **Note:** If you are using Google+ Sign-In for server-side apps, Google recommends that you
    * leave the Authorized redirect URI field blank in the Google Developer Console. In Stormpath,
    * when creating the Google Directory, you must set the redirect URI to `postmessage`.
-   * 
+   *
    * {@link http://docs.stormpath.com/guides/social-integrations/}
    *
    * @example
@@ -3330,96 +3175,43 @@ angular.module('stormpath')
    * </div>
    * </pre>
    */
-  .directive('spSocialLogin', ['$viewModel', '$auth', '$injector', function($viewModel, $auth, $injector) {
+  .directive('spSocialLogin', ['$viewModel', '$auth', '$http', '$injector', 'STORMPATH_CONFIG', function($viewModel, $auth, $http, $injector, STORMPATH_CONFIG) {
     return {
       link: function(scope, element, attrs) {
-        var providerService;
-        var parentScope = scope.$parent;
+        var providerHref = attrs.spSocialLogin;
+        // var parentScope = scope.$parent;
+        var blacklist = ['href', 'providerId', 'clientId'];
+        var social = $injector.get(STORMPATH_CONFIG.SOCIAL_LOGIN_SERVICE_NAME);
 
-        try {
-          providerService = $injector.get('$' + attrs.spSocialLogin + 'Login');
-        } catch (err) {
-          return;
-        }
-
-        providerService.clientId = attrs.spClientId;
-        providerService.init(element);
-
-        scope.providerName = providerService.name;
+        scope.providerName = attrs.spName;
 
         element.bind('click', function() {
-          var options = { scope: attrs.spScope }; // `scope` is OAuth scope, not Angular scope
+          var options = scope.$eval(attrs.spOptions);
+          var cleanOptions = {};
 
-          parentScope.posting = true;
-
-          providerService.login(options).then(function(data) {
-            return $auth.authenticate(data);
-          }).catch(function(err) {
-            parentScope.posting = false;
-
-            if (err.message) {
-              parentScope.error = err.message;
-            } else {
-              parentScope.error = 'An error occured when communicating with server.';
+          angular.forEach(options, function(value, key) {
+            if (value && !blacklist.includes(key)) {
+              cleanOptions[key] = value;
             }
           });
+
+          social.authorize(providerHref, attrs.spName, cleanOptions);
+          // .then(function(data) {
+          //   console.log(data);
+          //   // return $auth.authenticate(data);
+          // }).catch(function(err) {
+          //   console.error(err);
+          //
+          //   if (err.message) {
+          //     parentScope.error = err.message;
+          //   } else {
+          //     parentScope.error = 'An error occured when communicating with server.';
+          //   }
+          // });
         });
       }
     };
   }]);
-}());
-
-// We've disabled support for social login with LinkedIn until we've
-// solved how to manage the differences between other OAuth providers.
-// https://developer-programs.linkedin.com/documents/exchange-jsapi-tokens-rest-api-oauth-tokens
-
-(function() {
-  'use strict';
-
-  // Returns a string in LinkedIn's format for initializing the SDK
-  // https://developer.linkedin.com/docs/signin-with-linkedin
-  function buildLinkedInSDKConfig(clientId) {
-    return 'api_key: ' + clientId + '\n' + 'authorize: true';
-  }
-
-  function loadLinkedInSDK($spJsLoader, clientId) {
-    var innerHTML = buildLinkedInSDKConfig(clientId);
-
-    $spJsLoader.load('linkedin-jssdk', '//platform.linkedin.com/in.js', innerHTML);
-  }
-
-  function LinkedInLoginService($q, $spJsLoader) {
-    this.name = 'LinkedIn';
-    this.clientId = null;
-    this.$q = $q;
-    this.$spJsLoader = $spJsLoader;
-  }
-
-  LinkedInLoginService.prototype.init = function init(element) {
-    loadLinkedInSDK(this.$spJsLoader, this.clientId);
-  };
-
-  LinkedInLoginService.prototype.login = function login(options) {
-    var deferred = this.$q.defer();
-
-    IN.User.authorize(function() {
-      deferred.resolve({
-        providerData: {
-          providerId: 'linkedin',
-          accessToken: IN.ENV.auth.oauth_token
-        }
-      });
-    });
-
-    return deferred.promise;
-  };
-
-  angular.module('stormpath.linkedinLogin', [])
-  .provider('$linkedinLogin', function() {
-    this.$get = ['$q', '$spJsLoader', function linkedInLoginFactory($q, $spJsLoader) {
-      return new LinkedInLoginService($q, $spJsLoader);
-    }];
-  });
 }());
 
 'use strict';
@@ -3893,11 +3685,11 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
          * </pre>
          */
 
-        return $http($spFormEncoder.formPost({
+        return $http({
           url: STORMPATH_CONFIG.getUrl('REGISTER_URI'),
           method: 'POST',
           data: accountData
-        }))
+        })
         .then(function(response){
           var account = response.data.account || response.data;
           registeredEvent(account);
@@ -4113,11 +3905,11 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        * ```
        */
       UserService.prototype.passwordResetRequest = function passwordResetRequest(data){
-        return $http($spFormEncoder.formPost({
+        return $http({
           method: 'POST',
           url: STORMPATH_CONFIG.getUrl('FORGOT_PASSWORD_ENDPOINT'),
           data: data
-        }))
+        })
         .catch(function(httpResponse){
           return $q.reject($spErrorTransformer.transformError(httpResponse));
         });
@@ -4157,11 +3949,11 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        */
       UserService.prototype.resetPassword = function resetPassword(token,data){
         data.sptoken = token;
-        return $http($spFormEncoder.formPost({
+        return $http({
           method: 'POST',
           url:STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT'),
           data: data
-        }))
+        })
         .catch(function(httpResponse){
           return $q.reject($spErrorTransformer.transformError(httpResponse));
         });
@@ -4478,7 +4270,51 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
 
     return camelCasedObj;
   };
-});
+})
+
+.factory('$encodeQueryParams', function() {
+  return function encodeQueryParams(obj) {
+    if (!angular.isObject(obj)) {
+      return '';
+    }
+
+    var query = Object.keys(obj).map(function(key) {
+      return encodeURIComponent(key) + '=' + encodeURIComponent(obj[key]);
+    }).join('&');
+
+    return query ? ('?' + query) : query;
+  };
+})
+
+.factory('$getLocalUrl', ['$location', function($location) {
+  function parseUrl(url) {
+    var parser = document.createElement('a');
+    parser.href = url;
+
+    return {
+      protocol: parser.protocol,
+      hash: parser.hash,
+      host: parser.hostname,
+      port: parser.port,
+      pathname: parser.pathname,
+      search: parser.search
+    };
+  }
+
+  return function(uri) {
+    if (uri && uri.charAt(0) !== '/') {
+      var parsedUri = parseUrl(uri);
+      uri = parsedUri.pathname + parsedUri.search + parsedUri.hash;
+    }
+
+    return $location.protocol()
+      + '://'
+      + $location.host()
+      + ($location.port() ? (':' + $location.port()) : '')
+      + uri;
+
+  };
+}]);
 
 (function () {
   'use strict';

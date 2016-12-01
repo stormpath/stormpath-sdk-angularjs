@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2016
  * 
- * @version v1.1.1-dev-2016-11-30
+ * @version v1.1.1-dev-2016-12-01
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -3207,9 +3207,10 @@ angular.module('stormpath')
     if (parsedUrl.search.jwtResponse) {
       var AuthService = $injector.get(STORMPATH_CONFIG.AUTH_SERVICE_NAME);
       AuthService.authenticate({
-        grant_type: 'stormpath_social',
-        providerId: 'google',
-        accessToken: parsedUrl.search.jwtResponse
+        grant_type: 'stormpath_token',
+        token: parsedUrl.search.jwtResponse
+      }).then(function() {
+        $window.location.search = ''; // Clears the URL of the token
       });
     }
   }]);

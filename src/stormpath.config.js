@@ -489,7 +489,9 @@ angular.module('stormpath.CONFIG',[])
     * The default type of local storage used by
     * {@link stormpath.oauth.StormpathOAuthTokenProvider}.
     */
-    OAUTH_DEFAULT_TOKEN_STORE_TYPE: 'localStorage'
+    OAUTH_DEFAULT_TOKEN_STORE_TYPE: 'localStorage',
+
+    FACTOR_ENDPOINT: '/factor'
 
   };
   c.getUrl = function(key) {

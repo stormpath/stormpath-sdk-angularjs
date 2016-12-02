@@ -113,12 +113,14 @@ angular.module('stormpath.CONFIG',[])
     * set in the Stormpath admin console.
     *
     * The settings are mapped by providerId of a directory (e.g. `google`, `facebook`).
+    *
+    * Additional providers may be added to the object, but must all be in lowercase.
     */
     SOCIAL_LOGIN_OPTIONS: {
       google: {},
       facebook: {},
       twitter: {},
-      linkedIn: {}
+      linkedin: {}
     },
 
     /**

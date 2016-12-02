@@ -1,34 +1,62 @@
 (function() {
   'use strict';
 
-  /**
-   * @ngdoc overview
-   *
-   * @name  stormpath.socialLoginService
-   *
-   * @description
-   *
-   * This module provides the {@link stormpath.socialLoginService.$socialLogin $socialLogin} service.
-   *
-   * Currently, this provider does not have any configuration methods.
-   */
-  function SocialLoginService(STORMPATH_CONFIG, $encodeQueryParams, $getLocalUrl, $http, $window, $q) {
+/**
+ * @ngdoc overview
+ *
+ * @name  stormpath.socialLoginService
+ *
+ * @description
+ *
+ * This module provides the {@link stormpath.socialLoginService.$socialLogin $socialLogin} service.
+ *
+ * Currently, this provider does not have any configuration methods.
+ */
+
+ /**
+  * @ngdoc object
+  *
+  * @name stormpath.socialLoginService.$socialLogin
+  *
+  * @description
+  *
+  * The social login service provides a generic authorization interface through
+  * the Stormpath social login interface.
+  */
+  function SocialLoginService(STORMPATH_CONFIG, $encodeQueryParams, $getLocalUrl, $http, $window) {
     this.providersPromise = null;
     this.STORMPATH_CONFIG = STORMPATH_CONFIG;
     this.$encodeQueryParams = $encodeQueryParams;
     this.$getLocalUrl = $getLocalUrl;
     this.$http = $http;
     this.$window = $window;
-    this.$q = $q;
   }
 
-  SocialLoginService.prototype.authorize = function(accountStoreHref, providerName, options) {
+  /**
+  * @ngdoc method
+  *
+  * @name authorize
+  * @methodOf stormpath.socialLoginService.$socialLogin
+  * @description
+  *
+  * Authorizes the user using a social authentication provider. This method starts
+  * the redirect flow that attempts to authenticate the user, and, if successful,
+  * ends in the redirect uri configured via {@link STORMPATH_CONFIG.SOCIAL_LOGIN_REDIRECT_URI}.
+  *
+  * @param {String} accountStoreHref
+  * The HREF of the account store (directory) that is set up to provide the social
+  * authentication service.
+  *
+  * @param {Object} options
+  * Additional options (query parameters) to send with the authentication request.
+  *
+  */
+  SocialLoginService.prototype.authorize = function(accountStoreHref, options) {
     var requestParams = angular.extend({
       response_type: this.STORMPATH_CONFIG.SOCIAL_LOGIN_RESPONSE_TYPE,
       account_store_href: accountStoreHref,
       redirect_uri: this.$getLocalUrl(this.STORMPATH_CONFIG.SOCIAL_LOGIN_REDIRECT_URI)
-    }, options
-    , this.STORMPATH_CONFIG.getSocialLoginConfiguration(providerName));
+    }, options);
 
     var queryParams = this.$encodeQueryParams(requestParams);
     var socialAuthUri = this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI')
@@ -51,17 +79,8 @@
    * Currently, this provider does not have any configuration methods.
    */
   .config(['$injector', 'STORMPATH_CONFIG', function $socialLoginProvider($injector, STORMPATH_CONFIG) {
-    /**
-     * @ngdoc object
-     *
-     * @name stormpath.socialLoginService.$socialLogin
-     *
-     * @description
-     *
-     * The social login service provides methods for letting users logging in with Facebook, Google, etc.
-     */
-    var socialLoginFactory = ['$encodeQueryParams', '$http', '$window', '$q', '$getLocalUrl', function socialLoginFactory($encodeQueryParams, $http, $window, $q, $getLocalUrl) {
-      return new SocialLoginService(STORMPATH_CONFIG, $encodeQueryParams, $getLocalUrl, $http, $window, $q);
+    var socialLoginFactory = ['$encodeQueryParams', '$http', '$window', '$getLocalUrl', function socialLoginFactory($encodeQueryParams, $http, $window, $getLocalUrl) {
+      return new SocialLoginService(STORMPATH_CONFIG, $encodeQueryParams, $getLocalUrl, $http, $window);
     }];
 
     $injector.get('$provide').factory(STORMPATH_CONFIG.SOCIAL_LOGIN_SERVICE_NAME, socialLoginFactory);
@@ -75,11 +94,14 @@
    * @description
    *
    * Add this directive to a button or link in order to authenticate using a social provider.
-   * The value should be a social provider ID such as `google` or `facebook`.
+   * The value should be the account store HREF a social provider, such as Google or Facebook.
    *
-   * **Note:** If you are using Google+ Sign-In for server-side apps, Google recommends that you
-   * leave the Authorized redirect URI field blank in the Google Developer Console. In Stormpath,
-   * when creating the Google Directory, you must set the redirect URI to `postmessage`.
+   * The `sp-name` field must be set to the provider ID of the corresponding provider, e.g.
+   * `google` or `facebook`.
+   *
+   * Any additional fields can be specified as an object, via the `sp-options` field. These
+   * options will additionally be augmented (and overriden) by the options set for the given
+   * provider (determined by value of `sp-name`) in {@link STORMPATH_CONFIG.SOCIAL_LOGIN_OPTIONS}.
    *
    * {@link http://docs.stormpath.com/guides/social-integrations/}
    *
@@ -87,7 +109,7 @@
    *
    * <pre>
    * <div class="container">
-   *   <button sp-social-login="facebook" sp-client-id="oauth client id" sp-scope="public_profile,email">Login with Facebook</button>
+   *   <button sp-social-login="http://url.example/facebook-href" sp-name="facebook" sp-options="{scope: 'email'}">Login with Facebook</button>
    * </div>
    * </pre>
    */
@@ -105,17 +127,39 @@
           var cleanOptions = {};
 
           angular.forEach(options, function(value, key) {
-            if (value && !blacklist.includes(key)) {
+            if (value && blacklist.indexOf(key) !== -1) {
               cleanOptions[key] = value;
             }
           });
 
-          social.authorize(providerHref, attrs.spName, cleanOptions);
+          cleanOptions = angular.extend(
+            cleanOptions,
+            this.STORMPATH_CONFIG.getSocialLoginConfiguration(scope.providerName)
+          );
+
+          social.authorize(providerHref, cleanOptions);
         });
       }
     };
   }])
 
+  /**
+  * @private
+  *
+  * @ngdoc service
+  * @name stormpath.socialLogin.$processSocialAuthToken
+  * @description
+  *
+  * Executes the flow for processing social authentication tokens returned from
+  * the social login authentication redirect flow. If the token is present, it
+  * is used to authenticate the user using the `stormpath_token` grant type.
+  *
+  * Appropriate authentication success or failure events are broadcast when the
+  * authentication concludes.
+  *
+  * If the token is not present in the URL query parameters, the function returns
+  * a resolved promise immediatelly.
+  */
   .factory('$processSocialAuthToken', ['STORMPATH_CONFIG', '$parseUrl', '$window', '$injector', '$q', '$rootScope',
     function(STORMPATH_CONFIG, $parseUrl, $window, $injector, $q, $rootScope) {
       return function processSocialAuthToken() {

@@ -91,9 +91,18 @@ angular.module('stormpath.CONFIG',[])
     */
     SOCIAL_LOGIN_SERVICE_NAME: '$socialLogin',
 
+    /**
+    * @ngdoc property
+    *
+    * @name SOCIAL_LOGIN_RESPONSE_TYPE
+    *
+    * The response type requested from the Stormpath Social Login v2 API.
+    * Determines the type of token that will be returned for OAuth authentication
+    * against the Stormpath OAuth API, when making social login attempts.
+    */
     SOCIAL_LOGIN_RESPONSE_TYPE: 'stormpath_token',
 
-    SOCIAL_LOGIN_FIELDS: {
+    SOCIAL_LOGIN_OPTIONS: {
       google: {},
       facebook: {},
       twitter: {},
@@ -511,7 +520,7 @@ angular.module('stormpath.CONFIG',[])
 
   c.getSocialLoginConfiguration = function(key) {
     var canonicalKey = key ? key.toLowerCase() : '';
-    return this.SOCIAL_LOGIN_FIELDS[canonicalKey] || {};
+    return this.SOCIAL_LOGIN_OPTIONS[canonicalKey] || {};
   };
   return c;
 })());

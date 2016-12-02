@@ -233,31 +233,33 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils', '
         var op = $q.defer();
         var self = this;
 
-        return $processSocialAuthToken().then(function() {
-          if(self.cachedUserOp){
-            return self.cachedUserOp.promise;
-          }
-          else if(self.currentUser !== null && self.currentUser!==false && bypassCache!==true){
-            op.resolve(self.currentUser);
-            return op.promise;
-          }else{
-            self.cachedUserOp = op;
+        if (self.cachedUserOp) {
+          return self.cachedUserOp.promise;
+        }
 
-            $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI')).then(function(response){
-              self.cachedUserOp = null;
-              self.currentUser = new User(response.data.account || response.data);
-              currentUserEvent(self.currentUser);
-              op.resolve(self.currentUser);
-            },function(response){
-              self.currentUser = false;
-              if(response.status===401){
-                notLoggedInEvent();
-              }
-              self.cachedUserOp = null;
-              op.reject(response);
-            });
-            return op.promise;
-          }
+        if (self.currentUser !== null && self.currentUser!==false && bypassCache!==true) {
+          op.resolve(self.currentUser);
+          return op.promise;
+        }
+
+        self.cachedUserOp = op;
+        var beforeLoad = self.currentUser ? $q.resolve() : $processSocialAuthToken();
+
+        return beforeLoad.then(function() {
+          $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI')).then(function(response) {
+            self.cachedUserOp = null;
+            self.currentUser = new User(response.data.account || response.data);
+            currentUserEvent(self.currentUser);
+            op.resolve(self.currentUser);
+          }, function(response) {
+            self.currentUser = false;
+            if (response.status===401) {
+              notLoggedInEvent();
+            }
+            self.cachedUserOp = null;
+            op.reject(response);
+          });
+          return op.promise;
         });
       };
 

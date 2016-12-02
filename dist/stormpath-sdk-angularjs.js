@@ -3116,8 +3116,10 @@ angular.module('stormpath')
     , this.STORMPATH_CONFIG.getSocialLoginConfiguration(providerName));
 
     var queryParams = this.$encodeQueryParams(requestParams);
+    var socialAuthUri = this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI')
+                      + queryParams;
 
-    this.$window.location = this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI') + queryParams;
+    this.$window.location = socialAuthUri;
   };
 
   angular.module('stormpath.socialLogin', ['stormpath.CONFIG', 'stormpath.utils'])
@@ -3199,8 +3201,8 @@ angular.module('stormpath')
     };
   }])
 
-  .factory('$processSocialAuthToken', ['STORMPATH_CONFIG', '$parseUrl', '$window', '$injector', '$q',
-    function(STORMPATH_CONFIG, $parseUrl, $window, $injector, $q) {
+  .factory('$processSocialAuthToken', ['STORMPATH_CONFIG', '$parseUrl', '$window', '$injector', '$q', '$rootScope',
+    function(STORMPATH_CONFIG, $parseUrl, $window, $injector, $q, $rootScope) {
       return function processSocialAuthToken() {
         var parsedUrl = $parseUrl($window.location.href);
 
@@ -3212,7 +3214,13 @@ angular.module('stormpath')
             grant_type: 'stormpath_token',
             token: parsedUrl.search.jwtResponse
           }).then(function() {
-            $window.location.search = ''; // Clears the URL of the token
+            // Clears the URL of the token in both hashbang and HTML5 mode
+            $window.location.search = '';
+
+            $rootScope.$broadcast(STORMPATH_CONFIG.AUTHENTICATION_SUCCESS_EVENT_NAME)
+          }).catch(function(err) {
+            $rootScope.$broadcast(STORMPATH_CONFIG.AUTHENTICATION_FAILURE_EVENT_NAME);
+            throw err;
           });
         }
 
@@ -3762,31 +3770,33 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils', '
         var op = $q.defer();
         var self = this;
 
-        return $processSocialAuthToken().then(function() {
-          if(self.cachedUserOp){
-            return self.cachedUserOp.promise;
-          }
-          else if(self.currentUser !== null && self.currentUser!==false && bypassCache!==true){
-            op.resolve(self.currentUser);
-            return op.promise;
-          }else{
-            self.cachedUserOp = op;
+        if (self.cachedUserOp) {
+          return self.cachedUserOp.promise;
+        }
 
-            $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI')).then(function(response){
-              self.cachedUserOp = null;
-              self.currentUser = new User(response.data.account || response.data);
-              currentUserEvent(self.currentUser);
-              op.resolve(self.currentUser);
-            },function(response){
-              self.currentUser = false;
-              if(response.status===401){
-                notLoggedInEvent();
-              }
-              self.cachedUserOp = null;
-              op.reject(response);
-            });
-            return op.promise;
-          }
+        if (self.currentUser !== null && self.currentUser!==false && bypassCache!==true) {
+          op.resolve(self.currentUser);
+          return op.promise;
+        }
+
+        self.cachedUserOp = op;
+        var beforeLoad = self.currentUser ? $q.resolve() : $processSocialAuthToken();
+
+        return beforeLoad.then(function() {
+          $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI')).then(function(response) {
+            self.cachedUserOp = null;
+            self.currentUser = new User(response.data.account || response.data);
+            currentUserEvent(self.currentUser);
+            op.resolve(self.currentUser);
+          }, function(response) {
+            self.currentUser = false;
+            if (response.status===401) {
+              notLoggedInEvent();
+            }
+            self.cachedUserOp = null;
+            op.reject(response);
+          });
+          return op.promise;
         });
       };
 
@@ -4075,7 +4085,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils', '
         $rootScope.$broadcast(STORMPATH_CONFIG.NOT_LOGGED_IN_EVENT);
       }
 
-      var userService =  new UserService();
+      var userService = new UserService();
       $rootScope.$on(STORMPATH_CONFIG.SESSION_END_EVENT,function(){
         userService.currentUser = false;
       });

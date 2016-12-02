@@ -31,8 +31,10 @@
     , this.STORMPATH_CONFIG.getSocialLoginConfiguration(providerName));
 
     var queryParams = this.$encodeQueryParams(requestParams);
+    var socialAuthUri = this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI')
+                      + queryParams;
 
-    this.$window.location = this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI') + queryParams;
+    this.$window.location = socialAuthUri;
   };
 
   angular.module('stormpath.socialLogin', ['stormpath.CONFIG', 'stormpath.utils'])
@@ -114,8 +116,8 @@
     };
   }])
 
-  .factory('$processSocialAuthToken', ['STORMPATH_CONFIG', '$parseUrl', '$window', '$injector', '$q',
-    function(STORMPATH_CONFIG, $parseUrl, $window, $injector, $q) {
+  .factory('$processSocialAuthToken', ['STORMPATH_CONFIG', '$parseUrl', '$window', '$injector', '$q', '$rootScope',
+    function(STORMPATH_CONFIG, $parseUrl, $window, $injector, $q, $rootScope) {
       return function processSocialAuthToken() {
         var parsedUrl = $parseUrl($window.location.href);
 
@@ -127,7 +129,13 @@
             grant_type: 'stormpath_token',
             token: parsedUrl.search.jwtResponse
           }).then(function() {
-            $window.location.search = ''; // Clears the URL of the token
+            // Clears the URL of the token in both hashbang and HTML5 mode
+            $window.location.search = '';
+
+            $rootScope.$broadcast(STORMPATH_CONFIG.AUTHENTICATION_SUCCESS_EVENT_NAME)
+          }).catch(function(err) {
+            $rootScope.$broadcast(STORMPATH_CONFIG.AUTHENTICATION_FAILURE_EVENT_NAME);
+            throw err;
           });
         }
 

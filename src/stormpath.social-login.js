@@ -59,7 +59,7 @@
     }, options);
 
     var queryParams = this.$encodeQueryParams(requestParams);
-    var socialAuthUri = this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_URI')
+    var socialAuthUri = this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_ENDPOINT')
                       + queryParams;
 
     this.$window.location = socialAuthUri;

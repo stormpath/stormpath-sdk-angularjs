@@ -102,6 +102,18 @@ angular.module('stormpath.CONFIG',[])
     */
     SOCIAL_LOGIN_RESPONSE_TYPE: 'stormpath_token',
 
+    /**
+    * @ngdoc property
+    *
+    * @name SOCIAL_LOGIN_OPTIONS
+    *
+    * Options that are set for a given social authentication provider when
+    * making a social authentication request. These are appended to the request
+    * as query parameters, and will override any default options, or options
+    * set in the Stormpath admin console.
+    *
+    * The settings are mapped by providerId of a directory (e.g. `google`, `facebook`).
+    */
     SOCIAL_LOGIN_OPTIONS: {
       google: {},
       facebook: {},
@@ -109,9 +121,25 @@ angular.module('stormpath.CONFIG',[])
       linkedIn: {}
     },
 
+    /**
+    * @ngdoc property
+    *
+    * @name SOCIAL_LOGIN_REDIRECT_URI
+    *
+    * The URI that the social login flow will redirect to after a login attempt.
+    * This URI is relative to the base application URI.
+    */
     SOCIAL_LOGIN_REDIRECT_URI: '',
 
-    SOCIAL_LOGIN_AUTHORIZE_URI: '/authorize',
+    /**
+    * @ngdoc property
+    *
+    * @name SOCIAL_LOGIN_AUTHORIZE_URI
+    *
+    * The relative URI of the endpoint used for social auth.
+    * Should <b>not</b> be changed if Client API is used.
+    */
+    SOCIAL_LOGIN_AUTHORIZE_ENDPOINT: '/authorize',
 
     /**
     * @ngdoc property

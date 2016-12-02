@@ -114,19 +114,24 @@
     };
   }])
 
-  .run(['STORMPATH_CONFIG', '$parseUrl', '$window', '$injector', function(STORMPATH_CONFIG, $parseUrl, $window, $injector) {
-    var parsedUrl = $parseUrl($window.location.href);
+  .factory('$processSocialAuthToken', ['STORMPATH_CONFIG', '$parseUrl', '$window', '$injector', '$q',
+    function(STORMPATH_CONFIG, $parseUrl, $window, $injector, $q) {
+      return function processSocialAuthToken() {
+        var parsedUrl = $parseUrl($window.location.href);
 
-    // If this field is present, this means that we have been redirected here
-    // from a social login flow
-    if (parsedUrl.search.jwtResponse) {
-      var AuthService = $injector.get(STORMPATH_CONFIG.AUTH_SERVICE_NAME);
-      AuthService.authenticate({
-        grant_type: 'stormpath_token',
-        token: parsedUrl.search.jwtResponse
-      }).then(function() {
-        $window.location.search = ''; // Clears the URL of the token
-      });
-    }
-  }]);
+        // If this field is present, this means that we have been redirected here
+        // from a social login flow
+        if (parsedUrl.search.jwtResponse) {
+          var AuthService = $injector.get(STORMPATH_CONFIG.AUTH_SERVICE_NAME);
+          return AuthService.authenticate({
+            grant_type: 'stormpath_token',
+            token: parsedUrl.search.jwtResponse
+          }).then(function() {
+            $window.location.search = ''; // Clears the URL of the token
+          });
+        }
+
+        return $q.resolve();
+      };
+    }]);
 }());

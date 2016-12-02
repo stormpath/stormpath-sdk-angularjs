@@ -21,7 +21,7 @@
  * Currently, this provider does not have any configuration methods.
  */
 
-angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
+angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils', 'stormpath.socialLogin'])
 .provider('$user', [function $userProvider(){
 
   /**
@@ -74,8 +74,8 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
   };
 
   this.$get = [
-    '$q','$http','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer',
-    function userServiceFactory($q,$http,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer){
+    '$q','$http','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer', '$processSocialAuthToken',
+    function userServiceFactory($q,$http,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer, $processSocialAuthToken){
       function UserService(){
         this.cachedUserOp = null;
 
@@ -233,31 +233,32 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
         var op = $q.defer();
         var self = this;
 
-        if(self.cachedUserOp){
-          return self.cachedUserOp.promise;
-        }
-        else if(self.currentUser !== null && self.currentUser!==false && bypassCache!==true){
-          op.resolve(self.currentUser);
-          return op.promise;
-        }else{
-          self.cachedUserOp = op;
-
-          $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI')).then(function(response){
-            self.cachedUserOp = null;
-            self.currentUser = new User(response.data.account || response.data);
-            currentUserEvent(self.currentUser);
+        return $processSocialAuthToken().then(function() {
+          if(self.cachedUserOp){
+            return self.cachedUserOp.promise;
+          }
+          else if(self.currentUser !== null && self.currentUser!==false && bypassCache!==true){
             op.resolve(self.currentUser);
-          },function(response){
-            self.currentUser = false;
-            if(response.status===401){
-              notLoggedInEvent();
-            }
-            self.cachedUserOp = null;
-            op.reject(response);
-          });
-          return op.promise;
-        }
+            return op.promise;
+          }else{
+            self.cachedUserOp = op;
 
+            $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI')).then(function(response){
+              self.cachedUserOp = null;
+              self.currentUser = new User(response.data.account || response.data);
+              currentUserEvent(self.currentUser);
+              op.resolve(self.currentUser);
+            },function(response){
+              self.currentUser = false;
+              if(response.status===401){
+                notLoggedInEvent();
+              }
+              self.cachedUserOp = null;
+              op.reject(response);
+            });
+            return op.promise;
+          }
+        });
       };
 
       /**
@@ -545,7 +546,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
         $rootScope.$broadcast(STORMPATH_CONFIG.NOT_LOGGED_IN_EVENT);
       }
 
-      var userService =  new UserService();
+      var userService = new UserService();
       $rootScope.$on(STORMPATH_CONFIG.SESSION_END_EVENT,function(){
         userService.currentUser = false;
       });

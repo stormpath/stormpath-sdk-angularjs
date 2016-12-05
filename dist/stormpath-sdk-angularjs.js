@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2016
  * 
- * @version v1.1.1-dev-2016-11-18
+ * @version v1.1.1-dev-2016-10-28
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -198,17 +198,31 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
  */
 angular.module('stormpath', [
   'stormpath.CONFIG',
-  'stormpath.utils',
   'stormpath.auth',
   'stormpath.userService',
   'stormpath.viewModelService',
   'stormpath.socialLogin',
   'stormpath.facebookLogin',
-  'stormpath.googleLogin',
-  'stormpath.oauth'
+  'stormpath.googleLogin'
 ])
+.factory('SpAuthInterceptor',[function(){
+  function SpAuthInterceptor(){
 
-.factory('StormpathAgentInterceptor',['$isCurrentDomain', '$spHeaders', function($isCurrentDomain, $spHeaders){
+  }
+  SpAuthInterceptor.prototype.request = function(config){
+    config.withCredentials=true;
+    return config;
+  };
+
+  return new SpAuthInterceptor();
+}])
+.factory('StormpathAgentInterceptor',['$window',function($window){
+  function getLocation (href) {
+    var l = $window.document.createElement('a');
+    l.href = href;
+    return l;
+  }
+
   function StormpathAgentInterceptor(){
 
   }
@@ -220,8 +234,11 @@ angular.module('stormpath', [
    * @return {Object} config $http config object.
    */
   StormpathAgentInterceptor.prototype.request = function(config){
-    if ($isCurrentDomain(config.url)){
-      config.headers = angular.extend(config.headers, $spHeaders);
+    var a = getLocation(config.url);
+    var b = $window.location;
+    if (a.host === b.host){
+      // The placeholders in the value are replaced by the `grunt dist` command.
+      config.headers['X-Stormpath-Agent'] = 'stormpath-sdk-angularjs/1.1.1' + ' angularjs/' + angular.version.full;
     }
     return config;
   };
@@ -229,6 +246,7 @@ angular.module('stormpath', [
   return new StormpathAgentInterceptor();
 }])
 .config(['$httpProvider',function($httpProvider){
+  $httpProvider.interceptors.push('SpAuthInterceptor');
   $httpProvider.interceptors.push('StormpathAgentInterceptor');
 }])
 .provider('$stormpath', [function $stormpathProvider(){
@@ -853,12 +871,6 @@ angular.module('stormpath', [
   $rootScope.$on(STORMPATH_CONFIG.SESSION_END_EVENT,function(){
     $rootScope.user = $user.currentUser;
   });
-  $rootScope.$on(STORMPATH_CONFIG.SESSION_END_ERROR_EVENT,function(event, error){
-    console.error('Logout error', error);
-  });
-  $rootScope.$on(STORMPATH_CONFIG.UNAUTHENTICATED_EVENT,function(event, error){
-    console.error('UNAUTHENTICATED_EVENT');
-  });
 }])
 
 /**
@@ -1234,7 +1246,7 @@ angular.module('stormpath', [
  *
  * Currently, this provider does not have any configuration methods.
  */
-angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpath.utils'])
+angular.module('stormpath.auth',['stormpath.CONFIG'])
 .config(['$injector','STORMPATH_CONFIG',function $authProvider($injector,STORMPATH_CONFIG){
   /**
    * @ngdoc object
@@ -1247,7 +1259,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
    * "logging in" the user.
    */
   var authServiceProvider = {
-    $get: ['$http','$user','$rootScope','$spFormEncoder','$q','$spErrorTransformer', '$isCurrentDomain', 'StormpathOAuth', function authServiceFactory($http,$user,$rootScope,$spFormEncoder,$q, $spErrorTransformer, $isCurrentDomain, StormpathOAuth){
+    $get: ['$http','$user','$rootScope','$spFormEncoder','$q','$spErrorTransformer', function authServiceFactory($http,$user,$rootScope,$spFormEncoder,$q, $spErrorTransformer){
 
       function AuthService(){
         return this;
@@ -1337,36 +1349,21 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
             authenticatedEvent(httpResponse);
           });
         }
-
         function error(httpResponse){
           authenticationFailureEvent(httpResponse);
           return $q.reject($spErrorTransformer.transformError(httpResponse));
         }
-
-        var headers = {
-          Accept: 'application/json'
-        };
-
-        var authEndpoint = STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT');
-        var op;
-
-        if ($isCurrentDomain(authEndpoint)) {
-          op = $http($spFormEncoder.formPost({
-            url: authEndpoint,
+        return $http($spFormEncoder.formPost({
+            url: STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'),
             method: 'POST',
-            headers: headers,
+            headers: {
+              'Accept': 'application/json'
+            },
             withCredentials: true,
             data: data
-          }));
-        } else {
-          var remoteData = {
-            username: data.login,
-            password: data.password
-          };
-          op = StormpathOAuth.authenticate(remoteData, headers);
-        }
+          })
+        ).then(success, error);
 
-        return op.then(success, error);
       };
 
       /**
@@ -1410,24 +1407,17 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
        * event will be emitted after a successful logout.
        */
       AuthService.prototype.endSession = function endSession(){
-        var destroyEndpoint = STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT');
-        var op;
-
-        if ($isCurrentDomain(destroyEndpoint)) {
-          op = $http.post(destroyEndpoint, null, {
+        var op = $http.post(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'), null, {
             headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/x-www-form-urlencoded'
+                'Accept': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded'
             }
-          });
-        } else {
-          op = StormpathOAuth.revoke();
-        }
+        });
 
-        op.finally(function(){
+        op.then(function(){
           endSessionEvent();
-        }).catch(function(httpResponse){
-          $rootScope.$broadcast(STORMPATH_CONFIG.SESSION_END_ERROR_EVENT, httpResponse);
+        },function(response){
+          console.error('logout error',response);
         });
 
         return op;
@@ -1690,6 +1680,22 @@ angular.module('stormpath.CONFIG',[])
     /**
     * @ngdoc property
     *
+    * @name FORM_CONTENT_TYPE
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `'application/x-www-form-urlencoded'`
+    *
+    * The content type that is used for form posts.
+    */
+    FORM_CONTENT_TYPE: 'application/x-www-form-urlencoded',
+
+
+    /**
+    * @ngdoc property
+    *
     * @name GET_USER_EVENT
     *
     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
@@ -1777,8 +1783,6 @@ angular.module('stormpath.CONFIG',[])
     */
     SESSION_END_EVENT: '$sessionEnd',
 
-    SESSION_END_ERROR_EVENT: '$sessionEndError',
-
 
     /**
     * @ngdoc property
@@ -1851,68 +1855,6 @@ angular.module('stormpath.CONFIG',[])
     */
     ROUTE_CHANGE_UNAUTHORIZED: '$routeChangeUnauthorized',
 
-    /**
-    * @ngdoc property
-    *
-    * @name OAUTH_REQUEST_ERROR
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `$oAuthRequestError`
-    *
-    * The name of the event that is fired when the user attempts OAuth-based
-    * authentication, and fails due to an OAuth issue.
-    */
-    OAUTH_REQUEST_ERROR: '$oAuthRequestError',
-
-    /**
-    * @ngdoc property
-    *
-    * @name OAUTH_AUTHENTICATION_ENDPOINT
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `/oauth/token`
-    *
-    * The endpoint that is used to authenticate and refresh using OAuth tokens.
-    * This endpoint MUST support password and refresh_token grant authentication
-    * flows.
-    */
-    OAUTH_AUTHENTICATION_ENDPOINT: '/oauth/token',
-
-    /**
-    * @ngdoc property
-    * @name OAUTH_REVOKE_ENDPOINT
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `/oauth/revoke`
-    *
-    * The endpoint that is used to revoke OAuth tokens.
-    */
-    OAUTH_REVOKE_ENDPOINT: '/oauth/revoke',
-
-    /**
-    * @ngdoc property
-    * @name OAUTH_REVOKE_ENDPOINT
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * The name under which tokens are stored in the token storage mechanism.
-    * Might not be relevant if the underlying storage mechanism is not key-value
-    * based.
-    *
-    * See {@link stormpath.tokenStore.TokenStoreManager TokenStoreManager} for more detail.
-    */
-    OAUTH_TOKEN_STORAGE_NAME: 'stormpath:token',
 
     /**
     * @ngdoc property
@@ -1948,22 +1890,6 @@ angular.module('stormpath.CONFIG',[])
     * is resolved with an account that was successfully created
     */
     REGISTERED_EVENT_NAME: '$registered',
-
-    /**
-    * @ngdoc property
-    *
-    * @name OAUTH_DEFAULT_TOKEN_STORE_TYPE
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `localStorage`
-    *
-    * The default type of local storage used by
-    * {@link stormpath.oauth.StormpathOAuthTokenProvider}.
-    */
-    OAUTH_DEFAULT_TOKEN_STORE_TYPE: 'localStorage'
 
   };
   c.getUrl = function(key) {
@@ -2067,6 +1993,166 @@ angular.module('stormpath')
 'use strict';
 
 angular.module('stormpath')
+.provider('$spErrorTransformer', [function $spErrorTransformer(){
+  /**
+   * This service is intentionally excluded from NG Docs.
+   *
+   * It is an internal utility for producing error objects from $http response
+   * errors.
+   */
+
+  this.$get = [
+    function formEncoderServiceFactory(){
+
+      function ErrorTransformerService(){
+
+      }
+
+      ErrorTransformerService.prototype.transformError = function transformError(httpResponse){
+        var errorMessage = null;
+
+        if (httpResponse.data) {
+          errorMessage = httpResponse.data.message || httpResponse.data.error;
+        }
+
+        if (!errorMessage) {
+          errorMessage = 'An error occured when communicating with the server.';
+        }
+
+        var error = new Error(errorMessage);
+
+        error.httpResponse = httpResponse;
+        error.statusCode = httpResponse.status;
+        return error;
+      };
+
+      return new ErrorTransformerService();
+    }
+  ];
+}]);
+'use strict';
+
+angular.module('stormpath')
+.provider('$spFormEncoder', [function $spFormEncoder(){
+  /**
+   * This service is intentionally excluded from NG Docs.
+   * It is an internal utility.
+   */
+
+  this.$get = [
+    'STORMPATH_CONFIG',
+    function formEncoderServiceFactory(STORMPATH_CONFIG){
+
+      function FormEncoderService(){
+        var encoder = new UrlEncodedFormParser();
+        this.encodeUrlForm = encoder.encode.bind(encoder);
+        return this;
+      }
+
+      FormEncoderService.prototype.formPost = function formPost(httpRequest){
+        if(STORMPATH_CONFIG.FORM_CONTENT_TYPE==='application/x-www-form-urlencoded'){
+          var h = httpRequest.headers ? httpRequest.headers : (httpRequest.headers = {});
+          h['Content-Type'] = STORMPATH_CONFIG.FORM_CONTENT_TYPE;
+          httpRequest.data = this.encodeUrlForm(httpRequest.data);
+        }
+        return httpRequest;
+      };
+
+      function UrlEncodedFormParser(){
+
+        // Copy & modify from https://github.com/hapijs/qs/blob/master/lib/stringify.js
+
+        this.delimiter = '&';
+        this.arrayPrefixGenerators = {
+          brackets: function (prefix) {
+            return prefix + '[]';
+          },
+          indices: function (prefix, key) {
+            return prefix + '[' + key + ']';
+          },
+          repeat: function (prefix) {
+            return prefix;
+          }
+        };
+        return this;
+      }
+      UrlEncodedFormParser.prototype.stringify = function stringify(obj, prefix, generateArrayPrefix) {
+
+        if (obj instanceof Date) {
+          obj = obj.toISOString();
+        }
+        else if (obj === null) {
+          obj = '';
+        }
+
+        if (typeof obj === 'string' ||
+          typeof obj === 'number' ||
+          typeof obj === 'boolean') {
+
+          return [encodeURIComponent(prefix) + '=' + encodeURIComponent(obj)];
+        }
+
+        var values = [];
+
+        if (typeof obj === 'undefined') {
+          return values;
+        }
+
+        var objKeys = Object.keys(obj);
+        for (var i = 0, il = objKeys.length; i < il; ++i) {
+          var key = objKeys[i];
+          if (Array.isArray(obj)) {
+            values = values.concat(this.stringify(obj[key], generateArrayPrefix(prefix, key), generateArrayPrefix));
+          }
+          else {
+            values = values.concat(this.stringify(obj[key], prefix + '[' + key + ']', generateArrayPrefix));
+          }
+        }
+
+        return values;
+      };
+      UrlEncodedFormParser.prototype.encode = function encode(obj, options) {
+
+        options = options || {};
+        var delimiter = typeof options.delimiter === 'undefined' ? this.delimiter : options.delimiter;
+
+        var keys = [];
+
+        if (typeof obj !== 'object' ||
+          obj === null) {
+
+          return '';
+        }
+
+        var arrayFormat;
+        if (options.arrayFormat in this.arrayPrefixGenerators) {
+          arrayFormat = options.arrayFormat;
+        }
+        else if ('indices' in options) {
+          arrayFormat = options.indices ? 'indices' : 'repeat';
+        }
+        else {
+          arrayFormat = 'indices';
+        }
+
+        var generateArrayPrefix = this.arrayPrefixGenerators[arrayFormat];
+
+        var objKeys = Object.keys(obj);
+        for (var i = 0, il = objKeys.length; i < il; ++i) {
+          var key = objKeys[i];
+          keys = keys.concat(this.stringify(obj[key], key, generateArrayPrefix));
+        }
+
+        return keys.join(delimiter);
+      };
+
+      return new FormEncoderService();
+    }
+  ];
+}]);
+'use strict';
+
+angular.module('stormpath')
 
 .controller('SpLoginFormCtrl', ['$scope','$auth','$viewModel',function ($scope,$auth,$viewModel) {
   $scope.viewModel = null;
@@ -2144,614 +2230,6 @@ angular.module('stormpath')
     controller: 'SpLoginFormCtrl'
   };
 });
-
-'use strict';
-
-/**
-* @ngdoc overview
-*
-* @name stormpath.oauth
-*
-* @description
-*
-* This module provides the {@link stormpath.oauth.StormpathOAuth StormpathOAuth}
-* and {@link stormpath.oauth.StormpathOAuthToken StormpathOAuthToken} services,
-* implementing a client-side OAuth2 workflow.
-*/
-angular.module('stormpath.oauth', ['stormpath.CONFIG', 'stormpath.utils', 'storpath.tokenStore'])
-
-/**
-* @ngdoc service
-*
-* @name stormpath.oauth.StormpathOAuthTokenProvider
-* @requires stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-* @description
-*
-* Provides the {@link stormpath.oauth.StormpathOAuthToken StormpathOAuthToken}
-* service.
-*/
-.provider('StormpathOAuthToken', ['STORMPATH_CONFIG',
-function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
-  var self = this;
-
-  this._tokenStoreType = STORMPATH_CONFIG.OAUTH_DEFAULT_TOKEN_STORE_TYPE;
-
-  /**
-  * @ngdoc method
-  * @name stormpath.oauth.StormpathOAuthTokenProvider#setTokenStoreType
-  * @methodOf stormpath.oauth.StormpathOAuthTokenProvider
-  *
-  * @param {String} tokenStoreType The name of the token store type the tokens should use to record and read their data.
-  *
-  * @description
-  *
-  * Sets the name of the token store type that the tokens use to store and load its data.
-  * See {@link stormpath.tokenStore.TokenStoreManager#getTokenStore TokenStoreManager.getTokenStore}
-  * for details.
-  */
-  this.setTokenStoreType = function setTokenStoreType(tokenStoreType) {
-    this._tokenStoreType = tokenStoreType;
-  };
-
-  /**
-  * @ngdoc service
-  * @name stormpath.oauth.StormpathOAuthToken
-  * @requires $q
-  * @requires stormpath.tokenStore.TokenStoreManager
-  *
-  * @description
-  *
-  * A service for managing OAuth tokens. It offers a simple interface for storing
-  * and reading tokens into a generic storage (backed by
-  * {@link stormpath.tokenStore.TokenStoreManager TokenStoreManager}), as well
-  * as utility methods for getting specific components of the token - the access
-  * token, refresh token, token type, as well as the Authorization header
-  * constructed from the token.
-  *
-  * It uses the token store type set in the provider, unless overrided via
-  * {@link stormpath.oauth.StormpathOAuthToken#setTokenStoreType StormpathOAuthToken.setTokenStoreType}.
-  */
-  this.$get = function $get($q, $normalizeObjectKeys, TokenStoreManager) {
-    function StormpathOAuthToken() {
-      this.tokenStore = TokenStoreManager.getTokenStore(self._tokenStoreType);
-    }
-
-    /**
-    * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuthToken#setTokenStoreType
-    * @methodOf stormpath.oauth.StormpathOAuthToken
-    * @param {String} tokenStoreType The name of the token store type this token should use to record and read their data.
-    *
-    * @description
-    *
-    * Sets the name of the token store type that this token uses to store and load its data.
-    * See {@link stormpath.tokenStore.TokenStoreManager#getTokenStore TokenStoreManager.getTokenStore}
-    * for details.
-    */
-    StormpathOAuthToken.prototype.setTokenStoreType = function setTokenStoreType(tokenStoreType) {
-      this.tokenStore = TokenStoreManager.getTokenStore(tokenStoreType);
-    };
-
-    /**
-    * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuthToken#setToken
-    * @methodOf stormpath.oauth.StormpathOAuthToken
-    * @param {Object} token The OAuth authorization response returned by the API
-    * @returns {Promise} A promise that is resolved or rejected when the storage attempt succeeds or fails
-    *
-    * @description
-    *
-    * Stores the OAuth token data object into storage, relying on its token store
-    * for the storage implementation details. It transforms the snake-cased keys
-    * returned from the API into camel-cased keys when storing the token.
-    */
-    StormpathOAuthToken.prototype.setToken = function setToken(token) {
-      var canonicalToken = $normalizeObjectKeys(token);
-      return this.tokenStore.put(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME, canonicalToken);
-    };
-
-    /**
-    * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuthToken#getToken
-    * @methodOf stormpath.oauth.StormpathOAuthToken
-    *
-    * @returns {Promise} A promise containing either the resolved token, or a rejection with a reason.
-    *
-    * @description
-    *
-    * Retrieves the OAuth token data object from storage, relying on its set token
-    * store for the loading implementation details. The result will use camel-cased
-    * keys, as noted in
-    * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}.
-    */
-    StormpathOAuthToken.prototype.getToken = function getToken() {
-      return this.tokenStore.get(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME);
-    };
-
-    /**
-    * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuthToken#removeToken
-    * @methodOf stormpath.oauth.StormpathOAuthToken
-    *
-    * @returns {Promise} A promise indicating whether the operation had succeeded
-    *
-    * @description
-    *
-    * Removes the OAuth token from storage, relying on its set token store for the
-    * implementation details.
-    */
-    StormpathOAuthToken.prototype.removeToken = function removeToken() {
-      return this.tokenStore.remove(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME);
-    };
-
-    /**
-    * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuthToken#getAccessToken
-    * @methodOf stormpath.oauth.StormpathOAuthToken
-    *
-    * @returns {Promise} Promise containing the access token, or a rejection in case of failure
-    *
-    * @description
-    *
-    * Retrieves the access token from storage, relying on the token store for implementation.
-    * In case there of storage failure or there being no access token, the result is instead
-    * a rejected promise.
-    */
-    StormpathOAuthToken.prototype.getAccessToken = function getAccessToken() {
-      return this.getToken().then(function(token) {
-        if (token) {
-          return token.accessToken;
-        }
-
-        return $q.reject();
-      });
-    };
-
-    /**
-    * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuthToken#getRefreshToken
-    * @methodOf stormpath.oauth.StormpathOAuthToken
-    *
-    * @returns {Promise} Promise containing the refresh token, or a rejection in case of failure
-    *
-    * @description
-    *
-    * Retrieves the refresh token from storage, relying on the token store for implementation.
-    * In case there of storage failure or there being no refresh token, the result is instead
-    * a rejected promise.
-    */
-    StormpathOAuthToken.prototype.getRefreshToken = function getRefreshToken() {
-      return this.getToken().then(function(token) {
-        if (token) {
-          return token.refreshToken;
-        }
-
-        return $q.reject();
-      });
-    };
-
-    /**
-    * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuthToken#getTokenType
-    * @methodOf stormpath.oauth.StormpathOAuthToken
-    *
-    * @returns {Promise} Promise containing the token type, or a rejection in case of failure
-    *
-    * @description
-    *
-    * Retrieves the token type from storage, relying on the token store for implementation.
-    * In case there of storage failure or there being no token type, the result is instead
-    * a rejected promise.
-    */
-    StormpathOAuthToken.prototype.getTokenType = function getTokenType() {
-      return this.getToken().then(function(token) {
-        if (token) {
-          return token.tokenType;
-        }
-
-        return $q.reject();
-      });
-    };
-
-    /**
-    * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuthToken#getAuthorizationHeader
-    * @methodOf stormpath.oauth.StormpathOAuthToken
-    *
-    * @returns {Promise} Promise containing the value for the HTTP authorization header, or a rejection
-    *
-    * @description
-    *
-    * Constructs a proper HTTP authorization header value for the token in storage. If there is no
-    * token currently stored, or an error happens while communicating with the token storage, a rejected
-    * promise is returned instead.
-    */
-    StormpathOAuthToken.prototype.getAuthorizationHeader = function getAuthorizationHeader() {
-      return this.getToken()
-      .then(function(token) {
-        var tokenType = token && token.tokenType;
-        var accessToken = token && token.accessToken;
-
-        if (!tokenType || !accessToken) {
-          return $q.reject();
-        }
-
-        var tokenTypeName = tokenType.charAt(0).toUpperCase() + tokenType.substr(1);
-
-        return tokenTypeName + ' ' + accessToken;
-      });
-    };
-
-    return new StormpathOAuthToken();
-  };
-
-  this.$get.$inject = ['$q', '$normalizeObjectKeys', 'TokenStoreManager'];
-}])
-
-/**
-* @ngdoc service
-*
-* @name stormpath.oauth.StormpathOAuthProvider
-* @requires stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-* @description
-*
-* Provides the {@link stormpath.oauth.StormpathOAuth StormpathOAuth}
-* service.
-*/
-.provider('StormpathOAuth', ['STORMPATH_CONFIG', function StormpathOAuthProvider(STORMPATH_CONFIG) {
-
-  var oauthInstance;
-
-  /**
-  * @ngdoc service
-  * @name stormpath.oauth.StormpathOAuth
-  * @requires $q
-  * @requires stormpath.oauth.StormpathOAuthToken
-  *
-  * @description
-  *
-  * A service for managing the OAuth client-side authentication flow logic. It
-  * offers methods for authenticating via the `password` grant type, refreshing
-  * access tokens via refresh tokens, and revoking the current token.
-  */
-  this.$get = function($http, $spFormEncoder, StormpathOAuthToken) {
-    function StormpathOAuth() {}
-
-    /**
-    * @ngdoc method
-    * @methodOf stormpath.oauth.StormpathOAuth
-    * @name #authenticate
-    *
-    *
-    * @param {Object} requestData Authentication data object. Expects an email/username and a password field.
-    * @param {Object=} opts Additional request options, (e.g. headers), optional.
-    *
-    * @returns {Promise} A promise containing the authentication response
-    *
-    * @description
-    *
-    * Attempts to authenticate the user, using the password grant flow by default,
-    * although the method can be overriden via the `requestOpts` parameter. If
-    * successful, automatically stores the token using
-    * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}.
-    */
-    StormpathOAuth.prototype.authenticate = function authenticate(requestData, extraHeaders) {
-      var self = this;
-      var data = angular.extend({
-        grant_type: 'password'
-      }, requestData);
-
-      var headers = angular.extend({
-        Accept: 'application/json'
-      }, extraHeaders);
-
-      return $http($spFormEncoder.formPost({
-        url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
-        method: 'POST',
-        headers: headers,
-        data: data
-      })).then(function(response) {
-        self.attemptingRefresh = false;
-        StormpathOAuthToken.setToken(response.data);
-
-        return response;
-      });
-    };
-
-    /**
-    * @ngdoc method
-    * @methodOf stormpath.oauth.StormpathOAuth
-    * @name revoke
-    *
-    * @param {Object=} requestData Additional data to send with the revoke request, optional.
-    * @param {Object=} opts Additional request options, (e.g. headers), optional.
-    *
-    * @returns {Promise} A promise containing the revokation response
-    *
-    * @description
-    *
-    * Attempts to revoke the currently active token. If successful, also removes
-    * the token from storage, using
-    * {@link stormpath.oauth.StormpathOAuthToken#removeToken StormpathOAuthToken.removeToken}.
-    */
-    StormpathOAuth.prototype.revoke = function revoke() {
-      var self = this;
-
-      return StormpathOAuthToken.getToken().then(function(token) {
-        var data = {
-          token: token.refreshToken || token.accessToken,
-          token_type_hint: token.refreshToken ? 'refresh_token' : 'access_token'
-        };
-
-        return $http($spFormEncoder.formPost({
-          url: STORMPATH_CONFIG.getUrl('OAUTH_REVOKE_ENDPOINT'),
-          method: 'POST',
-          data: data
-        })).finally(function(response) {
-          StormpathOAuthToken.removeToken();
-          self.attemptingRefresh = false;
-          return response;
-        });
-      });
-    };
-
-    /**
-     * @ngdoc method
-    * @methodOf stormpath.oauth.StormpathOAuth
-    * @name refresh
-    *
-    * @param {Object=} requestData Additional data to add to the refresh POST request, optional.
-    * @param {Object=} opts Additional request options, (e.g. headers), optional.
-    *
-    * @returns {Promise} A promise containing the refresh attempt response
-    *
-    * @description
-    *
-    * Attempts to refresh the current token, using its refresh token. If successful,
-    * updates the currently stored token using
-    * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}
-    * with the response data.
-    */
-    StormpathOAuth.prototype.refresh = function(requestData, extraHeaders) {
-      var self = this;
-
-      return StormpathOAuthToken.getRefreshToken().then(function(refreshToken) {
-        var data = angular.extend({
-          grant_type: 'refresh_token',
-          refresh_token: refreshToken
-        }, requestData);
-
-        var headers = angular.extend({
-          Accept: 'application/json'
-        }, extraHeaders);
-
-        self.attemptingRefresh = true;
-
-        return $http($spFormEncoder.formPost({
-          url: STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
-          method: 'POST',
-          headers: headers,
-          data: data
-        })).then(function(response) {
-          StormpathOAuthToken.setToken(response.data);
-          self.attemptingRefresh = false;
-
-          return response;
-        });
-      });
-    };
-
-    if (!oauthInstance) {
-      oauthInstance = new StormpathOAuth();
-    }
-
-    return oauthInstance;
-  };
-
-  this.$get.$inject = ['$http', '$spFormEncoder', 'StormpathOAuthToken'];
-}])
-/**
-* @ngdoc service
-*
-* @name stormpath.oauth.$spOAuthBlacklistProvider
-* @description
-*
-* Provides the {@link stormpath.oauth.$spOAuthBlacklist $spOAuthBlacklist}
-* service. Additionally, it can be used to add URLs to the default list of
-* blacklisted URLs (i.e. URLs that the SDK will not attach an Authorized
-* header when making requests to), via the
-* {@link stormpath.oauth.$spOAuthBlacklistProvider#addUrl $spOAuthBlacklistProvider.addUrl}
-* method.
-*
-* By default, the authentication (`/oauth/*`, `login` and `register`) endpoints are included
-* in the blacklist.
-*/
-.provider('$spOAuthBlacklist', [function() {
-
-  var blacklist = [
-    '/oauth/token$',
-    '/oauth/revoke$',
-    '/login$',
-    '/register$'
-  ];
-
-  /**
-  * @ngdoc method
-  *
-  * @name #addUrl
-  * @methodOf stormpath.oauth.$spOAuthBlacklistProvider
-  *
-  * @param {String} url
-  * A regex-like string (passed to the Regex constructor) used to test URLs
-  * to verify whether they are blacklisted.
-  *
-  * @description
-  *
-  * Adds an URL to the OAuth blacklist. The blacklist is a list of URLs for which
-  * the SDK will never append the Authorization header.
-  *
-  * @example
-  * <pre>
-  *  .config(['$spOAuthBlacklistProvider'], function ($spOAuthBlacklistProvider) {
-  *   $spOAuthBlacklistProvider.addUrl('/about/.*$');
-  * });
-  * </pre>
-  */
-  this.addUrl = function blacklistUrl(url) {
-    if (angular.isString(url)) {
-      blacklist.push(url);
-    }
-  };
-
-  /**
-  * @ngdoc service
-  *
-  * @name stormpath.oauth.$spOAuthBlacklist
-  * @description
-  *
-  * A utility service that is used internally to determine calls to which URLs
-  * should not have an `Authorized` header appended to by the SDK. For
-  * configuration, see
-  * {@link stormpath.oauth.$spOAuthBlacklistProvider $spOAuthBlacklistProvider}.
-  */
-  this.$get = function() {
-    return {
-
-      /**
-      * @ngdoc method
-      *
-      * @name #isBlacklisted
-      * @methodOf stormpath.oauth.$spOAuthBlacklist
-      *
-      * @param {String} url The URL for which to check whether it is blacklisted
-      * @return {Boolean} Does the string match a blacklisted URL
-      *
-      * @description
-      *
-      * Checks whether a given URL matches one of the expressions for blacklisted
-      * routes.
-      */
-      isBlacklisted: function isBlacklisted(url) {
-        url = url || '';
-        var matched = false;
-
-        blacklist.forEach(function(expr) {
-          if (matched) {
-            return;
-          }
-
-          matched = new RegExp(expr).test(url);
-        });
-
-        return matched;
-      }
-    };
-  };
-
-  this.$get.$inject = [];
-
-}])
-/**
-* @ngdoc service
-* @name stormpath.utils.StormpathOAuthInterceptor
-*
-* @description
-*
-* Processes requests and response errors to avoid manual OAuth flow integration.
-* Adds property Authorization headers to outgoing requests to external domains
-* and handles specific OAuth-based response errors.
-*/
-.factory('StormpathOAuthInterceptor', ['$isCurrentDomain', '$spOAuthBlacklist', '$rootScope', '$q', '$injector', 'StormpathOAuthToken', 'STORMPATH_CONFIG',
-function($isCurrentDomain, $spOAuthBlacklist, $rootScope, $q, $injector, StormpathOAuthToken, STORMPATH_CONFIG) {
-
-  function StormpathOAuthInterceptor() {}
-
-  /**
-  * @ngdoc method
-  * @name stormpath.utils.StormpathOAuthInterceptor#request
-  * @methodOf stormpath.utils.StormpathOAuthInterceptor
-  *
-  * @param {Object} config $http config object.
-  * @return {Promise} config Promise containing $http config object.
-  *
-  * @description
-  *
-  * Adds the Authorization header on all outgoing request that are going to a
-  * different domain, do not already have an Authorization header, and only if
-  * there is currently a token in the token store.
-  */
-
-  StormpathOAuthInterceptor.prototype.request = function request(config) {
-    if ($isCurrentDomain(config.url) || $spOAuthBlacklist.isBlacklisted(config.url)) {
-      return config;
-    }
-
-    config.headers = config.headers || {};
-
-    return StormpathOAuthToken.getAuthorizationHeader().then(function(authHeader) {
-      if (authHeader) {
-        config.headers.Authorization = authHeader;
-      }
-
-      return config;
-    }).catch(function() {
-      return config;
-    });
-  };
-
-  /**
-  * @ngdoc method
-  * @name stormpath.utils.StormpathOAuthInterceptor#responseError
-  * @methodOf stormpath.utils.StormpathOAuthInterceptor
-  *
-  * @param {Object} response $http response error object.
-  * @return {Promise} Promise containing either the error or the result of a retry after refreshing the OAuth token
-  *
-  * @description
-  *
-  * Handles basic OAuth errors. In case of a token expiration, it will try to
-  * refresh it. In case of invalid request or token format, it will remove the
-  * token instead. Finally, in all cases where a fallback process cannot be made
-  * successfully, an {@link OAUTH_REQUEST_ERROR} event is broadcast.
-  */
-  StormpathOAuthInterceptor.prototype.responseError = function responseError(response) {
-    var error = response.data ? response.data.error : null;
-
-    // Ensures that the token is removed in case of invalid_grant or invalid_request
-    // responses
-    if (response.status === 400 && (error === 'invalid_grant' || error === 'invalid_request')) {
-      StormpathOAuthToken.removeToken();
-
-      $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
-    }
-
-    // Does not remove the token so that it can be refreshed in the handler,
-    // retrying the request instead after refreshing the access token.
-    // Gives up if a refresh fails.
-    if (response.status === 401 && (error === 'invalid_token' || error === 'invalid_client')) {
-      var StormpathOAuth = $injector.get('StormpathOAuth');
-
-      if (!StormpathOAuth.attemptingRefresh) {
-        return StormpathOAuth.refresh().then(function() {
-          var $http = $injector.get('$http');
-          return $http(response.config);
-        }).catch(function() {
-          $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
-          $q.reject(response);
-        });
-      }
-
-      $rootScope.$broadcast(STORMPATH_CONFIG.OAUTH_REQUEST_ERROR, response);
-    }
-
-    return $q.reject(response);
-  };
-
-  return new StormpathOAuthInterceptor();
-}])
-.config(['$httpProvider', function($httpProvider) {
-  $httpProvider.interceptors.push('StormpathOAuthInterceptor');
-}]);
 
 'use strict';
 
@@ -3423,312 +2901,6 @@ angular.module('stormpath')
 }());
 
 'use strict';
-
-/**
-* @ngdoc overview
-*
-* @name stormpath.tokenStore
-*
-* @description
-*
-* This module provides a global access point for registering and fetching token
-* store mechanisms, as used by the {@link stormpath.oauth} module.
-*/
-
-/**
-* @ngdoc object
-* @interface
-* @name stormpath.tokenStore.TokenStore
-*
-* @description
-* A token store implementation. It allows simple key-value pair storing, fetching,
-* and deleting. Its methods may be synchronous, but must always return promises.
-*/
-
-/**
-* @ngdoc method
-* @name stormpath.tokenStore.TokenStore#put
-* @methodOf stormpath.tokenStore.TokenStore
-*
-* @param {String} name The name under which to store a value.
-* @param {Any} value The string representation of a value.
-* @returns {Promise} Indication of success
-*
-* @description
-*
-* Stores a string value in a key-value store.
-*/
-
-/**
-* @ngdoc method
-* @name stormpath.tokenStore.TokenStore#get
-* @methodOf stormpath.tokenStore.TokenStore
-*
-* @param {String} name The name for which to retrieve a value.
-* @returns {Promise} The resolved value retrieved from the store, or a rejection with a reason.
-*
-* @description
-*
-* Retrieves a value from a key-value store.
-*/
-
-/**
-* @ngdoc method
-* @name stormpath.tokenStore.TokenStore#remove
-* @methodOf stormpath.tokenStore.TokenStore
-*
-* @param {String} name The name for which to remove a value.
-* @returns {Promise} Indication of success. Should resolve if there is no value to remove.
-*
-* @description
-*
-* Remove a value from a key-value store.
-*/
-
-angular.module('storpath.tokenStore', ['stormpath.CONFIG'])
-
-/**
-* @ngdoc service
-*
-* @name stormpath.tokenStore.TokenStoreManagerProvider
-*
-* @description
-*
-* Provides the {@link stormpath.tokenStore.TokenStoreManager TokenStoreManager} service.
-*/
-.provider('TokenStoreManager', function() {
-  var tokenStores = {};
-
-  /**
-  * @ngdoc object
-  *
-  * @name stormpath.tokenStore.TokenStoreManager
-  *
-  * @description
-  *
-  * This service provides methods for registering token stores (with duck-typed
-  * validation), as well as retrieving them by name.
-  *
-  * Token store implementations must implement the
-  * {@link stormpath.tokenStore.TokenStore TokenStore interface}.
-  *
-  * All token stores are expected to satisfy the following contract:
-  *   - Instances must have a `put` method that takes a key and a value, stores them, and returns a promise indicating success
-  *   - Instances must have a `get` method that takes a key and returns a promise containing the value for the given key, or a rejection with a reason
-  *   - Instances must have a `remove` method that takes a key and removes the value, returning the result as a promise
-  *
-  * See {@link stormpath.tokenStore.LocalStorageTokenStore LocalStorageTokenStore}
-  * for an example of an implementation.
-  *
-  * @example
-  *
-  * <pre>
-  *   angular.module('app')
-  *     .run(['$q', 'TokenStoreManager', function($q, TokenStoreManager) {
-  *       // Can also be provided by a service/factory for better code organisation
-  *       var myStore = {
-  *         data: {},
-  *         get: function get(key) {
-  *           return this.data[key] ? $q.resolve(this.data[key]) : $q.reject();
-  *         },
-  *         put: function put(key, value) {
-  *           this.data[key] = value;
-  *           return $q.resolve();
-  *         },
-  *         remove: function remove(key) {
-  *           delete this.data[key];
-  *           return $q.resolve();
-  *         }
-  *       };
-  *
-  *       TokenStoreManager.registerTokenStore('basicStore', myStore);
-  *
-  *       var alsoMyStore = TokenStoreManager.getTokenStore('basicStore');
-  *     }]);
-  * </pre>
-  */
-  this.$get = function $get() {
-    return {
-      /**
-      * @ngdoc method
-      * @name stormpath.tokenStore.TokenStoreManager#registerTokenStore
-      *
-      * @methodOf stormpath.tokenStore.TokenStoreManager
-      *
-      * @param {String} name The name under which to store the token store implementation
-      * @param {TokenStore} tokenStore A concrete {@link stormpath.tokenStore.TokenStore TokenStore}
-      *
-      * @throws {Error} tokenStore must satisfy the token store contract methods (get, put, remove).
-      */
-      registerTokenStore: function registerTokenStore(name, tokenStore) {
-        var requiredMethods = ['get', 'put', 'remove'];
-
-        var isValid = tokenStore && requiredMethods.reduce(function(valid, method) {
-          return valid && angular.isFunction(tokenStore[method]);
-        }, true);
-
-        if (!isValid) {
-          throw new Error('Invalid token store. `get`, `put` and `remove` methods must be implemented');
-        }
-
-        tokenStores[name] = tokenStore;
-      },
-      /**
-      * @ngdoc method
-      * @name stormpath.tokenStore.TokenStoreManager#getTokenStore
-      *
-      * @methodOf stormpath.tokenStore.TokenStoreManager
-      *
-      * @param {String} name The name of the token store implementation.
-      * @returns {TokenStore} The token store implementation stored under that name
-      * @throws {Error} When no token store is present for that name.
-      */
-      getTokenStore: function getTokenStore(name) {
-        if (angular.isUndefined(tokenStores[name])) {
-          throw new Error('Unrecognised token store: ' + name);
-        }
-
-        return tokenStores[name];
-      }
-    };
-  };
-})
-
-/**
-* @ngdoc service
-* @name stormpath.tokenStore.LocalStorageTokenStore
-* @augments stormpath.tokenStore.TokenStore
-*
-* @description
-*
-* Implements token storage via browser localStorage.
-*/
-.factory('LocalStorageTokenStore', ['$q', function($q) {
-  function LocalStorageTokenStore() {
-    this._checkAvailability();
-  }
-
-  // Checks whether the current environment supports localStorage and sets the
-  // internal state accordingly
-  LocalStorageTokenStore.prototype._checkAvailability = function _checkAvailability() {
-    if (typeof localStorage === undefined) {
-      this.hasLocalStorage = false;
-    } else {
-      try {
-        localStorage.setItem('sp:feature_test', 'test');
-
-        if (localStorage.getItem('sp:feature_test') === 'test') {
-          localStorage.removeItem('sp:feature_test');
-          this.hasLocalStorage = true;
-        } else {
-          this.hasLocalStorage = false;
-        }
-      } catch (e) {
-        this.hasLocalStorage = false;
-      }
-    }
-  };
-
-  // Provides uniform rejection method for when localStorage is not supported
-  LocalStorageTokenStore.prototype._notImplementedError = function _notImplementedError() {
-    return $q.reject({
-      error: {
-        message: 'Local storage not supported in this environment'
-      }
-    });
-  };
-
-  /**
-  * @ngdoc method
-  * @name stormpath.tokenStore.LocalStorageTokenStore#put
-  * @methodOf stormpath.tokenStore.LocalStorageTokenStore
-  *
-  * @param {String} name The name under which to store a value.
-  * @param {Any} value The string representation of a value.
-  * @returns {Promise} Indication of success
-  *
-  * @description
-  *
-  * Attempts to store a key-value pair using the localStorage API.
-  */
-  LocalStorageTokenStore.prototype.put = function put(key, value) {
-    if (!this.hasLocalStorage) {
-      return this._notImplementedError();
-    }
-
-    var stringValue;
-
-    try {
-      stringValue = JSON.stringify(value);
-    } catch (e) {
-      return $q.reject(e);
-    }
-
-    localStorage.setItem(key, stringValue);
-    return $q.resolve();
-  };
-
-  /**
-  * @ngdoc method
-  * @name stormpath.tokenStore.LocalStorageTokenStore#get
-  * @methodOf stormpath.tokenStore.LocalStorageTokenStore
-  *
-  * @param {String} name The name for which to retrieve a value.
-  * @returns {Promise} Resolved with value or rejected if local storage is unsupported, or value not present.
-  *
-  * @description
-  *
-  * Attempts to retrieve a value for a given key using the localStorage API.
-  */
-  LocalStorageTokenStore.prototype.get = function get(key) {
-    if (!this.hasLocalStorage) {
-      return this._notImplementedError();
-    }
-
-    var value = localStorage.getItem(key);
-
-    if (angular.isDefined(value)) {
-      try {
-        return $q.resolve(JSON.parse(value));
-      } catch (e) {
-        return $q.reject(e);
-      }
-    }
-
-    return $q.reject(new Error('Token not found'));
-  };
-
-  /**
-  * @ngdoc method
-  * @name stormpath.tokenStore.LocalStorageTokenStore#remove
-  * @methodOf stormpath.tokenStore.LocalStorageTokenStore
-  *
-  * @param {String} name The name for which to remove the value.
-  * @returns {Promise} Indication of success
-  *
-  * @description
-  *
-  * Attempts to remove a value for a key from store using the localStorage API.
-  */
-  LocalStorageTokenStore.prototype.remove = function remove(key) {
-    if (!this.hasLocalStorage) {
-      return this._notImplementedError();
-    }
-
-    localStorage.removeItem(key);
-    return $q.resolve();
-  };
-
-  return new LocalStorageTokenStore();
-}])
-
-// Register the basic localStorage provider when run
-.run(['TokenStoreManager', 'LocalStorageTokenStore',
-function(TokenStoreManager, LocalStorageTokenStore) {
-  TokenStoreManager.registerTokenStore('localStorage', LocalStorageTokenStore);
-}]);
-
-'use strict';
 /**
  * @ngdoc overview
  *
@@ -3751,7 +2923,7 @@ function(TokenStoreManager, LocalStorageTokenStore) {
  * Currently, this provider does not have any configuration methods.
  */
 
-angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
+angular.module('stormpath.userService',['stormpath.CONFIG'])
 .provider('$user', [function $userProvider(){
 
   /**
@@ -3972,7 +3144,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
         }else{
           self.cachedUserOp = op;
 
-          $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI')).then(function(response){
+          $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI'),{withCredentials:true}).then(function(response){
             self.cachedUserOp = null;
             self.currentUser = new User(response.data.account || response.data);
             currentUserEvent(self.currentUser);
@@ -4081,9 +3253,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
        * The `sptoken` that was delivered to the user by email
        */
       UserService.prototype.verifyPasswordResetToken = function verifyPasswordResetToken(token){
-        return $http({
-          url: STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT')+'?sptoken='+token
-        });
+        return $http.get(STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT')+'?sptoken='+token);
       };
 
       /**
@@ -4284,202 +3454,6 @@ angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils'])
   ];
 }]);
 
-'use strict';
-
-/**
- * This module and factory are intentionally excluded from NG Docs.
- *
- * The factory is an internal utility used to check whether an URL is on the
- * same domain on which the SPA is hosted.
- */
-
-angular.module('stormpath.utils', ['stormpath.CONFIG'])
-.factory('$isCurrentDomain', ['$window', function($window) {
-  return function(url) {
-    var link = $window.document.createElement('a');
-    link.href = url;
-
-    return $window.location.host === link.host;
-  };
-}])
-.constant('$spHeaders', {
-  // The placeholders in the value are replaced by the `grunt dist` command.
-  'X-Stormpath-Agent': 'stormpath-sdk-angularjs/1.1.1' + ' angularjs/' + angular.version.full
-})
-.provider('$spErrorTransformer', [function $spErrorTransformer(){
-  /**
-   * This service is intentionally excluded from NG Docs.
-   *
-   * It is an internal utility for producing error objects from $http response
-   * errors.
-   */
-
-  this.$get = [
-    function formEncoderServiceFactory(){
-
-      function ErrorTransformerService(){
-
-      }
-
-      ErrorTransformerService.prototype.transformError = function transformError(httpResponse){
-        var errorMessage = null;
-
-        if (httpResponse.data) {
-          errorMessage = httpResponse.data.message || httpResponse.data.error;
-        }
-
-        if (!errorMessage) {
-          errorMessage = 'An error occured when communicating with the server.';
-        }
-
-        var error = new Error(errorMessage);
-
-        error.httpResponse = httpResponse;
-        error.statusCode = httpResponse.status;
-        return error;
-      };
-
-      return new ErrorTransformerService();
-    }
-  ];
-}])
-.provider('$spFormEncoder', [function $spFormEncoder(){
-  /**
-   * This service is intentionally excluded from NG Docs.
-   * It is an internal utility.
-   */
-
-  this.$get = [
-    function formEncoderServiceFactory(){
-
-      function FormEncoderService(){
-        var encoder = new UrlEncodedFormParser();
-        this.encodeUrlForm = encoder.encode.bind(encoder);
-        return this;
-      }
-
-      FormEncoderService.prototype.formPost = function formPost(httpRequest){
-        var h = httpRequest.headers ? httpRequest.headers : (httpRequest.headers = {});
-        h['Content-Type'] = 'application/x-www-form-urlencoded';
-        httpRequest.data = this.encodeUrlForm(httpRequest.data);
-        return httpRequest;
-      };
-
-      function UrlEncodedFormParser(){
-
-        // Copy & modify from https://github.com/hapijs/qs/blob/master/lib/stringify.js
-
-        this.delimiter = '&';
-        this.arrayPrefixGenerators = {
-          brackets: function (prefix) {
-            return prefix + '[]';
-          },
-          indices: function (prefix, key) {
-            return prefix + '[' + key + ']';
-          },
-          repeat: function (prefix) {
-            return prefix;
-          }
-        };
-        return this;
-      }
-      UrlEncodedFormParser.prototype.stringify = function stringify(obj, prefix, generateArrayPrefix) {
-
-        if (obj instanceof Date) {
-          obj = obj.toISOString();
-        }
-        else if (obj === null) {
-          obj = '';
-        }
-
-        if (typeof obj === 'string' ||
-          typeof obj === 'number' ||
-          typeof obj === 'boolean') {
-
-          return [encodeURIComponent(prefix) + '=' + encodeURIComponent(obj)];
-        }
-
-        var values = [];
-
-        if (typeof obj === 'undefined') {
-          return values;
-        }
-
-        var objKeys = Object.keys(obj);
-        for (var i = 0, il = objKeys.length; i < il; ++i) {
-          var key = objKeys[i];
-          if (Array.isArray(obj)) {
-            values = values.concat(this.stringify(obj[key], generateArrayPrefix(prefix, key), generateArrayPrefix));
-          }
-          else {
-            values = values.concat(this.stringify(obj[key], prefix + '[' + key + ']', generateArrayPrefix));
-          }
-        }
-
-        return values;
-      };
-      UrlEncodedFormParser.prototype.encode = function encode(obj, options) {
-
-        options = options || {};
-        var delimiter = typeof options.delimiter === 'undefined' ? this.delimiter : options.delimiter;
-
-        var keys = [];
-
-        if (typeof obj !== 'object' ||
-          obj === null) {
-
-          return '';
-        }
-
-        var arrayFormat;
-        if (options.arrayFormat in this.arrayPrefixGenerators) {
-          arrayFormat = options.arrayFormat;
-        }
-        else if ('indices' in options) {
-          arrayFormat = options.indices ? 'indices' : 'repeat';
-        }
-        else {
-          arrayFormat = 'indices';
-        }
-
-        var generateArrayPrefix = this.arrayPrefixGenerators[arrayFormat];
-
-        var objKeys = Object.keys(obj);
-        for (var i = 0, il = objKeys.length; i < il; ++i) {
-          var key = objKeys[i];
-          keys = keys.concat(this.stringify(obj[key], key, generateArrayPrefix));
-        }
-
-        return keys.join(delimiter);
-      };
-
-      return new FormEncoderService();
-    }
-  ];
-}])
-/**
-* Intentionally excluded from the NG Docs.
-*
-* Shallow-transforms snake-cased keys in an object into camelCased keys
-*/
-.factory('$normalizeObjectKeys', function() {
-  return function normalizeObjectKeys(obj) {
-    var camelCasedObj = {};
-
-    Object.keys(obj).forEach(function(key) {
-      if (obj.hasOwnProperty(key)) {
-        var camelCasedKey = key.replace(/_([A-Za-z])/g, function(all, char) {
-          return char.toUpperCase();
-        });
-
-        camelCasedObj[camelCasedKey] = obj[key];
-      }
-    });
-
-    return camelCasedObj;
-  };
-});
-
 (function () {
   'use strict';
 
@@ -4508,7 +3482,7 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
     });
   };
 
-  angular.module('stormpath.viewModelService', ['stormpath.utils'])
+  angular.module('stormpath.viewModelService', [])
   .provider('$viewModel', function () {
     this.$get = ['$http', 'STORMPATH_CONFIG', function viewModelFactory($http, STORMPATH_CONFIG) {
       return new ViewModelService($http, STORMPATH_CONFIG);

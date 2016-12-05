@@ -1,35 +1,42 @@
 <div class="row">
   <div class="col-xs-12">
-    <div ng-show="!mfa.action.factors || mfa.posting" class="sp-loading">
+    <div ng-show="!action.factors || posting" class="sp-loading">
       Loading...
     </div>
-    <form class="form-horizontal" ng-show="mfa.action.factors && !mfa.loading" ng-submit="mfa.submit()">
-      <div ng-if="mfa.action.factors.length > 1">
-        <div class="form-group">
+    <form class="form-horizontal" ng-show="action.factors && !loading" ng-submit="submit()">
+      <div ng-switch="action.type">
+        <div ng-switch-when="'factor_challenge'">
+          <p ng-if="action.factors[0].hint">
+            Hint: {{action.factors[0].hint}}
+          </p>
+
+          <div class="form-group">
+            <label for="spCode" class="col-xs-12 col-sm-4">Code:</label>
+            <div class="col-xs-12 col-sm-4">
+              <input class="form-control" id="spCode" type="text" ng-model="challenge.code" placeholder="XXXX" ng-disabled="posting" ng-required="field.required">
+            </div>
+          </div>
+        </div>
+
+        <div ng-switch-when="'factor_enroll'">
+          <!-- TODO, we don't have a model here, I will need to check with Robert -->
+        </div>
+
+        <div ng-switch-when="'factor_select'" class="form-group">
           <label for="spFactors" class="col-xs-12 col-sm-4 control-label">New Password</label>
           <div class="col-xs-12 col-sm-4">
             <select class="form-control"
-                    ng-model="mfa.selectedFactor"
-                    ng-options="factor.type for factor in mfa.action.factors tracky by factor.state">
+                    ng-model="selectedFactor"
+                    ng-options="factor.type for factor in action.factors tracky by factor.state">
             </select>
           </div>
         </div>
       </div>
-      <div ng-if="mfa.action.factors.length === 1">
-        <p ng-if="mfa.action.factors[0].hint">
-          {{mfa.action.factors[0].hint}}
-        </p>
-        <div class="form-group">
-          <label for="spCode" class="col-xs-12 col-sm-4">Code:</label>
-          <div class="col-xs-12 col-sm-4">
-            <input class="form-control" id="spCode" type="text" ng-model="mfa.code" placeholder="XXXX" ng-disabled="posting" ng-required="field.required">
-          </div>
-        </div>
-      </div>
+
       <div class="form-group">
         <div class="col-sm-offset-4 col-sm-4">
-          <p class="text-danger" ng-show="mfa.error" ng-bind="mfa.error"></p>
-          <button type="submit" class="btn btn-primary" ng-disabled="mfa.posting">Authenticate</button>
+          <p class="text-danger" ng-show="error" ng-bind="error"></p>
+          <button type="submit" class="btn btn-primary" ng-disabled="posting">Authenticate</button>
         </div>
       </div>
     </form>

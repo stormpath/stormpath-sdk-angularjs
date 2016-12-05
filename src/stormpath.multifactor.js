@@ -14,16 +14,15 @@ MFAService.prototype.requiresMultifactorAuthentication = function(response) {
     && response.action.type.startsWith('factor_');
 };
 
-MFAService.prototype.challenge = function(factor, code) {
-  var data = {
+MFAService.prototype.challenge = function(factor, challenge) {
+  var data = angular.extend({
     grant_type: 'stormpath_factor_challenge',
-    state: factor.state,
-    code: code
-  };
+    state: factor.state
+  }, challenge);
 
   return this.$http(
     this.$spFormEncoder.formPost({
-      url: this.STORMPATH_CONFIG.getUrl('OAUTH_ENDPOINT'),
+      url: this.STORMPATH_CONFIG.getUrl('OAUTH_AUTHENTICATION_ENDPOINT'),
       method: 'POST',
       headers: {
         Accept: 'application/json'
@@ -33,10 +32,10 @@ MFAService.prototype.challenge = function(factor, code) {
   );
 };
 
-MFAService.prototype.enroll = function(factor, factorData) {
+MFAService.prototype.enroll = function(factor, enrollment) {
   var data = angular.extend({
     state: factor.state
-  }, factorData);
+  }, enrollment);
 
   return this.$http.post(this.STORMPATH_CONFIG.getUrl('FACTOR_ENDPOINT'), data, {
     headers: {
@@ -57,36 +56,40 @@ MFAService.prototype.selectFactor = function(factor) {
   });
 };
 
-function MFAController(STORMPATH_CONFIG, $http) {
-  this.STORMPATH_CONFIG = STORMPATH_CONFIG;
-
-  this.$http = $http;
-
-  this.posting = false;
-  this.error = null;
-}
-
-MFAController.prototype.submit = function submit() {
-  this.error = null;
-
-  if (this.action.type === 'factor_challenge') {
-    // send via oauth:
-    var request = {
-      grant_type: 'stormpath_factor_challenge',
-      state: this.action.state,
-      code: this.code
-    };
-    console.log(request);
-  } else if (this.action.type === '') {
-
-  } else {
-    this.error = 'An error has occurred. Please try refreshing the application.';
-  }
-};
-
 angular.module('stormpath')
-.controller('SpMultifactorFormCtrl', [function () {
-  return new MFAController();
+.service('MFAService', MFAService)
+.controller('SpMultifactorFormCtrl', ['STORMPATH_CONFIG', '$scope', '$q', 'MFAService', function(STORMPATH_CONFIG, $scope, $q, MFAService) {
+
+  $scope.submit = function submit() {
+    var promise;
+
+    $scope.posting = true;
+
+    switch ($scope.action.type) {
+    case 'factor_challenge':
+      promise = MFAService.challenge($scope.action.factors[0], $scope.challenge.code);
+      break;
+    case 'factor_enroll':
+      //TODO add case
+      promise = $q.reject('Work in progress');
+      break;
+    case 'factor_select':
+      promise = MFAService.challenge($scope.selectedFactor);
+      break;
+    default:
+      promise = $q.reject('Invalid multifactor action type: ' + $scope.action.type);
+    }
+
+    promise
+    .then(function(response) {
+      $scope.posting = false;
+      return response;
+    })
+    .catch(function(error) {
+      $scope.posting = false;
+      $scope.error = error.message;
+    });
+  };
 }])
 
 .directive('spMultifactorForm', function() {

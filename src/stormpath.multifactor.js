@@ -127,7 +127,7 @@ angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.utils'])
   $scope.newFactor = {};
 
   if (!$scope.challenge) {
-    return $scope.$broadcast(STORMPATH_CONFIG.STATE_CHANGE_UNAUTHENTICATED);
+    return $scope.$emit(STORMPATH_CONFIG.STATE_CHANGE_UNAUTHENTICATED);
   }
 
   $scope.factorViewModels = $scope.challenge.factors.map(function(factorData) {
@@ -170,12 +170,31 @@ angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.utils'])
   };
 }])
 
+.controller('spMultifactorChallengeFormCtrl', ['StormpathMultifactorAuthenticator', '$scope', function(StormpathMultifactorAuthenticator, $scope) {
+  $scope.submit = function submit() {
+    $scope.posting = true;
+  };
+}])
+
 .directive('spMultifactorForm', function() {
   return {
     templateUrl: function(tElemenet, tAttrs) {
       return tAttrs.templateUrl || 'spMultifactorAuthenticationForm.tpl.html';
     },
     controller: 'SpMultifactorFormCtrl'
+  };
+})
+
+.directive('spMultifactorChallengeForm', function() {
+  return {
+    templateUrl: function(tElement, tAttrs) {
+      return tAttrs.templateUrl || 'spMultifactorChallengeForm.tpl.html';
+    },
+    scope: {
+      factor: '=',
+      posting: '='
+    },
+    controller: 'spMultifactorChallengeFormCtrl'
   };
 })
 

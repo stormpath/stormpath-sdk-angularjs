@@ -1,3 +1,36 @@
+<style>
+  .sp-form {
+    padding: 16px 8px;
+  }
+
+  .sp-form__title {
+    font-size: 24px;
+    font-weight: 100;
+    letter-spacing: 1px;
+    margin: 0;
+  }
+
+  .sp-form__instructions {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.5;
+    margin: 24px 0;
+    padding: 0;
+  }
+
+  .sp-form__inputs {
+    padding: 0;
+  }
+
+  .sp-form__inputs--spaced {
+    margin-right: 32px;
+  }
+
+  .sp-form__continue-button {
+    font-weight: 500;
+    border-radius: 0;
+  }
+</style>
 <div class="panel panel-default">
   <div class="panel-body">
     <div ng-show="!challenge.factors || posting" class="sp-loading">
@@ -7,31 +40,8 @@
       <div ng-switch="challenge.action">
         <!-- Challenge sub-form -->
         <div ng-switch-when="factor_challenge">
-          <h3>Verification required</h3>
-
-          <p ng-if="challenge.factors[0].type === 'sms'" class="col-xs-12">
-            We just sent a code to {{challenge.factors[0].hint}}. Enter the code you receive here.
-          </p>
-          <p ng-if="challenge.factors[0].type === 'google-authenticator'" class="col-xs-12">
-            Open the Google Authenticator app on your mobile device, and enter the code show for your account.
-          </p>
-
-          <p class="alert alert-danger" ng-show="error" ng-bind="error"></p>
-
-          <div class="form-group col-xs-12 col-sm-6">
-              <input
-                class="form-control"
-                type="text"
-                ng-model="challenge.code"
-                placeholder="6-digit code"
-                ng-disabled="posting"
-                required
-              >
-          </div>
-
-          <div class="form-group col-xs-12 col-sm-3">
-            <button type="submit" class="btn btn-success btn-block" ng-disabled="posting">Continue</button>
-          </div>
+          <sp-multifactor-challenge-form factor="challenge.factors[0]" posting="$scope.posting">
+          </sp-multifactor-challenge-form>
         </div>
 
         <!-- Enrollment sub-form -->
@@ -41,7 +51,7 @@
 
             <p>
               Enter a phone number that you can receive SMS text messages at.
-              You'll need to have access to this pohone when logging in to your
+              You'll need to have access to this phone when logging in to your
               account.
             </p>
 

@@ -173,6 +173,15 @@ angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.utils'])
 .controller('spMultifactorChallengeFormCtrl', ['StormpathMultifactorAuthenticator', '$scope', function(StormpathMultifactorAuthenticator, $scope) {
   $scope.submit = function submit() {
     $scope.posting = true;
+    return StormpathMultifactorAuthenticator.challenge($scope.factor, $scope.code);
+  };
+}])
+
+.controller('spMultifactorEnrollmentFormCtrl', ['StormpathMultifactorAuthenticator', '$scope', function(StormpathMultifactorAuthenticator, $scope) {
+  $scope.newFactor = {};
+  $scope.submit = function submit() {
+    $scope.posting = true;
+    return StormpathMultifactorAuthenticator.enroll($scope.factor, $scope.newFactor);
   };
 }])
 
@@ -195,6 +204,19 @@ angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.utils'])
       posting: '='
     },
     controller: 'spMultifactorChallengeFormCtrl'
+  };
+})
+
+.directive('spMultifactorEnrollmentForm', function() {
+  return {
+    templateUrl: function(tElement, tAttrs) {
+      return tAttrs.templateUrl || 'spMultifactorEnrollForm.tpl.html';
+    },
+    scope: {
+      factor: '=',
+      posting: '='
+    },
+    controller: 'spMultifactorEnrollmentFormCtrl'
   };
 })
 

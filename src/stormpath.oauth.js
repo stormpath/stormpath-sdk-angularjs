@@ -471,6 +471,8 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     if (angular.isString(url)) {
       blacklist.push(url);
     }
+
+    return this;
   };
 
   /**

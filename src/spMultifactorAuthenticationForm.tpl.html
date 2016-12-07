@@ -1,43 +1,163 @@
-<div class="row">
-  <div class="col-xs-12">
-    <div ng-show="!action.factors || posting" class="sp-loading">
+<div class="panel panel-default">
+  <div class="panel-body">
+    <div ng-show="!challenge.factors || posting" class="sp-loading">
       Loading...
     </div>
-    <form class="form-horizontal" ng-show="action.factors && !loading" ng-submit="submit()">
-      <div ng-switch="action.type">
-        <div ng-switch-when="'factor_challenge'">
-          <p ng-if="action.factors[0].hint">
-            Hint: {{action.factors[0].hint}}
+    <form ng-show="challenge.factors && !loading" ng-submit="submit()">
+      <div ng-switch="challenge.action">
+        <!-- Challenge sub-form -->
+        <div ng-switch-when="factor_challenge">
+          <h3>Verification required</h3>
+
+          <p ng-if="challenge.factors[0].type === 'sms'" class="col-xs-12">
+            We just sent a code to {{challenge.factors[0].hint}}. Enter the code you receive here.
+          </p>
+          <p ng-if="challenge.factors[0].type === 'google-authenticator'" class="col-xs-12">
+            Open the Google Authenticator app on your mobile device, and enter the code show for your account.
           </p>
 
-          <div class="form-group">
-            <label for="spCode" class="col-xs-12 col-sm-4">Code:</label>
-            <div class="col-xs-12 col-sm-4">
-              <input class="form-control" id="spCode" type="text" ng-model="challenge.code" placeholder="XXXX" ng-disabled="posting" ng-required="field.required">
+          <p class="alert alert-danger" ng-show="error" ng-bind="error"></p>
+
+          <div class="form-group col-xs-12 col-sm-6">
+              <input
+                class="form-control"
+                type="text"
+                ng-model="challenge.code"
+                placeholder="6-digit code"
+                ng-disabled="posting"
+                required
+              >
+          </div>
+
+          <div class="form-group col-xs-12 col-sm-3">
+            <button type="submit" class="btn btn-success btn-block" ng-disabled="posting">Continue</button>
+          </div>
+        </div>
+
+        <!-- Enrollment sub-form -->
+        <div ng-switch-when="factor_enroll">
+          <div ng-if="challenge.factors[0].type === 'sms'">
+            <h3>Set up SMS Authentication</h3>
+
+            <p>
+              Enter a phone number that you can receive SMS text messages at.
+              You'll need to have access to this pohone when logging in to your
+              account.
+            </p>
+
+            <p class="alert alert-danger" ng-show="error" ng-bind="error"></p>
+
+            <div class="form-group col-xs-12 col-sm-6">
+                <input
+                  class="form-control"
+                  type="text"
+                  ng-model="newFactor.phone.number"
+                  placeholder="(555) 123-1234"
+                  ng-disabled="posting"
+                  required
+                >
+            </div>
+
+            <div class="form-group col-xs-12 col-sm-3">
+              <button type="submit" class="btn btn-success btn-block" ng-disabled="posting">Continue</button>
             </div>
           </div>
-        </div>
 
-        <div ng-switch-when="'factor_enroll'">
-          <!-- TODO, we don't have a model here, I will need to check with Robert -->
-        </div>
+          <div ng-if="challenge.factors[0].type === 'google-authenticator'">
+            <h3>Set Up Google Authenticator</h3>
 
-        <div ng-switch-when="'factor_select'" class="form-group">
-          <label for="spFactors" class="col-xs-12 col-sm-4 control-label">New Password</label>
-          <div class="col-xs-12 col-sm-4">
-            <select class="form-control"
-                    ng-model="selectedFactor"
-                    ng-options="factor.type for factor in action.factors tracky by factor.state">
-            </select>
+            <ol>
+              <li>
+                <main>Install and open Google Authenticator on your mobile device.</main>
+                <section class="visible-md visible-lg">
+                  <p>
+                    Search the App Store or Play store for "Google Authenticator".
+                  </p>
+                </section>
+                <section class="visible-xs visible-sm">
+                  <p>
+                    Install and open Google Authenticator on your mobile device.
+                  </p>
+                  <a href="https://itunes.apple.com/us/app/google-authenticator/id388497605?mt=8&at=10l6Xd&ct=iwexrijhlq00xkod01g9a" style="margin:0 10px;display:inline-block;overflow:hidden;background:url(//linkmaker.itunes.apple.com/assets/shared/badges/en-gb/appstore-lrg.svg) no-repeat;width:135px;height:40px;background-size:contain;"></a>
+                  <a href='https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en&utm_source=global_co&utm_medium=prtnr&utm_content=Mar2515&utm_campaign=PartBadge&pcampaignid=MKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1' style="display:block;width:155px;"><img alt='Get it on Google Play' style="max-width:100%;" src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png'/></a>
+                </section>
+              </li>
+
+              <li>
+                <main>
+                  Add this account to Google Authenticator.
+                </main>
+                <section>
+                  <ul class="list-unstyled">
+                    <li>Tap the plus icon.</li>
+                    <li class="visible-md visible-lg">Scan this barcode.</li>
+                    <li class="visible-xs visible-sm">Paste in this key:</li>
+                  </ul>
+                </section>
+                <section>
+                  <img class="visible-md-block visible-lg-block" ng-src="{{challenge.factors[0].base64QRImage}}">
+                  <h5>{{challenge.factors[0].secret}}</h5>
+                </section>
+              </li>
+
+              <li>
+                <main>
+                  Enter the code shown for {{challenge.factors[0].issuer}} in Google Authenticator.
+                </main>
+
+                <p class="alert alert-danger" ng-show="error" ng-bind="error"></p>
+
+                <div class="form-group col-xs-12 col-sm-6">
+                    <input
+                      class="form-control"
+                      type="text"
+                      ng-model="newFactor.code"
+                      placeholder="6-digit code"
+                      ng-disabled="posting"
+                      required
+                    >
+                </div>
+
+                <div class="form-group col-xs-12 col-sm-3">
+                  <button type="submit" class="btn btn-success btn-block" ng-disabled="posting">Continue</button>
+                </div>
+              </li>
+            </ol>
           </div>
         </div>
-      </div>
 
-      <div class="form-group">
-        <div class="col-sm-offset-4 col-sm-4">
-          <p class="text-danger" ng-show="error" ng-bind="error"></p>
-          <button type="submit" class="btn btn-primary" ng-disabled="posting">Authenticate</button>
+        <!-- Factor seelection sub-form -->
+        <div ng-switch-when="factor_select" class="form-group">
+          <h3>Two-Factor Authentication Required</h3>
+
+          <p>
+            To protect your account from unauthorized access, we required that
+            you set up an additional factor to verify your identity when logging
+            in. Please choose a method to set up now:
+          </p>
+
+          <ul class="list-unstyled">
+            <li class="panel panel-primary" ng-repeat="factorViewModel in factorViewModels track by $index" ng-click="selectFactor(factorViewModel.factor)">
+              <div class="panel-body">
+                <div class="row">
+                  <div class="col-xs-3">
+                    <img ng-src="{{::factorViewModel.getIcon()}}">
+                  </div>
+                  <div class="col-xs-9">
+                    <h4>
+                      {{::factorViewModel.getTitle()}}
+                    </h4>
+
+                    <div>
+                      {{::factorViewModel.getDescription()}}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
         </div>
+
       </div>
     </form>
   </div>

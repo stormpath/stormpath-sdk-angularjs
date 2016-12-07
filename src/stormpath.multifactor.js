@@ -1,24 +1,29 @@
 'use strict';
 
-function MFAService(STORMPATH_CONFIG, $http, $spFormEncoder) {
+function StormpathMultifactorAuthenticator(STORMPATH_CONFIG, $q, $http, $spFormEncoder, $rootScope) {
   this.STORMPATH_CONFIG = STORMPATH_CONFIG;
 
+  this.$q = $q;
   this.$http = $http;
   this.$spFormEncoder = $spFormEncoder;
+  this.$rootScope = $rootScope;
 }
 
-MFAService.prototype.requiresMultifactorAuthentication = function(response) {
-  return response.status === 200
-    && response.action
-    && response.action.type
-    && response.action.type.startsWith('factor_');
+StormpathMultifactorAuthenticator.prototype.setChallenge = function(action) {
+  this.action = action;
 };
 
-MFAService.prototype.challenge = function(factor, challenge) {
-  var data = angular.extend({
+StormpathMultifactorAuthenticator.prototype.getChallenge = function() {
+  return this.action;
+};
+
+StormpathMultifactorAuthenticator.prototype.challenge = function(factor, code) {
+  var self = this;
+  var data = {
     grant_type: 'stormpath_factor_challenge',
-    state: factor.state
-  }, challenge);
+    state: factor.state,
+    code: code
+  };
 
   return this.$http(
     this.$spFormEncoder.formPost({
@@ -29,10 +34,16 @@ MFAService.prototype.challenge = function(factor, challenge) {
       },
       data: data
     })
-  );
+  ).then(function(response) {
+    self.$rootScope.$broadcast(self.STORMPATH_CONFIG.AUTHENTICATION_SUCCESS_EVENT_NAME);
+    return response;
+  }).catch(function(err) {
+    self.$rootScope.$broadcast(self.STORMPATH_CONFIG.AUTHENTICATION_FAILURE_EVENT_NAME);
+    throw err;
+  });
 };
 
-MFAService.prototype.enroll = function(factor, enrollment) {
+StormpathMultifactorAuthenticator.prototype.enroll = function(factor, enrollment) {
   var data = angular.extend({
     state: factor.state
   }, enrollment);
@@ -44,7 +55,7 @@ MFAService.prototype.enroll = function(factor, enrollment) {
   });
 };
 
-MFAService.prototype.selectFactor = function(factor) {
+StormpathMultifactorAuthenticator.prototype.selectFactor = function(factor) {
   var data = {
     state: factor.state
   };
@@ -56,28 +67,95 @@ MFAService.prototype.selectFactor = function(factor) {
   });
 };
 
-angular.module('stormpath')
-.service('MFAService', MFAService)
-.controller('SpMultifactorFormCtrl', ['STORMPATH_CONFIG', '$scope', '$q', 'MFAService', function(STORMPATH_CONFIG, $scope, $q, MFAService) {
+/**
+*
+*/
+function FactorViewModel(factor) {
+  this.factor = factor;
+}
+
+FactorViewModel.prototype.getIcon = function getIcon() {
+  var dataUrl = (
+    this.factor.type === 'sms'
+      ? '<svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"/><path d="M0 0h24v24H0z" fill="none"/></svg>'
+      : '<svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/><path d="M0 0h24v24H0z" fill="none"/></svg>'
+  );
+
+  return 'data:image/svg+xml,' + dataUrl;
+};
+
+FactorViewModel.prototype.getTitle = function getTitle() {
+  return this.factor.type === 'sms'
+    ? 'SMS Text Messages'
+    : 'Google Authenticator';
+};
+
+FactorViewModel.prototype.getDescription = function getDescription() {
+  return this.factor.type === 'sms'
+    ? 'Your carrier\'s standard charges may apply.'
+    : 'A free app from Google.';
+};
+
+angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.utils'])
+.service('StormpathMultifactorAuthenticator', StormpathMultifactorAuthenticator)
+
+.factory('StormpathMFAInterceptor', ['STORMPATH_CONFIG', '$rootScope', '$injector', function(STORMPATH_CONFIG, $rootScope, $injector) {
+  function StormpathMFAInterceptor() {}
+
+  StormpathMFAInterceptor.prototype.response = function response(response) {
+    var requiresMFA = response
+      && response.status === 200
+      && response.data
+      && response.data.action
+      && response.data.action.startsWith('factor_');
+
+    if (requiresMFA) {
+      var StormpathMultifactorAuthenticator = $injector.get('StormpathMultifactorAuthenticator');
+      StormpathMultifactorAuthenticator.setChallenge(response.data);
+
+      $rootScope.$broadcast(STORMPATH_CONFIG.MFA_REQUIRED_EVENT);
+    }
+
+    return response;
+  };
+
+  return new StormpathMFAInterceptor();
+}])
+
+.controller('SpMultifactorFormCtrl', ['STORMPATH_CONFIG', '$scope', '$q', 'StormpathMultifactorAuthenticator', function(STORMPATH_CONFIG, $scope, $q, StormpathMultifactorAuthenticator) {
+  $scope.challenge = StormpathMultifactorAuthenticator.getChallenge();
+  $scope.newFactor = {};
+
+  if (!$scope.challenge) {
+    return $scope.$broadcast(STORMPATH_CONFIG.STATE_CHANGE_UNAUTHENTICATED);
+  }
+
+  $scope.factorViewModels = $scope.challenge.factors.map(function(factorData) {
+    return new FactorViewModel(factorData);
+  });
+
+  $scope.selectFactor = function selectFactor(factor) {
+    $scope.selectedFactor = factor;
+    $scope.submit();
+  };
 
   $scope.submit = function submit() {
     var promise;
 
     $scope.posting = true;
 
-    switch ($scope.action.type) {
+    switch ($scope.challenge.action) {
     case 'factor_challenge':
-      promise = MFAService.challenge($scope.action.factors[0], $scope.challenge.code);
+      promise = StormpathMultifactorAuthenticator.challenge($scope.challenge.factors[0], $scope.challenge.code);
       break;
     case 'factor_enroll':
-      //TODO add case
-      promise = $q.reject('Work in progress');
+      promise = StormpathMultifactorAuthenticator.enroll($scope.challenge.factors[0], $scope.newFactor);
       break;
     case 'factor_select':
-      promise = MFAService.challenge($scope.selectedFactor);
+      promise = StormpathMultifactorAuthenticator.selectFactor($scope.selectedFactor);
       break;
     default:
-      promise = $q.reject('Invalid multifactor action type: ' + $scope.action.type);
+      promise = $q.reject('Invalid multifactor action type: ' + $scope.challenge.action);
     }
 
     promise
@@ -95,11 +173,12 @@ angular.module('stormpath')
 .directive('spMultifactorForm', function() {
   return {
     templateUrl: function(tElemenet, tAttrs) {
-      return tAttrs.templateUrl || 'spLoginForm.tpl.html';
+      return tAttrs.templateUrl || 'spMultifactorAuthenticationForm.tpl.html';
     },
-    controller: 'SpMultifactorFormCtrl as mfa',
-    scope: {
-      action: '='
-    }
+    controller: 'SpMultifactorFormCtrl'
   };
-});
+})
+
+.config(['$httpProvider', function($httpProvider) {
+  $httpProvider.interceptors.push('StormpathMFAInterceptor');
+}]);

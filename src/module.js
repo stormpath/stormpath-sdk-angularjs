@@ -190,7 +190,8 @@ angular.module('stormpath', [
   'stormpath.socialLogin',
   'stormpath.facebookLogin',
   'stormpath.googleLogin',
-  'stormpath.oauth'
+  'stormpath.oauth',
+  'stormpath.mfa'
 ])
 
 .factory('StormpathAgentInterceptor',['$isCurrentDomain', '$spHeaders', function($isCurrentDomain, $spHeaders){
@@ -630,6 +631,16 @@ angular.module('stormpath', [
           }
         });
 
+        $rootScope.$on(STORMPATH_CONFIG.MFA_REQUIRED_EVENT, function() {
+          if (config.defaultMFAState) {
+            $state.go(config.defaultMFAState, {}, {
+              reload: true,
+              inherit: false,
+              notify: true
+            });
+          }
+        });
+
         if(config.forbiddenState){
           self.forbiddenWatcher = $rootScope.$on(STORMPATH_CONFIG.STATE_CHANGE_UNAUTHORIZED,function(){
             $state.go(config.forbiddenState);
@@ -713,6 +724,12 @@ angular.module('stormpath', [
             self.postLogin = null;
           } else if (config.defaultPostLoginRoute) {
             $location.path(config.defaultPostLoginRoute);
+          }
+        });
+
+        $rootScope.$on(STORMPATH_CONFIG.MFA_REQUIRED_EVENT, function() {
+          if (config.defaultMFARoute) {
+            $state.go(config.defaultMFARoute);
           }
         });
 

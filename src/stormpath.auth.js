@@ -120,7 +120,8 @@ angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
 
 
         function success(httpResponse){
-          $user.get(true).then(function(){
+          return $user.get(true).then(function(){
+            return httpResponse;
             authenticatedEvent(httpResponse);
           });
         }

@@ -491,7 +491,9 @@ angular.module('stormpath.CONFIG',[])
     */
     OAUTH_DEFAULT_TOKEN_STORE_TYPE: 'localStorage',
 
-    FACTOR_ENDPOINT: '/factor'
+    FACTOR_ENDPOINT: '/factor',
+
+    MFA_REQUIRED_EVENT: '$mfaRequired'
 
   };
   c.getUrl = function(key) {

@@ -44,52 +44,25 @@
     <div ng-show="!challenge.factors || posting" class="sp-loading">
       Loading...
     </div>
-    <form ng-show="challenge.factors && !loading" ng-submit="submit()">
+    <form ng-show="challenge.factors && !loading">
       <div ng-switch="challenge.action">
         <!-- Challenge sub-form -->
         <div ng-switch-when="factor_challenge">
-          <sp-multifactor-challenge-form factor="challenge.factors[0]" posting="$scope.posting">
+          <sp-multifactor-challenge-form factor="challenge.factors[0]" posting="posting">
           </sp-multifactor-challenge-form>
         </div>
 
         <!-- Enrollment sub-form -->
         <div ng-switch-when="factor_enroll">
-          <sp-multifactor-enrollment-form factor="challenge.factors[0]" posting="$scope.posting">
+          <sp-multifactor-enrollment-form factor="challenge.factors[0]" posting="posting">
           </sp-multifactor-enrollment-form>
         </div>
 
         <!-- Factor seelection sub-form -->
-        <div ng-switch-when="factor_select" class="form-group">
-          <h3>Two-Factor Authentication Required</h3>
-
-          <p>
-            To protect your account from unauthorized access, we required that
-            you set up an additional factor to verify your identity when logging
-            in. Please choose a method to set up now:
-          </p>
-
-          <ul class="list-unstyled">
-            <li class="panel panel-primary" ng-repeat="factorViewModel in factorViewModels track by $index" ng-click="selectFactor(factorViewModel.factor)">
-              <div class="panel-body">
-                <div class="row">
-                  <div class="col-xs-3">
-                    <img ng-src="{{::factorViewModel.getIcon()}}">
-                  </div>
-                  <div class="col-xs-9">
-                    <h4>
-                      {{::factorViewModel.getTitle()}}
-                    </h4>
-
-                    <div>
-                      {{::factorViewModel.getDescription()}}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </li>
-          </ul>
+        <div ng-switch-when="factor_select">
+          <sp-multifactor-select-form factors="challenge.factors" posting="posting">
+          </sp-multifactor-select-form>
         </div>
-
       </div>
     </form>
   </div>

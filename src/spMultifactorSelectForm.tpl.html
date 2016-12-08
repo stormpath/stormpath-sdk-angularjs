@@ -1,0 +1,66 @@
+<style>
+  .sp-factors {
+  }
+
+  .sp-factors__factor {
+    margin-bottom: 15px;
+  }
+
+  .sp-factor-select {
+    display: flex;
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 18px;
+    border: 2px solid #0072DD;
+  }
+
+  .sp-factor-select__image-container {
+    display: flex;
+    min-width: 40px;
+    margin-right: 18px;
+    box-sizing: border-box;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .sp-factor-select__image {
+    width: 32px;
+  }
+
+  .sp-factor-select__title {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: #0072DD;
+  }
+
+  .sp-factor-select__description {
+    font-size: 12px;
+    font-weight: 600;
+  }
+</style>
+<div class="sp-form">
+  <h3 class="sp-form__title">Two-Factor Authentication Required</h3>
+
+  <section class="sp-form__instructions">
+    To protect your account from unauthorized access, we required that
+    you set up an additional factor to verify your identity when logging
+    in. Please choose a method to set up now:
+  </section>
+
+  <ul class="list-unstyled sp-factors">
+    <li class="sp-factor__factor sp-factor-select" ng-repeat="factorViewModel in factorViewModels track by $index" ng-click="select(factorViewModel.factor)">
+      <div class="sp-factor-select__image-container">
+        <img class="sp-factor-select__image" ng-src="{{::factorViewModel.getIcon()}}">
+      </div>
+      <div class="sp-factor-select__main">
+        <div class="sp-factor-select__title">
+          {{::factorViewModel.getTitle()}}
+        </div>
+
+        <div class="sp-factor-select__description">
+          {{::factorViewModel.getDescription()}}
+        </div>
+      </div>
+    </li>
+  </ul></div>

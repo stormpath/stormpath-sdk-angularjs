@@ -44,25 +44,25 @@
     <div ng-show="!challenge.factors || posting" class="sp-loading">
       Loading...
     </div>
-    <form ng-show="challenge.factors && !loading">
+    <div ng-show="challenge.factors && !loading">
       <div ng-switch="challenge.action">
-        <!-- Challenge sub-form -->
-        <div ng-switch-when="factor_challenge">
-          <sp-multifactor-challenge-form factor="challenge.factors[0]" posting="posting">
-          </sp-multifactor-challenge-form>
-        </div>
+        <sp-multifactor-challenge-form
+          ng-switch-when="factor_challenge"
+          factor="challenge.factors[0]"
+          posting="posting">
+        </sp-multifactor-challenge-form>
 
-        <!-- Enrollment sub-form -->
-        <div ng-switch-when="factor_enroll">
-          <sp-multifactor-enrollment-form factor="challenge.factors[0]" posting="posting">
-          </sp-multifactor-enrollment-form>
-        </div>
+        <sp-multifactor-enrollment-form
+          ng-switch-when="factor_enroll"
+          factor="challenge.factors[0]"
+          posting="posting">
+        </sp-multifactor-enrollment-form>
 
-        <!-- Factor seelection sub-form -->
-        <div ng-switch-when="factor_select">
-          <sp-multifactor-select-form factors="challenge.factors" posting="posting">
-          </sp-multifactor-select-form>
-        </div>
+        <sp-multifactor-select-form
+          ng-switch-when="factor_select"
+          factors="challenge.factors"
+          posting="posting">
+        </sp-multifactor-select-form>
       </div>
     </form>
   </div>

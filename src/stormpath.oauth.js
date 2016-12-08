@@ -317,7 +317,9 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         headers: headers,
         data: data
       })).then(function(response) {
-        StormpathOAuthToken.setToken(response.data);
+        if (response.data && (response.data.access_token || response.data.refresh_token)) {
+          StormpathOAuthToken.setToken(response.data);
+        }
 
         return response;
       });

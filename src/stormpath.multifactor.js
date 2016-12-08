@@ -1,12 +1,14 @@
 'use strict';
 
-function StormpathMultifactorAuthenticator(STORMPATH_CONFIG, $q, $http, $spFormEncoder, $rootScope) {
+function StormpathMultifactorAuthenticator(STORMPATH_CONFIG, $q, $http, $spFormEncoder, $rootScope, StormpathOAuthToken) {
   this.STORMPATH_CONFIG = STORMPATH_CONFIG;
 
   this.$q = $q;
   this.$http = $http;
   this.$spFormEncoder = $spFormEncoder;
   this.$rootScope = $rootScope;
+
+  this.StormpathOAuthToken = StormpathOAuthToken;
 }
 
 StormpathMultifactorAuthenticator.prototype.setChallenge = function(action) {
@@ -35,8 +37,9 @@ StormpathMultifactorAuthenticator.prototype.challenge = function(factor, code) {
       data: data
     })
   ).then(function(response) {
+    return self.StormpathOAuthToken.setToken(response.data);
+  }).then(function() {
     self.$rootScope.$broadcast(self.STORMPATH_CONFIG.AUTHENTICATION_SUCCESS_EVENT_NAME);
-    return response;
   }).catch(function(err) {
     self.$rootScope.$broadcast(self.STORMPATH_CONFIG.AUTHENTICATION_FAILURE_EVENT_NAME);
     throw err;
@@ -92,7 +95,7 @@ FactorViewModel.prototype.getDescription = function getDescription() {
     : 'A free app from Google.';
 };
 
-angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.utils'])
+angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.oauth', 'stormpath.utils'])
 .service('StormpathMultifactorAuthenticator', StormpathMultifactorAuthenticator)
 
 .factory('StormpathMFAInterceptor', ['STORMPATH_CONFIG', '$rootScope', '$injector', function(STORMPATH_CONFIG, $rootScope, $injector) {
@@ -120,50 +123,10 @@ angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.utils'])
 
 .controller('SpMultifactorFormCtrl', ['STORMPATH_CONFIG', '$scope', '$q', 'StormpathMultifactorAuthenticator', function(STORMPATH_CONFIG, $scope, $q, StormpathMultifactorAuthenticator) {
   $scope.challenge = StormpathMultifactorAuthenticator.getChallenge();
-  $scope.newFactor = {};
 
   if (!$scope.challenge) {
-    return $scope.$emit(STORMPATH_CONFIG.STATE_CHANGE_UNAUTHENTICATED);
+    $scope.$emit(STORMPATH_CONFIG.STATE_CHANGE_UNAUTHENTICATED);
   }
-
-  $scope.factorViewModels = $scope.challenge.factors.map(function(factorData) {
-    return new FactorViewModel(factorData);
-  });
-
-  $scope.selectFactor = function selectFactor(factor) {
-    $scope.selectedFactor = factor;
-    $scope.submit();
-  };
-
-  $scope.submit = function submit() {
-    var promise;
-
-    $scope.posting = true;
-
-    switch ($scope.challenge.action) {
-    case 'factor_challenge':
-      promise = StormpathMultifactorAuthenticator.challenge($scope.challenge.factors[0], $scope.challenge.code);
-      break;
-    case 'factor_enroll':
-      promise = StormpathMultifactorAuthenticator.enroll($scope.challenge.factors[0], $scope.newFactor);
-      break;
-    case 'factor_select':
-      promise = StormpathMultifactorAuthenticator.selectFactor($scope.selectedFactor);
-      break;
-    default:
-      promise = $q.reject('Invalid multifactor action type: ' + $scope.challenge.action);
-    }
-
-    promise
-    .then(function(response) {
-      $scope.posting = false;
-      return response;
-    })
-    .catch(function(error) {
-      $scope.posting = false;
-      $scope.error = error.message;
-    });
-  };
 }])
 
 .factory('FactorViewModel', function() {

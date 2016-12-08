@@ -622,7 +622,7 @@ angular.module('stormpath', [
         }
 
         $rootScope.$on(STORMPATH_CONFIG.AUTHENTICATION_SUCCESS_EVENT_NAME,function(){
-          if(self.postLogin && (config.autoRedirect !== false)){
+          if(self.postLogin && self.postLogin.toState && (config.autoRedirect !== false)){
             $state.go(self.postLogin.toState,self.postLogin.toParams).then(function(){
               self.postLogin = null;
             });
@@ -719,7 +719,7 @@ angular.module('stormpath', [
         }
 
         $rootScope.$on(STORMPATH_CONFIG.AUTHENTICATION_SUCCESS_EVENT_NAME, function() {
-          if (self.postLogin && config.autoRedirect !== false) {
+          if (self.postLogin && self.postLogin.toRoute && config.autoRedirect !== false) {
             $location.path(self.postLogin.toRoute);
             self.postLogin = null;
           } else if (config.defaultPostLoginRoute) {

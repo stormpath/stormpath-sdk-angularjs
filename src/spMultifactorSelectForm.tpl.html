@@ -11,6 +11,7 @@
     width: 100%;
     margin-bottom: 15px;
     padding: 18px;
+    cursor:pointer;
     border: 2px solid #0072DD;
   }
 
@@ -23,8 +24,12 @@
     align-items: center;
   }
 
-  .sp-factor-select__image {
+  .sp-factor-select__image-container svg {
     width: 32px;
+  }
+
+  .sp-factor-select__image-container .path {
+    fill: #0072DD;
   }
 
   .sp-factor-select__title {
@@ -38,6 +43,18 @@
     font-size: 12px;
     font-weight: 600;
   }
+
+  .sp-factor-select:hover {
+    border-color: #2A6496;
+  }
+
+  .sp-factor-select:hover .sp-factor-select__title {
+    color: #2A6496;
+  }
+
+  .sp-factor-select:hover .path {
+    fill: #2A6496;
+  }
 </style>
 <div class="sp-form">
   <h3 class="sp-form__title">Two-Factor Authentication Required</h3>
@@ -50,8 +67,9 @@
 
   <ul class="list-unstyled sp-factors">
     <li class="sp-factor__factor sp-factor-select" ng-repeat="factorViewModel in factorViewModels track by $index" ng-click="select(factorViewModel.factor)">
-      <div class="sp-factor-select__image-container">
-        <img class="sp-factor-select__image" ng-src="{{::factorViewModel.getIcon()}}">
+      <div
+        class="sp-factor-select__image-container"
+        ng-bind-html="::clean(factorViewModel.getIcon())">
       </div>
       <div class="sp-factor-select__main">
         <div class="sp-factor-select__title">

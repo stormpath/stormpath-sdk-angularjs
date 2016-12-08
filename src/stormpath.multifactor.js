@@ -167,6 +167,10 @@ angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
   $scope.selectNotEnrolled = function selectNotEnrolled(factor) {
     $scope.activeFactor = factor;
   };
+
+  $scope.clearActiveFactor = function clearActiveFactor() {
+    $scope.activeFactor = null;
+  };
 }])
 
 .controller('spMultifactorEnrollmentFormCtrl', ['$scope', function($scope) {
@@ -213,7 +217,9 @@ angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
     scope: {
       factor: '=',
       posting: '=',
-      onSubmit: '&'
+      hasMultiple: '=',
+      onSubmit: '&',
+      onBack: '&'
     },
     controller: 'spMultifactorEnrollmentFormCtrl'
   };

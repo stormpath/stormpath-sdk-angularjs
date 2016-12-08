@@ -56,72 +56,17 @@
     margin-bottom: 16px;
   }
 </style>
-<form ng-submit="onSubmit({factor: factor, factorData: newFactor})" class="sp-form sp-challenge-form">
-  <div ng-if="factor.type === 'sms'">
-    <h3 class="sp-form__title">Set up SMS Authentication</h3>
+<div class="panel panel-default">
+  <div class="panel-body">
+    <form ng-submit="onSubmit({factor: factor, factorData: newFactor})" class="sp-form sp-challenge-form">
+      <div ng-if="factor.type === 'sms'">
+        <h3 class="sp-form__title">Set up SMS Authentication</h3>
 
-    <p class="sp-form__instructions">
-      Enter a phone number that you can receive SMS text messages at.
-      You'll need to have access to this phone when logging in to your
-      account.
-    </p>
-
-    <p class="alert alert-danger" ng-show="error" ng-bind="error"></p>
-
-    <div class="form-group col-xs-12 col-sm-6 sp-form__inputs sp-form__inputs--spaced">
-        <input
-          class="form-control"
-          type="text"
-          ng-model="newFactor.phone.number"
-          placeholder="(555) 123-1234"
-          ng-disabled="posting"
-          required
-        >
-    </div>
-
-    <div class="form-group col-xs-12 col-sm-3 sp-form__inputs">
-      <button type="submit" class="btn btn-success btn-block sp-form__continue-button" ng-disabled="posting">Continue</button>
-    </div>
-  </div>
-
-  <div ng-if="factor.type === 'google-authenticator'">
-    <h3 class="sp-form__title">Set Up Google Authenticator</h3>
-
-    <ol class="sp-form__steps sp-steps">
-      <li class="sp-steps__step sp-step">
-        <main class="sp-step__title">Install and open Google Authenticator on your mobile device.</main>
-        <section class="visible-md visible-lg sp-step__instructions">
-          <p>
-            Search the App Store or Play store for "Google Authenticator".
-          </p>
-        </section>
-        <section class="visible-xs visible-sm sp-step__instructions">
-          <a href="https://itunes.apple.com/us/app/google-authenticator/id388497605?mt=8&at=10l6Xd&ct=iwexrijhlq00xkod01g9a" style="margin:0 10px;display:inline-block;overflow:hidden;background:url(//linkmaker.itunes.apple.com/assets/shared/badges/en-gb/appstore-lrg.svg) no-repeat;width:135px;height:40px;background-size:contain;"></a>
-          <a href='https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en&utm_source=global_co&utm_medium=prtnr&utm_content=Mar2515&utm_campaign=PartBadge&pcampaignid=MKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1' style="display:block;width:155px;"><img alt='Get it on Google Play' style="max-width:100%;" src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png'/></a>
-        </section>
-      </li>
-
-      <li class="sp-steps__step sp-step">
-        <main class="sp-step__title">
-          Add this account to Google Authenticator.
-        </main>
-        <section class="sp-step__instructions">
-          <ul class="list-unstyled">
-            <li>Tap the plus icon.</li>
-            <li class="visible-md visible-lg">Scan this barcode.</li>
-            <li class="visible-xs visible-sm">Paste in this key:</li>
-          </ul>
-        </section>
-        <section class="sp-step__instructions">
-          <img class="visible-md-block sp-step__image visible-lg-block" ng-src="{{factor.base64QRImage}}">
-          <h5 class="sp-step__caption">{{factor.secret}}</h5>
-        </section>
-      </li>
-
-      <li class="sp-steps__step sp-step">
-        <main class="sp-step__title">
-          Enter the code shown for {{factor.issuer}} in Google Authenticator.
-        </main>
+        <p class="sp-form__instructions">
+          Enter a phone number that you can receive SMS text messages at.
+          You'll need to have access to this phone when logging in to your
+          account.
+        </p>
 
         <p class="alert alert-danger" ng-show="error" ng-bind="error"></p>
 
@@ -129,8 +74,8 @@
             <input
               class="form-control"
               type="text"
-              ng-model="newFactor.code"
-              placeholder="6-digit code"
+              ng-model="newFactor.phone.number"
+              placeholder="(555) 123-1234"
               ng-disabled="posting"
               required
             >
@@ -139,7 +84,71 @@
         <div class="form-group col-xs-12 col-sm-3 sp-form__inputs">
           <button type="submit" class="btn btn-success btn-block sp-form__continue-button" ng-disabled="posting">Continue</button>
         </div>
-      </li>
-    </ol>
+      </div>
+
+      <div ng-if="factor.type === 'google-authenticator'">
+        <h3 class="sp-form__title">Set Up Google Authenticator</h3>
+
+        <ol class="sp-form__steps sp-steps">
+          <li class="sp-steps__step sp-step">
+            <main class="sp-step__title">Install and open Google Authenticator on your mobile device.</main>
+            <section class="visible-md visible-lg sp-step__instructions">
+              <p>
+                Search the App Store or Play store for "Google Authenticator".
+              </p>
+            </section>
+            <section class="visible-xs visible-sm sp-step__instructions">
+              <a href="https://itunes.apple.com/us/app/google-authenticator/id388497605?mt=8&at=10l6Xd&ct=iwexrijhlq00xkod01g9a" style="margin:0 10px;display:inline-block;overflow:hidden;background:url(//linkmaker.itunes.apple.com/assets/shared/badges/en-gb/appstore-lrg.svg) no-repeat;width:135px;height:40px;background-size:contain;"></a>
+              <a href='https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en&utm_source=global_co&utm_medium=prtnr&utm_content=Mar2515&utm_campaign=PartBadge&pcampaignid=MKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1' style="display:block;width:155px;"><img alt='Get it on Google Play' style="max-width:100%;" src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png'/></a>
+            </section>
+          </li>
+
+          <li class="sp-steps__step sp-step">
+            <main class="sp-step__title">
+              Add this account to Google Authenticator.
+            </main>
+            <section class="sp-step__instructions">
+              <ul class="list-unstyled">
+                <li>Tap the plus icon.</li>
+                <li class="visible-md visible-lg">Scan this barcode.</li>
+                <li class="visible-xs visible-sm">Paste in this key:</li>
+              </ul>
+            </section>
+            <section class="sp-step__instructions">
+              <img class="visible-md-block sp-step__image visible-lg-block" ng-src="{{factor.base64QRImage}}">
+              <h5 class="sp-step__caption">{{factor.secret}}</h5>
+            </section>
+          </li>
+
+          <li class="sp-steps__step sp-step">
+            <main class="sp-step__title">
+              Enter the code shown for {{factor.issuer}} in Google Authenticator.
+            </main>
+
+            <p class="alert alert-danger" ng-show="error" ng-bind="error"></p>
+
+            <div class="form-group col-xs-12 col-sm-6 sp-form__inputs sp-form__inputs--spaced">
+                <input
+                  class="form-control"
+                  type="text"
+                  ng-model="newFactor.code"
+                  placeholder="6-digit code"
+                  ng-disabled="posting"
+                  required
+                >
+            </div>
+
+            <div class="form-group col-xs-12 col-sm-3 sp-form__inputs">
+              <button type="submit" class="btn btn-success btn-block sp-form__continue-button" ng-disabled="posting">Continue</button>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </form>
   </div>
-</form>
+</div>
+<ul class="sp-links" ng-if="hasMultiple">
+  <li class="sp-links__link" ng-click="onBack()">
+    Choose a Different Method
+  </li>
+</ul>

@@ -121,45 +121,65 @@ angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
   return new StormpathMFAInterceptor();
 }])
 
-.controller('SpMultifactorFormCtrl', ['STORMPATH_CONFIG', '$scope', '$q', 'StormpathMultifactorAuthenticator', function(STORMPATH_CONFIG, $scope, $q, StormpathMultifactorAuthenticator) {
-  $scope.challenge = StormpathMultifactorAuthenticator.getChallenge();
-
-  if (!$scope.challenge) {
-    $scope.$emit(STORMPATH_CONFIG.STATE_CHANGE_UNAUTHENTICATED);
-  }
-}])
-
 .factory('FactorViewModel', function() {
   return FactorViewModel;
 })
 
-.controller('spMultifactorChallengeFormCtrl', ['StormpathMultifactorAuthenticator', '$scope', function(StormpathMultifactorAuthenticator, $scope) {
-  $scope.submit = function submit() {
+.controller('SpMultifactorFormCtrl', ['STORMPATH_CONFIG', '$scope', 'StormpathMultifactorAuthenticator', function(STORMPATH_CONFIG, $scope, StormpathMultifactorAuthenticator) {
+  $scope.challenge = StormpathMultifactorAuthenticator.getChallenge();
+
+  if (!$scope.challenge) {
+    return $scope.$emit(STORMPATH_CONFIG.STATE_CHANGE_UNAUTHENTICATED);
+  }
+
+  $scope.activeFactor = $scope.challenge.factors.length === 1
+    ? $scope.challenge.factors[0]
+    : null;
+
+  $scope.challengeFactor = function challenge(factor, code) {
     $scope.posting = true;
-    return StormpathMultifactorAuthenticator.challenge($scope.factor, $scope.code);
+    return StormpathMultifactorAuthenticator
+      .challenge(factor, code)
+      .finally(function() {
+        $scope.posting = false;
+      });
+  };
+
+  $scope.enrollFactor = function enroll(factor, factorData) {
+    $scope.posting = true;
+    return StormpathMultifactorAuthenticator
+      .enroll(factor, factorData)
+      .finally(function() {
+        $scope.posting = false;
+      });
+  };
+
+  $scope.selectEnrolled = function selectEnrolled(factor) {
+    $scope.posting = true;
+
+    return StormpathMultifactorAuthenticator
+      .selectFactor(factor)
+      .finally(function() {
+        $scope.posting = false;
+      });
+  };
+
+  $scope.selectNotEnrolled = function selectNotEnrolled(factor) {
+    $scope.activeFactor = factor;
   };
 }])
 
-.controller('spMultifactorEnrollmentFormCtrl', ['StormpathMultifactorAuthenticator', '$scope', function(StormpathMultifactorAuthenticator, $scope) {
+.controller('spMultifactorEnrollmentFormCtrl', ['$scope', function($scope) {
   $scope.newFactor = {};
-  $scope.submit = function submit() {
-    $scope.posting = true;
-    return StormpathMultifactorAuthenticator.enroll($scope.factor, $scope.newFactor);
-  };
 }])
 
-.controller('spMultifactorSelectFormCtrl', ['StormpathMultifactorAuthenticator', 'FactorViewModel', '$scope', '$sce', function(StormpathMultifactorAuthenticator, FactorViewModel, $scope, $sce) {
+.controller('spMultifactorSelectFormCtrl', ['FactorViewModel', '$scope', '$sce', function(FactorViewModel, $scope, $sce) {
   $scope.factorViewModels = $scope.factors.map(function(factor) {
     return new FactorViewModel(factor);
   });
 
   $scope.clean = function clean(html) {
     return $sce.trustAsHtml(html);
-  };
-
-  $scope.select = function select(factor) {
-    $scope.posting = true;
-    return StormpathMultifactorAuthenticator.selectFactor(factor);
   };
 }])
 
@@ -179,9 +199,9 @@ angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
     },
     scope: {
       factor: '=',
-      posting: '='
-    },
-    controller: 'spMultifactorChallengeFormCtrl'
+      posting: '=',
+      onSubmit: '&'
+    }
   };
 })
 
@@ -192,7 +212,8 @@ angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
     },
     scope: {
       factor: '=',
-      posting: '='
+      posting: '=',
+      onSubmit: '&'
     },
     controller: 'spMultifactorEnrollmentFormCtrl'
   };
@@ -205,7 +226,9 @@ angular.module('stormpath.mfa', ['stormpath.CONFIG', 'stormpath.oauth', 'stormpa
     },
     scope: {
       factors: '=',
-      posting: '='
+      posting: '=',
+      isEnrolled: '=?',
+      onSubmit: '&'
     },
     controller: 'spMultifactorSelectFormCtrl'
   };

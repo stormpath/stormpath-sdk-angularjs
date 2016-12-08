@@ -60,14 +60,21 @@
 <div class="sp-form">
   <h3 class="sp-form__title">Two-Factor Authentication Required</h3>
 
-  <section class="sp-form__instructions">
+  <section class="sp-form__instructions" ng-if="!isEnrolled">
     To protect your account from unauthorized access, we required that
     you set up an additional factor to verify your identity when logging
     in. Please choose a method to set up now:
   </section>
 
+  <section class="sp-form__instructions" ng-if="isEnrolled">
+    Please select which method to use to verify your identity:
+  </section>
+
   <ul class="list-unstyled sp-factors">
-    <li class="sp-factor__factor sp-factor-select" ng-repeat="factorViewModel in factorViewModels track by $index" ng-click="select(factorViewModel.factor)">
+    <li
+      class="sp-factor__factor sp-factor-select"
+      ng-repeat="factorViewModel in factorViewModels track by $index"
+      ng-click="onSubmit({factor: factorViewModel.factor})">
       <div
         class="sp-factor-select__image-container"
         ng-bind-html="::clean(factorViewModel.getIcon())">
@@ -82,4 +89,5 @@
         </div>
       </div>
     </li>
-  </ul></div>
+  </ul>
+</div>

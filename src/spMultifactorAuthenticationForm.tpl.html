@@ -41,27 +41,41 @@
 </style>
 <div class="panel panel-default">
   <div class="panel-body">
-    <div ng-show="!challenge.factors || posting" class="sp-loading">
+    <div ng-show="!challenge.factors" class="sp-loading">
       Loading...
     </div>
-    <div ng-show="challenge.factors && !loading">
+    <div ng-show="challenge.factors">
       <div ng-switch="challenge.action">
         <sp-multifactor-challenge-form
           ng-switch-when="factor_challenge"
           factor="challenge.factors[0]"
-          posting="posting">
+          posting="posting"
+          on-submit="challengeFactor(factor, code)"
+        >
         </sp-multifactor-challenge-form>
 
-        <sp-multifactor-enrollment-form
-          ng-switch-when="factor_enroll"
-          factor="challenge.factors[0]"
-          posting="posting">
-        </sp-multifactor-enrollment-form>
+        <div ng-switch-when="factor_enroll">
+          <sp-multifactor-enrollment-form
+            ng-if="activeFactor"
+            factor="activeFactor"
+            posting="posting"
+            on-submit="enrollFactor(factor, factorData)">
+          </sp-multifactor-enrollment-form>
+
+          <sp-multifactor-select-form
+            ng-if="!activeFactor"
+            factors="challenge.factors"
+            posting="posting"
+            on-submit="selectNotEnrolled(factor)">
+          </sp-multifactor-select-form>
+        </div>
 
         <sp-multifactor-select-form
           ng-switch-when="factor_select"
           factors="challenge.factors"
-          posting="posting">
+          posting="posting"
+          is-enrolled="true"
+          on-submit="selectEnrolled(factor)">
         </sp-multifactor-select-form>
       </div>
     </div>

@@ -203,9 +203,26 @@ angular.module('stormpath', [
    * @return {Object} config $http config object.
    */
   StormpathAgentInterceptor.prototype.request = function(config){
-    if ($isCurrentDomain(config.url)){
+
+    var uriExpressions = [
+      '/change$',
+      '/forgot$',
+      '/login$',
+      '/logout$',
+      '/me$',
+      '/oauth/token$',
+      '/oauth/token$',
+      '/register$',
+      '/revoke$',
+      '/verify$'
+    ];
+
+    if (uriExpressions.some(function(expr){
+      return new RegExp(expr).test(config.url);
+    })) {
       config.headers = angular.extend(config.headers, $spHeaders);
     }
+
     return config;
   };
 

@@ -98,7 +98,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * for the storage implementation details. It transforms the snake-cased keys
     * returned from the API into camel-cased keys when storing the token.
     */
-    StormpathOAuthToken.prototype.setToken = function setToken(token) {
+    StormpathOAuthToken.prototype.setTokenResponse = function setTokenResponse(token) {
       var canonicalToken = $normalizeObjectKeys(token);
       // Store a time at which we should renew the token, subtract off one second to give us some buffer of time
       canonicalToken.exp = new Date(new Date().setMilliseconds(0)+((token.expires_in-1)*1000));
@@ -117,9 +117,9 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * Retrieves the OAuth token data object from storage, relying on its set token
     * store for the loading implementation details. The result will use camel-cased
     * keys, as noted in
-    * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}.
+    * {@link stormpath.oauth.StormpathOAuthToken#setTokenResponse StormpathOAuthToken.setTokenResponse}.
     */
-    StormpathOAuthToken.prototype.getToken = function getToken() {
+    StormpathOAuthToken.prototype.getTokenResponse = function getTokenResponse() {
       return this.tokenStore.get(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME);
     };
 
@@ -153,13 +153,25 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * a rejected promise.
     */
     StormpathOAuthToken.prototype.getAccessToken = function getAccessToken() {
-      return this.getToken().then(function(token) {
-        if (token) {
-          return token.accessToken;
-        }
+      var self = this;
+      return this.getTokenResponse()
+        .then(function(token) {
+          var tokenType = token && token.tokenType;
+          var accessToken = token && token.accessToken;
 
-        return $q.reject();
-      });
+          if (!tokenType || !accessToken) {
+            return $q.reject();
+          }
+
+          if (new Date() >= new Date(token.exp)) {
+            var StormpathOAuth = $injector.get('StormpathOAuth');
+            return StormpathOAuth.refresh().then(function(){
+              return self.getAccessToken();
+            });
+          }
+
+          return accessToken;
+        });
     };
 
     /**
@@ -176,7 +188,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * a rejected promise.
     */
     StormpathOAuthToken.prototype.getRefreshToken = function getRefreshToken() {
-      return this.getToken().then(function(token) {
+      return this.getTokenResponse().then(function(token) {
         if (token) {
           return token.refreshToken;
         }
@@ -199,49 +211,12 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * a rejected promise.
     */
     StormpathOAuthToken.prototype.getTokenType = function getTokenType() {
-      return this.getToken().then(function(token) {
+      return this.getTokenResponse().then(function(token) {
         if (token) {
           return token.tokenType;
         }
 
         return $q.reject();
-      });
-    };
-
-    /**
-    * @ngdoc method
-    * @name stormpath.oauth.StormpathOAuthToken#getAuthorizationHeader
-    * @methodOf stormpath.oauth.StormpathOAuthToken
-    *
-    * @returns {Promise} Promise containing the value for the HTTP authorization header, or a rejection
-    *
-    * @description
-    *
-    * Constructs a proper HTTP authorization header value for the token in storage. If there is no
-    * token currently stored, or an error happens while communicating with the token storage, a rejected
-    * promise is returned instead.
-    */
-    StormpathOAuthToken.prototype.getAuthorizationHeader = function getAuthorizationHeader() {
-      var self = this;
-      return this.getToken()
-      .then(function(token) {
-        var tokenType = token && token.tokenType;
-        var accessToken = token && token.accessToken;
-
-        if (!tokenType || !accessToken) {
-          return $q.reject();
-        }
-
-        if (new Date() >= new Date(token.exp)) {
-          var StormpathOAuth = $injector.get('StormpathOAuth');
-          return StormpathOAuth.refresh().then(function(){
-            return self.getAuthorizationHeader();
-          });
-        }
-
-        var tokenTypeName = tokenType.charAt(0).toUpperCase() + tokenType.substr(1);
-
-        return tokenTypeName + ' ' + accessToken;
       });
     };
 
@@ -299,7 +274,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * Attempts to authenticate the user, using the password grant flow by default,
     * although the method can be overriden via the `requestOpts` parameter. If
     * successful, automatically stores the token using
-    * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}.
+    * {@link stormpath.oauth.StormpathOAuthToken#setTokenResponse StormpathOAuthToken.setTokenResponse}.
     */
     StormpathOAuth.prototype.authenticate = function authenticate(requestData, extraHeaders) {
       var self = this;
@@ -317,7 +292,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
         headers: headers,
         data: data
       })).then(function(response) {
-        StormpathOAuthToken.setToken(response.data);
+        StormpathOAuthToken.setTokenResponse(response.data);
 
         return response;
       });
@@ -328,9 +303,6 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * @methodOf stormpath.oauth.StormpathOAuth
     * @name revoke
     *
-    * @param {Object=} requestData Additional data to send with the revoke request, optional.
-    * @param {Object=} opts Additional request options, (e.g. headers), optional.
-    *
     * @returns {Promise} A promise containing the revokation response
     *
     * @description
@@ -338,10 +310,12 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * Attempts to revoke the currently active token. If successful, also removes
     * the token from storage, using
     * {@link stormpath.oauth.StormpathOAuthToken#removeToken StormpathOAuthToken.removeToken}.
+    * This method is specific to an OAuth workflow, `$auth.endSession()` should be used instead
+    * as it is generc and defers to this method when nedeed.
     */
     StormpathOAuth.prototype.revoke = function revoke() {
 
-      return StormpathOAuthToken.getToken().then(function(token) {
+      return StormpathOAuthToken.getTokenResponse().then(function(token) {
         var data = {
           token: token.refreshToken || token.accessToken,
           token_type_hint: token.refreshToken ? 'refresh_token' : 'access_token'
@@ -373,7 +347,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     *
     * Attempts to refresh the current token, using its refresh token. If successful,
     * updates the currently stored token using
-    * {@link stormpath.oauth.StormpathOAuthToken#setToken StormpathOAuthToken.setToken}
+    * {@link stormpath.oauth.StormpathOAuthToken#setTokenResponse StormpathOAuthToken.setTokenResponse}
     * with the response data.
     */
     StormpathOAuth.prototype.refresh = function(requestData, extraHeaders) {
@@ -400,7 +374,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
           headers: headers,
           data: data
         })).then(function(response) {
-          StormpathOAuthToken.setToken(response.data);
+          StormpathOAuthToken.setTokenResponse(response.data);
           return response;
         }).catch(function(response){
           StormpathOAuthToken.removeToken();
@@ -547,26 +521,25 @@ function($isCurrentDomain, $spOAuthBlacklist, $rootScope, $q, $injector, Stormpa
   * @description
   *
   * Adds the Authorization header on all outgoing request that are going to a
-  * different domain, do not already have an Authorization header, and only if
-  * there is currently a token in the token store.
+  * different domain, if the match an expression in the  AUTO_AUTHORIZED_URIS list.
   */
 
   StormpathOAuthInterceptor.prototype.request = function request(config) {
-    if ($isCurrentDomain(config.url) || $spOAuthBlacklist.isBlacklisted(config.url)) {
-      return config;
+
+    if (STORMPATH_CONFIG.AUTO_AUTHORIZED_URIS.some(function(expr){
+      var regex = expr instanceof RegExp ? expr : new RegExp(expr);
+      return regex.test(config.url);
+    })) {
+      return StormpathOAuthToken.getAccessToken()
+        .then(function(token){
+          config.headers.Authorization = 'Bearer ' + token;
+          return config;
+        }).catch(function(){
+          return config;
+        });
     }
 
-    config.headers = config.headers || {};
-
-    return StormpathOAuthToken.getAuthorizationHeader().then(function(authHeader) {
-      if (authHeader) {
-        config.headers.Authorization = authHeader;
-      }
-
-      return config;
-    }).catch(function() {
-      return config;
-    });
+    return config;
   };
 
   return new StormpathOAuthInterceptor();

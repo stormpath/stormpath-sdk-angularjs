@@ -74,6 +74,23 @@ angular.module('stormpath.CONFIG',[])
     */
     AUTH_SERVICE_NAME: '$auth',
 
+    /**
+     * @ngdoc property
+     *
+     * @name AUTO_AUTHORIZED_URIS
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * Default: `['/me$']`
+     *
+     * The list of URLs to match when making requests.  If an OAuth strategy is
+     * being used and the request matches this URL, this library will automatically
+     * add the `Authorization: Bearer <token>` header to the request.
+    */
+    AUTO_AUTHORIZED_URIS: ['/me$'],
+
 
     /**
     * @ngdoc property

@@ -59,18 +59,18 @@ angular.module('stormpath.CONFIG',[])
 
 
     /**
-    * @ngdoc property
-    *
-    * @name AUTH_SERVICE_NAME
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `$auth`
-    *
-    * The name of the authentication service, this changes the
-    * service name that you inject.
+     * @ngdoc property
+     *
+     * @name AUTH_SERVICE_NAME
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * Default: `$auth`
+     *
+     * The name of the authentication service, this changes the
+     * service name that you inject.
     */
     AUTH_SERVICE_NAME: '$auth',
 
@@ -93,45 +93,53 @@ angular.module('stormpath.CONFIG',[])
 
 
     /**
-    * @ngdoc property
-    *
-    * @name SOCIAL_LOGIN_SERVICE_NAME
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `$socialLogin`
-    *
-    * The name of the social login service, this changes the
-    * service name that you inject.
+     * @ngdoc property
+     *
+     * @name SOCIAL_LOGIN_SERVICE_NAME
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * Default: `$socialLogin`
+     *
+     * The name of the social login service, this changes the
+     * service name that you inject.
     */
     SOCIAL_LOGIN_SERVICE_NAME: '$socialLogin',
 
     /**
-    * @ngdoc property
-    *
-    * @name SOCIAL_LOGIN_RESPONSE_TYPE
-    *
-    * The response type requested from the Stormpath Social Login v2 API.
-    * Determines the type of token that will be returned for OAuth authentication
-    * against the Stormpath OAuth API, when making social login attempts.
+     * @ngdoc property
+     *
+     * @name SOCIAL_LOGIN_RESPONSE_TYPE
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * The response type requested from the Stormpath Social Login v2 API.
+     * Determines the type of token that will be returned for OAuth authentication
+     * against the Stormpath OAuth API, when making social login attempts.
     */
     SOCIAL_LOGIN_RESPONSE_TYPE: 'stormpath_token',
 
     /**
-    * @ngdoc property
-    *
-    * @name SOCIAL_LOGIN_OPTIONS
-    *
-    * Options that are set for a given social authentication provider when
-    * making a social authentication request. These are appended to the request
-    * as query parameters, and will override any default options, or options
-    * set in the Stormpath admin console.
-    *
-    * The settings are mapped by providerId of a directory (e.g. `google`, `facebook`).
-    *
-    * Additional providers may be added to the object, but must all be in lowercase.
+     * @ngdoc property
+     *
+     * @name SOCIAL_LOGIN_OPTIONS
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * Options that are set for a given social authentication provider when
+     * making a social authentication request. These are appended to the request
+     * as query parameters, and will override any default options, or options
+     * set in the Stormpath admin console.
+     *
+     * The settings are mapped by providerId of a directory (e.g. `google`, `facebook`).
+     *
+     * Additional providers may be added to the object, but must all be in lowercase.
     */
     SOCIAL_LOGIN_OPTIONS: {
       google: {},
@@ -141,22 +149,30 @@ angular.module('stormpath.CONFIG',[])
     },
 
     /**
-    * @ngdoc property
-    *
-    * @name SOCIAL_LOGIN_REDIRECT_URI
-    *
-    * The URI that the social login flow will redirect to after a login attempt.
-    * This URI is relative to the base application URI.
+     * @ngdoc property
+     *
+     * @name SOCIAL_LOGIN_REDIRECT_URI
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * The URI that the social login flow will redirect to after a login attempt.
+     * This URI is relative to the base application URI.
     */
     SOCIAL_LOGIN_REDIRECT_URI: '',
 
     /**
-    * @ngdoc property
-    *
-    * @name SOCIAL_LOGIN_AUTHORIZE_URI
-    *
-    * The relative URI of the endpoint used for social auth.
-    * Should <b>not</b> be changed if Client API is used.
+     * @ngdoc property
+     *
+     * @name SOCIAL_LOGIN_AUTHORIZE_URI
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * The relative URI of the endpoint used for social auth.
+     * Should <b>not</b> be changed if Client API is used.
     */
     SOCIAL_LOGIN_AUTHORIZE_ENDPOINT: '/authorize',
 

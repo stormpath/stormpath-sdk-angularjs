@@ -51,16 +51,15 @@
   * Additional options (query parameters) to send with the authentication request.
   *
   */
-  SocialLoginService.prototype.authorize = function(accountStoreHref, options) {
+  SocialLoginService.prototype.authorize = function(accountStore, options) {
     var requestParams = angular.extend({
       response_type: this.STORMPATH_CONFIG.SOCIAL_LOGIN_RESPONSE_TYPE,
-      account_store_href: accountStoreHref,
+      account_store_href: accountStore.href,
       redirect_uri: this.$getLocalUrl(this.STORMPATH_CONFIG.SOCIAL_LOGIN_REDIRECT_URI)
     }, options);
 
     var queryParams = this.$encodeQueryParams(requestParams);
-    var socialAuthUri = this.STORMPATH_CONFIG.getUrl('SOCIAL_LOGIN_AUTHORIZE_ENDPOINT')
-                      + queryParams;
+    var socialAuthUri = accountStore.authorizeUri + queryParams;
 
     this.$window.location = socialAuthUri;
   };
@@ -116,17 +115,17 @@
   .directive('spSocialLogin', ['$viewModel', '$auth', '$http', '$injector', 'STORMPATH_CONFIG', function($viewModel, $auth, $http, $injector, STORMPATH_CONFIG) {
     return {
       link: function(scope, element, attrs) {
-        var providerHref = attrs.spSocialLogin;
+        var accontStore = scope.$eval(attrs.spSocialLogin);
         var blacklist = ['href', 'providerId', 'clientId'];
         var social = $injector.get(STORMPATH_CONFIG.SOCIAL_LOGIN_SERVICE_NAME);
 
         scope.providerName = attrs.spName;
 
         element.bind('click', function() {
-          var options = scope.$eval(attrs.spOptions);
+          // var options = scope.$eval(attrs.spOptions);
           var cleanOptions = {};
 
-          angular.forEach(options, function(value, key) {
+          angular.forEach(accontStore.provider, function(value, key) {
             if (value && blacklist.indexOf(key) !== -1) {
               cleanOptions[key] = value;
             }
@@ -134,10 +133,10 @@
 
           cleanOptions = angular.extend(
             cleanOptions,
-            this.STORMPATH_CONFIG.getSocialLoginConfiguration(scope.providerName)
+            STORMPATH_CONFIG.getSocialLoginConfiguration(scope.providerName)
           );
 
-          social.authorize(providerHref, cleanOptions);
+          social.authorize(accontStore, cleanOptions);
         });
       }
     };

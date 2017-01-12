@@ -115,17 +115,17 @@
   .directive('spSocialLogin', ['$viewModel', '$auth', '$http', '$injector', 'STORMPATH_CONFIG', function($viewModel, $auth, $http, $injector, STORMPATH_CONFIG) {
     return {
       link: function(scope, element, attrs) {
-        var accontStore = scope.$eval(attrs.spSocialLogin);
+        var accountStore = scope.$eval(attrs.spSocialLogin);
         var blacklist = ['href', 'providerId', 'clientId'];
         var social = $injector.get(STORMPATH_CONFIG.SOCIAL_LOGIN_SERVICE_NAME);
 
-        scope.providerName = attrs.spName;
+        scope.providerName = accountStore.provider.providerId;
 
         element.bind('click', function() {
-          // var options = scope.$eval(attrs.spOptions);
+
           var cleanOptions = {};
 
-          angular.forEach(accontStore.provider, function(value, key) {
+          angular.forEach(accountStore.provider, function(value, key) {
             if (value && blacklist.indexOf(key) !== -1) {
               cleanOptions[key] = value;
             }
@@ -133,10 +133,10 @@
 
           cleanOptions = angular.extend(
             cleanOptions,
-            STORMPATH_CONFIG.getSocialLoginConfiguration(scope.providerName)
+            STORMPATH_CONFIG.getSocialLoginConfiguration(accountStore.provider.providerId)
           );
 
-          social.authorize(accontStore, cleanOptions);
+          social.authorize(accountStore, cleanOptions);
         });
       }
     };

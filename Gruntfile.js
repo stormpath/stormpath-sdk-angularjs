@@ -151,11 +151,6 @@ module.exports = function (grunt) {
         src: ['<%= src %>','ngdoc_assets/index.ngdoc'],
         title: 'API Reference',
         api: true
-      },
-      server: {
-        src: ['ngdoc_assets/server/index.ngdoc'],
-        title: 'Server Integration Guide',
-        api: false
       }
     },
     copy: {

@@ -183,31 +183,15 @@
  */
 angular.module('stormpath', [
   'stormpath.CONFIG',
+  'stormpath.utils',
   'stormpath.auth',
   'stormpath.userService',
   'stormpath.viewModelService',
   'stormpath.socialLogin',
-  'stormpath.facebookLogin',
-  'stormpath.googleLogin'
+  'stormpath.oauth'
 ])
-.factory('SpAuthInterceptor',[function(){
-  function SpAuthInterceptor(){
 
-  }
-  SpAuthInterceptor.prototype.request = function(config){
-    config.withCredentials=true;
-    return config;
-  };
-
-  return new SpAuthInterceptor();
-}])
-.factory('StormpathAgentInterceptor',['$window',function($window){
-  function getLocation (href) {
-    var l = $window.document.createElement('a');
-    l.href = href;
-    return l;
-  }
-
+.factory('StormpathAgentInterceptor',['$isCurrentDomain', '$spHeaders', function($isCurrentDomain, $spHeaders){
   function StormpathAgentInterceptor(){
 
   }
@@ -219,19 +203,32 @@ angular.module('stormpath', [
    * @return {Object} config $http config object.
    */
   StormpathAgentInterceptor.prototype.request = function(config){
-    var a = getLocation(config.url);
-    var b = $window.location;
-    if (a.host === b.host){
-      // The placeholders in the value are replaced by the `grunt dist` command.
-      config.headers['X-Stormpath-Agent'] = '@@PACKAGE_NAME/@@PACKAGE_VERSION' + ' angularjs/' + angular.version.full;
+
+    var uriExpressions = [
+      '/change$',
+      '/forgot$',
+      '/login$',
+      '/logout$',
+      '/me$',
+      '/oauth/token$',
+      '/oauth/token$',
+      '/register$',
+      '/revoke$',
+      '/verify$'
+    ];
+
+    if (uriExpressions.some(function(expr){
+      return new RegExp(expr).test(config.url);
+    })) {
+      config.headers = angular.extend(config.headers, $spHeaders);
     }
+
     return config;
   };
 
   return new StormpathAgentInterceptor();
 }])
 .config(['$httpProvider',function($httpProvider){
-  $httpProvider.interceptors.push('SpAuthInterceptor');
   $httpProvider.interceptors.push('StormpathAgentInterceptor');
 }])
 .provider('$stormpath', [function $stormpathProvider(){
@@ -855,6 +852,12 @@ angular.module('stormpath', [
   });
   $rootScope.$on(STORMPATH_CONFIG.SESSION_END_EVENT,function(){
     $rootScope.user = $user.currentUser;
+  });
+  $rootScope.$on(STORMPATH_CONFIG.SESSION_END_ERROR_EVENT,function(event, error){
+    console.error('Logout error', error);
+  });
+  $rootScope.$on(STORMPATH_CONFIG.UNAUTHENTICATED_EVENT,function(event, error){
+    console.error('UNAUTHENTICATED_EVENT');
   });
 }])
 

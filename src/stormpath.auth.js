@@ -21,7 +21,7 @@
  *
  * Currently, this provider does not have any configuration methods.
  */
-angular.module('stormpath.auth',['stormpath.CONFIG'])
+angular.module('stormpath.auth',['stormpath.CONFIG', 'stormpath.oauth', 'stormpath.utils'])
 .config(['$injector','STORMPATH_CONFIG',function $authProvider($injector,STORMPATH_CONFIG){
   /**
    * @ngdoc object
@@ -34,7 +34,7 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
    * "logging in" the user.
    */
   var authServiceProvider = {
-    $get: ['$http','$user','$rootScope','$spFormEncoder','$q','$spErrorTransformer', function authServiceFactory($http,$user,$rootScope,$spFormEncoder,$q, $spErrorTransformer){
+    $get: ['$http','$user','$rootScope','$spFormEncoder','$q','$spErrorTransformer', '$isCurrentDomain', 'StormpathOAuth', function authServiceFactory($http,$user,$rootScope,$spFormEncoder,$q, $spErrorTransformer, $isCurrentDomain, StormpathOAuth){
 
       function AuthService(){
         return this;
@@ -124,21 +124,40 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
             authenticatedEvent(httpResponse);
           });
         }
+
         function error(httpResponse){
           authenticationFailureEvent(httpResponse);
           return $q.reject($spErrorTransformer.transformError(httpResponse));
         }
-        return $http($spFormEncoder.formPost({
-            url: STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT'),
+
+        var headers = {
+          Accept: 'application/json'
+        };
+
+        var authEndpoint = STORMPATH_CONFIG.getUrl('AUTHENTICATION_ENDPOINT');
+        var op;
+
+        if ($isCurrentDomain(authEndpoint)) {
+          op = $http($spFormEncoder.formPost({
+            url: authEndpoint,
             method: 'POST',
-            headers: {
-              'Accept': 'application/json'
-            },
+            headers: headers,
             withCredentials: true,
             data: data
-          })
-        ).then(success, error);
+          }));
+        } else {
+          var remoteData = angular.extend({}, data);
 
+          // Handles different naming expected in local and client API login
+          if (remoteData.login) {
+            remoteData.username = remoteData.login;
+            delete remoteData.login;
+          }
+
+          op = StormpathOAuth.authenticate(remoteData, headers);
+        }
+
+        return op.then(success, error);
       };
 
       /**
@@ -182,17 +201,24 @@ angular.module('stormpath.auth',['stormpath.CONFIG'])
        * event will be emitted after a successful logout.
        */
       AuthService.prototype.endSession = function endSession(){
-        var op = $http.post(STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT'), null, {
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        });
+        var destroyEndpoint = STORMPATH_CONFIG.getUrl('DESTROY_SESSION_ENDPOINT');
+        var op;
 
-        op.then(function(){
+        if ($isCurrentDomain(destroyEndpoint)) {
+          op = $http.post(destroyEndpoint, null, {
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/x-www-form-urlencoded'
+            }
+          });
+        } else {
+          op = StormpathOAuth.revoke();
+        }
+
+        op.finally(function(){
           endSessionEvent();
-        },function(response){
-          console.error('logout error',response);
+        }).catch(function(httpResponse){
+          $rootScope.$broadcast(STORMPATH_CONFIG.SESSION_END_ERROR_EVENT, httpResponse);
         });
 
         return op;

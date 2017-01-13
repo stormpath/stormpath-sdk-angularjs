@@ -26,7 +26,7 @@
     });
   };
 
-  angular.module('stormpath.viewModelService', [])
+  angular.module('stormpath.viewModelService', ['stormpath.utils'])
   .provider('$viewModel', function () {
     this.$get = ['$http', 'STORMPATH_CONFIG', function viewModelFactory($http, STORMPATH_CONFIG) {
       return new ViewModelService($http, STORMPATH_CONFIG);

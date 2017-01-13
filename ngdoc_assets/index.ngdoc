@@ -2,10 +2,9 @@
 @name API Documentation
 @description
 
-# Stormpath Angular JS SDK
+# Stormpath Angular JS SDK Ng Docs
 
 [![Bower Version](https://img.shields.io/bower/v/stormpath-sdk-angularjs.svg?style=flat)](https://bower.io)
-[![Build Status](https://img.shields.io/travis/stormpath/stormpath-sdk-angularjs.svg?style=flat)](https://travis-ci.org/stormpath/stormpath-sdk-angularjs)
 
 ## Welcome!
 
@@ -19,26 +18,6 @@ module provides to your application.  With this SDK you can:
 * Use [`ui-router`][ui-router] to control access to your view states (authentication and authorization)
 
 
-## Quickstart
+## Quickstart & Getting Started
 
-If you're not sure where to start, the [Quickstart][] on Github is useful if
-you have an existing project
-
-Are you starting a new project?  The [Yeoman Guide][] will help you build an
-app from scratch.
-
-## Server Integration
-
-This module requires Stormpath on your back-end to work properly. At the moment we
-have a fully-featured integration for **Express.js**, [express-stormpath][].
-
-For **other frameworks**, please see the [Server Integration Guide][].
-
-For a **quick demo setup**, use our [Stormpath SPA Development Server][].
-
-[express-stormpath]: https://github.com/stormpath/express-stormpath
-[Server Integration Guide]: https://docs.stormpath.com/angularjs/sdk/#/server
-[Stormpath SPA Development Server]: https://github.com/stormpath/stormpath-spa-dev-server
-[ui-router]: https://github.com/angular-ui/ui-router
-[Quickstart]: https://github.com/stormpath/stormpath-sdk-angularjs
-[Yeoman Guide]: https://docs.stormpath.com/angularjs/guide
+If you are just getting started with this library, we suggest the [README](https://github.com/stormpath/stormpath-sdk-angularjs) on Github.

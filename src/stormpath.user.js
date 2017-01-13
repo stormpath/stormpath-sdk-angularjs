@@ -21,7 +21,7 @@
  * Currently, this provider does not have any configuration methods.
  */
 
-angular.module('stormpath.userService',['stormpath.CONFIG'])
+angular.module('stormpath.userService',['stormpath.CONFIG', 'stormpath.utils', 'stormpath.socialLogin'])
 .provider('$user', [function $userProvider(){
 
   /**
@@ -74,8 +74,8 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
   };
 
   this.$get = [
-    '$q','$http','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer',
-    function userServiceFactory($q,$http,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer){
+    '$q','$http','STORMPATH_CONFIG','$rootScope','$spFormEncoder','$spErrorTransformer', '$processSocialAuthToken',
+    function userServiceFactory($q,$http,STORMPATH_CONFIG,$rootScope,$spFormEncoder,$spErrorTransformer, $processSocialAuthToken){
       function UserService(){
         this.cachedUserOp = null;
 
@@ -163,11 +163,11 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
          * </pre>
          */
 
-        return $http($spFormEncoder.formPost({
+        return $http({
           url: STORMPATH_CONFIG.getUrl('REGISTER_URI'),
           method: 'POST',
           data: accountData
-        }))
+        })
         .then(function(response){
           var account = response.data.account || response.data;
           registeredEvent(account);
@@ -233,31 +233,34 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
         var op = $q.defer();
         var self = this;
 
-        if(self.cachedUserOp){
+        if (self.cachedUserOp) {
           return self.cachedUserOp.promise;
         }
-        else if(self.currentUser !== null && self.currentUser!==false && bypassCache!==true){
+
+        if (self.currentUser !== null && self.currentUser!==false && bypassCache!==true) {
           op.resolve(self.currentUser);
           return op.promise;
-        }else{
-          self.cachedUserOp = op;
+        }
 
-          $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI'),{withCredentials:true}).then(function(response){
+        self.cachedUserOp = op;
+        var beforeLoad = self.currentUser ? $q.resolve() : $processSocialAuthToken();
+
+        return beforeLoad.then(function() {
+          $http.get(STORMPATH_CONFIG.getUrl('CURRENT_USER_URI')).then(function(response) {
             self.cachedUserOp = null;
             self.currentUser = new User(response.data.account || response.data);
             currentUserEvent(self.currentUser);
             op.resolve(self.currentUser);
-          },function(response){
+          }, function(response) {
             self.currentUser = false;
-            if(response.status===401){
+            if (response.status===401) {
               notLoggedInEvent();
             }
             self.cachedUserOp = null;
             op.reject(response);
           });
           return op.promise;
-        }
-
+        });
       };
 
       /**
@@ -351,7 +354,9 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
        * The `sptoken` that was delivered to the user by email
        */
       UserService.prototype.verifyPasswordResetToken = function verifyPasswordResetToken(token){
-        return $http.get(STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT')+'?sptoken='+token);
+        return $http({
+          url: STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT')+'?sptoken='+token
+        });
       };
 
       /**
@@ -381,11 +386,11 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
        * ```
        */
       UserService.prototype.passwordResetRequest = function passwordResetRequest(data){
-        return $http($spFormEncoder.formPost({
+        return $http({
           method: 'POST',
           url: STORMPATH_CONFIG.getUrl('FORGOT_PASSWORD_ENDPOINT'),
           data: data
-        }))
+        })
         .catch(function(httpResponse){
           return $q.reject($spErrorTransformer.transformError(httpResponse));
         });
@@ -425,11 +430,11 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
        */
       UserService.prototype.resetPassword = function resetPassword(token,data){
         data.sptoken = token;
-        return $http($spFormEncoder.formPost({
+        return $http({
           method: 'POST',
           url:STORMPATH_CONFIG.getUrl('CHANGE_PASSWORD_ENDPOINT'),
           data: data
-        }))
+        })
         .catch(function(httpResponse){
           return $q.reject($spErrorTransformer.transformError(httpResponse));
         });
@@ -543,7 +548,7 @@ angular.module('stormpath.userService',['stormpath.CONFIG'])
         $rootScope.$broadcast(STORMPATH_CONFIG.NOT_LOGGED_IN_EVENT);
       }
 
-      var userService =  new UserService();
+      var userService = new UserService();
       $rootScope.$on(STORMPATH_CONFIG.SESSION_END_EVENT,function(){
         userService.currentUser = false;
       });

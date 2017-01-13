@@ -20,26 +20,19 @@ This module provides services and directives for AngularJS that will allow you t
 
 Follow these steps to add Stormpath user authentication to your AngularJS app.
 
-*Don't have an app? Use our [example app][] as a boilerplate - it has
-Stormpath already integrated!  Starting from scratch?  Our [Yeoman Guide][]
-will walk you through the creation of a full-stack application.*
+1. **Install or Download the Stormpath Angular SDK**
 
-1. **Install UI-Router**
+  If you are using Bower or NPM, you can install this module with the respective command:
 
-  The Stormpath module is only compatible with the [UI-Router][], so ensure that your application is using it.
+  ```
+  npm install stormpath-sdk-angularjs --save
+  ```
 
-2. **Integrate Your Back-End**
+  ```
+  bower install stormpath-sdk-angularjs --save
+  ```
 
-  This module requires Stormpath on your back-end to work properly. At the moment we
-  have a fully-featured integration for **Express.js**, [express-stormpath][].
-
-  For **other frameworks**, please see the [Server Integration Guide][].
-
-  For a **quick setup**, use our [Stormpath SPA Development Server][].
-
-3. **Download and Include the SDK**
-
-  Download these two files:
+  If you are not using a package manager, you can download the latest source from our Github CDN by using these links:
 
   * [stormpath-sdk-angularjs.min.js](https://raw.githubusercontent.com/stormpath/stormpath-sdk-angularjs/master/dist/stormpath-sdk-angularjs.min.js)
   * [stormpath-sdk-angularjs.tpls.min.js](https://raw.githubusercontent.com/stormpath/stormpath-sdk-angularjs/master/dist/stormpath-sdk-angularjs.tpls.min.js)
@@ -51,19 +44,7 @@ will walk you through the creation of a full-stack application.*
   <script src="stormpath-sdk-angularjs.tpls.min.js"></script>
   ```
 
-  Or install with bower:
-
-  ```
-  $ bower install stormpath-sdk-angularjs --save
-  ```
-
-  Or install with npm:
-
-  ```
-  $ npm install stormpath-sdk-angularjs --save
-  ```
-
-4. **Add the Module to Your App's Dependencies**
+2. **Add the Module to Your App's Dependencies**
 
   Add the `stormpath` module and templates to your app's dependencies in *app.js*:
 
@@ -71,9 +52,39 @@ will walk you through the creation of a full-stack application.*
   var app = angular.module('myApp', [..., 'stormpath', 'stormpath.templates']);
   ```
 
-5. **Configure the UI-Router**
+3. **Configure Stormpath**
 
-  In your `run()` block in *app.js*, configure the login state and the default state after login:
+  The Angular SDK leverages the [Stormpath Client API][] for its authentication needs. Login to your Stormpath Tenant, and find your Client API domain (inside your application's policy section).  Add your Client API domain as the `ENDPOINT_PREFIX` setting, via your `.config()` function:
+
+  ```javascript
+  angular.module('myApp', [..., 'stormpath', 'stormpath.templates'])
+    .config(function (STORMPATH_CONFIG) {
+
+      // Specify your Client API domain here:
+
+      STORMPATH_CONFIG.ENDPOINT_PREFIX = 'https://{{clientApiDomainName}}';
+    });
+  ```
+
+
+4. **Configure Routing**
+
+  In your app's `run()` block, configure the login state and the default state after login.
+
+  For `ngRouter`:
+
+  ```javascript
+  angular.module('myApp')
+    .run(function($stormpath){
+      $stormpath.ngRouter({
+        forbiddenRoute: '/forbidden',
+        defaultPostLoginRoute: '/home',
+        loginRoute: '/login'
+      });
+    });
+  ```
+
+  For `uiRouter`:
 
   ```javascript
   app.run(function($stormpath){
@@ -87,37 +98,25 @@ will walk you through the creation of a full-stack application.*
   Set `loginState` to your login state. If you don't have one, create one.
   Set `defaultPostLoginState` to your default state after login.
 
-6. **Protect Your States**
 
-  On all states that you want to protect, add:
 
-  ```javascript
-  sp: {
-    authenticate: true
-  }
-  ```
+5. **Insert the Login and Registration Forms**
+   
+   You can use the [`sp-login-form`][] and [`sp-registration-form`][] directives to inject these default forms into your application, you should put this in the views/states where you want them to appear:
 
-  For example:
+   ```html
+   <div sp-login-form></div>
+   ```
+   
+   ```html
+   <div sp-registration-form></div>
+   ```
 
-  ```javascript
-  $stateProvider.state('secret', {
-    url: '/secret',
-    views: {...},
-    sp: {
-      authenticate: true
-    }
-  });
-  ```
+    </p>
+    These forms will read their configuration from the Client API and allow you to login or register for your application.
+    You should now be able to use these forms to login to your application.
 
-7. **Add States for Login and Signup**
-
-  Create states and views for your login and signup page. Use the [`sp-login-form`][] and [`sp-registration-form`][] directives to inject the forms into your templates. E.g.
-
-  ```html
-  <div sp-login-form></div>
-  ```
-
-8. **Add Login and Logout Links**
+6. **Add Login and Logout Links**
 
   Use the [`sp-logout`][] directive to end the session:
 
@@ -131,7 +130,7 @@ will walk you through the creation of a full-stack application.*
   <a ui-sref="login">Login</a>
   ```
 
-9. **Hide Elements When Logged In**
+7. **Hide Elements When Logged In**
 
   Use the [`if-user`][] directive:
 
@@ -139,7 +138,7 @@ will walk you through the creation of a full-stack application.*
   <a ui-sref="main" sp-logout if-user>Logout</a>
   ```
 
-10. **Hide Elements When Logged Out**
+8. **Hide Elements When Logged Out**
 
   Use the [`if-not-user`][] directive:
 
@@ -147,16 +146,123 @@ will walk you through the creation of a full-stack application.*
   <a ui-sref="login" if-not-user>Login</a>
   ```
 
-11. **That's It!**
+9. **Protect Your States**
 
-  You just added user authentication to your app with Stormpath. See the [API Documentation][] for further information on how Stormpath can be used with your AngularJS app.
+  On all states that you want to protect, add:
+
+  ```javascript
+  sp: {
+    authenticate: true
+  }
+  ```
+
+  For `ngRouter`:
+
+  ```javascript
+  angular.module('myApp')
+    .config(function ($routeProvider) {
+      $routeProvider
+        .when('/profile', {
+          templateUrl: 'app/profile/profile.html',
+          controller: 'ProfileCtrl',
+          sp: {
+            authenticate: true
+          }
+        });
+    });
+  ```
+
+  For `uiRouter`:
+
+  ```javascript
+  angular.module('myApp')
+    .config(function ($stateProvider) {
+      $stateProvider
+        .state('profile', {
+          url: '/profile',
+          templateUrl: 'app/profile/profile.html',
+          controller: 'ProfileCtrl',
+          sp: {
+            authenticate: true
+          }
+        });
+    });
+  ```
+
+
+10. **Login!**
+
+  That's it!  You just added user authentication to your app with Stormpath. See the [API Documentation][] for further information on how Stormpath can be used with your AngularJS app.
+
+  Looking for social login?  Simply configure the directories in your Stormpath tenant, and the buttons will automatically appear in the login form.  For more reading, please see the [Social Login Product Guide][].
+
+11. **Making Authenticated Requests**
+  
+  Once you are able to successfully authenticate (log in) from your application, you will want to authorize access to API endpoints on your server.  The Angular SDK provides methods for getting the current authenticated access token, and using it to authenticate requests.
+
+  Imagine you have an API on your server, such as `http://localhost:3000/api/subscription`, and you want to authorize requests to this endpoint and know who the user is.
+
+  If you want to manually construct a request, using the `$http` library, you can use our access token getter to add the access token to the request:
+
+  ```javascript
+  StormpathOAuthToken.getAccessToken()
+    .then(function(accessToken){
+      $http({
+        url: 'http://localhost:3000/api/subscription',
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer ' + accessToken
+        }
+      });
+    })
+    .catch(function() {
+      // No access token, the user is not logged in
+    });
+  ```
+
+  If you don't want to manually add the access token to every request, you can white-list URLs by expression and the Angular SDK will automatically add this token to all requests that have a matching URL:
+
+  ```javascript
+  angular.module('myApp', [..., 'stormpath', 'stormpath.templates'])
+    .config(function (STORMPATH_CONFIG) {
+
+      // Automatically add access token to all /api requests
+
+      STORMPATH_CONFIG.AUTO_AUTHORIZED_URIS.push(new RegExp('/api'));
+    });
+  ```
+
+12. **Authorizing Requests Server-Side**
+
+  Once your app has made the request with the access token, your server will need to read the token and make an authorization decision.  We provide SDKs for your backend server that make this easy.  Please follow one of the following links for a language-specific or framework-specific guide:
+
+  **Java**
+
+  Spring Boot developers should make use of our Spring Boot plugin, and see the [Token Management Documentation](https://docs.stormpath.com/java/spring-boot-web/tutorial.html#token-management).
+
+  **.NET**
+  
+  ASP.NET developers can leverage our [ASP.NET](https://docs.stormpath.com/dotnet/aspnet/latest/) and [ASP.NET Core](https://docs.stormpath.com/dotnet/aspnetcore/latest/) libraries to achieve authorization in their applications, please see the Authorization section of each guide.
+          
+  **Node.js**
+  
+  Express developers can use our [Express-Stormpath](https://docs.stormpath.com/nodejs/express/latest/) library to easily authenticate requests with access tokens and make authorization decisions, please see the [Token Authentication](https://docs.stormpath.com/nodejs/express/latest/authentication.html#token-authentication) documentation.
+  
+  Node applications can generically use the [Stormpath Node SDK](https://docs.stormpath.com/nodejs/jsdoc/) to validate tokens, using the [JwtAuthenticator](https://docs.stormpath.com/nodejs/jsdoc/JwtAuthenticator.html).
+
+  **PHP**
+
+  Laravel developers can use our <a href="https://docs.stormpath.com/php/laravel/latest/index.html">Stormpath-Laravel</a> or [Stormpath-Lumen](https://docs.stormpath.com/php/lumen/latest/index.html) libraries and their respective `stormpath.auth` middleware to authenticate requests, please see the User Data section of the documentation for each library.
+
+  **Other**
+          
+  Don't see your environment listed?  Not a problem!  Our access tokens are simple JWTs, that can be validated with most generic JWT validation libraries.  Our product guide can walk you through the process, [Validating an Access Token](https://docs.stormpath.com/rest/product-guide/latest/auth_n.html#validating-an-access-token").
+
+  Need more assistance? Feel free to contact our support channel, details are below.
 
 ## Documentation
 
 For all available directives and services, see the [API Documentation][].
-
-If you are using Yeomon, please see our [Yeoman Guide][].  It will walk
-you through the creation of an Angular application from scratch, using Yeoman.
 
 ## Example
 
@@ -233,3 +339,5 @@ Apache 2.0, see [LICENSE](LICENSE).
 [Yeoman Guide]: https://docs.stormpath.com/angularjs/guide
 [support center]: https://support.stormpath.com
 [CORS example app]: https://github.com/stormpath/stormpath-sdk-angularjs/tree/master/example/cors-app
+[Stormpath Client API]: https://docs.stormpath.com/client-api/product-guide/latest/index.html
+[Social Login Product Guide]: https://docs.stormpath.com/rest/product-guide/latest/auth_n.html#how-social-authentication-works

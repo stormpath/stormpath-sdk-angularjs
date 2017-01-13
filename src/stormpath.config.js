@@ -59,38 +59,122 @@ angular.module('stormpath.CONFIG',[])
 
 
     /**
-    * @ngdoc property
-    *
-    * @name AUTH_SERVICE_NAME
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `$auth`
-    *
-    * The name of the authentication service, this changes the
-    * service name that you inject.
+     * @ngdoc property
+     *
+     * @name AUTH_SERVICE_NAME
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * Default: `$auth`
+     *
+     * The name of the authentication service, this changes the
+     * service name that you inject.
     */
     AUTH_SERVICE_NAME: '$auth',
 
+    /**
+     * @ngdoc property
+     *
+     * @name AUTO_AUTHORIZED_URIS
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * Default: `['/me$']`
+     *
+     * The list of URLs to match when making requests.  If an OAuth strategy is
+     * being used and the request matches this URL, this library will automatically
+     * add the `Authorization: Bearer <token>` header to the request.
+    */
+    AUTO_AUTHORIZED_URIS: ['/me$'],
+
 
     /**
-    * @ngdoc property
-    *
-    * @name SOCIAL_LOGIN_SERVICE_NAME
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `$socialLogin`
-    *
-    * The name of the social login service, this changes the
-    * service name that you inject.
+     * @ngdoc property
+     *
+     * @name SOCIAL_LOGIN_SERVICE_NAME
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * Default: `$socialLogin`
+     *
+     * The name of the social login service, this changes the
+     * service name that you inject.
     */
     SOCIAL_LOGIN_SERVICE_NAME: '$socialLogin',
 
+    /**
+     * @ngdoc property
+     *
+     * @name SOCIAL_LOGIN_RESPONSE_TYPE
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * The response type requested from the Stormpath Social Login v2 API.
+     * Determines the type of token that will be returned for OAuth authentication
+     * against the Stormpath OAuth API, when making social login attempts.
+    */
+    SOCIAL_LOGIN_RESPONSE_TYPE: 'stormpath_token',
+
+    /**
+     * @ngdoc property
+     *
+     * @name SOCIAL_LOGIN_OPTIONS
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * Options that are set for a given social authentication provider when
+     * making a social authentication request. These are appended to the request
+     * as query parameters, and will override any default options, or options
+     * set in the Stormpath admin console.
+     *
+     * The settings are mapped by providerId of a directory (e.g. `google`, `facebook`).
+     *
+     * Additional providers may be added to the object, but must all be in lowercase.
+    */
+    SOCIAL_LOGIN_OPTIONS: {
+      google: {},
+      facebook: {},
+      twitter: {},
+      linkedin: {}
+    },
+
+    /**
+     * @ngdoc property
+     *
+     * @name SOCIAL_LOGIN_REDIRECT_URI
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * The URI that the social login flow will redirect to after a login attempt.
+     * This URI is relative to the base application URI.
+    */
+    SOCIAL_LOGIN_REDIRECT_URI: '',
+
+    /**
+     * @ngdoc property
+     *
+     * @name SOCIAL_LOGIN_AUTHORIZE_URI
+     *
+     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+     *
+     * @description
+     *
+     * The relative URI of the endpoint used for social auth.
+     * Should <b>not</b> be changed if Client API is used.
+    */
+    SOCIAL_LOGIN_AUTHORIZE_ENDPOINT: '/authorize',
 
     /**
     * @ngdoc property
@@ -216,22 +300,6 @@ angular.module('stormpath.CONFIG',[])
     /**
     * @ngdoc property
     *
-    * @name FORM_CONTENT_TYPE
-    *
-    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
-    *
-    * @description
-    *
-    * Default: `'application/x-www-form-urlencoded'`
-    *
-    * The content type that is used for form posts.
-    */
-    FORM_CONTENT_TYPE: 'application/x-www-form-urlencoded',
-
-
-    /**
-    * @ngdoc property
-    *
     * @name GET_USER_EVENT
     *
     * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
@@ -319,6 +387,8 @@ angular.module('stormpath.CONFIG',[])
     */
     SESSION_END_EVENT: '$sessionEnd',
 
+    SESSION_END_ERROR_EVENT: '$sessionEndError',
+
 
     /**
     * @ngdoc property
@@ -391,6 +461,68 @@ angular.module('stormpath.CONFIG',[])
     */
     ROUTE_CHANGE_UNAUTHORIZED: '$routeChangeUnauthorized',
 
+    /**
+    * @ngdoc property
+    *
+    * @name OAUTH_REQUEST_ERROR
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `$oAuthRequestError`
+    *
+    * The name of the event that is fired when the user attempts OAuth-based
+    * authentication, and fails due to an OAuth issue.
+    */
+    OAUTH_REQUEST_ERROR: '$oAuthRequestError',
+
+    /**
+    * @ngdoc property
+    *
+    * @name OAUTH_AUTHENTICATION_ENDPOINT
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `/oauth/token`
+    *
+    * The endpoint that is used to authenticate and refresh using OAuth tokens.
+    * This endpoint MUST support password and refresh_token grant authentication
+    * flows.
+    */
+    OAUTH_AUTHENTICATION_ENDPOINT: '/oauth/token',
+
+    /**
+    * @ngdoc property
+    * @name OAUTH_REVOKE_ENDPOINT
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `/oauth/revoke`
+    *
+    * The endpoint that is used to revoke OAuth tokens.
+    */
+    OAUTH_REVOKE_ENDPOINT: '/oauth/revoke',
+
+    /**
+    * @ngdoc property
+    * @name OAUTH_REVOKE_ENDPOINT
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * The name under which tokens are stored in the token storage mechanism.
+    * Might not be relevant if the underlying storage mechanism is not key-value
+    * based.
+    *
+    * See {@link stormpath.tokenStore.TokenStoreManager TokenStoreManager} for more detail.
+    */
+    OAUTH_TOKEN_STORAGE_NAME: 'stormpath:token',
 
     /**
     * @ngdoc property
@@ -427,9 +559,31 @@ angular.module('stormpath.CONFIG',[])
     */
     REGISTERED_EVENT_NAME: '$registered',
 
+    /**
+    * @ngdoc property
+    *
+    * @name OAUTH_DEFAULT_TOKEN_STORE_TYPE
+    *
+    * @propertyOf stormpath.STORMPATH_CONFIG:STORMPATH_CONFIG
+    *
+    * @description
+    *
+    * Default: `localStorage`
+    *
+    * The default type of local storage used by
+    * {@link stormpath.oauth.StormpathOAuthTokenProvider}.
+    */
+    OAUTH_DEFAULT_TOKEN_STORE_TYPE: 'localStorage'
+
   };
+
   c.getUrl = function(key) {
     return this.ENDPOINT_PREFIX + this[key];
+  };
+
+  c.getSocialLoginConfiguration = function(key) {
+    var canonicalKey = key ? key.toLowerCase() : '';
+    return this.SOCIAL_LOGIN_OPTIONS[canonicalKey] || {};
   };
   return c;
 })());

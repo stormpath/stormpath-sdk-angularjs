@@ -1,3 +1,13 @@
+# 2.0.0
+
+This release adds support for the [Stormpath Client API][], which allows you to authenticate the user directly with Stormpath (authentication does not require special software in your server).  The user receives an access token, which can be used to authorize requests on your server.  If you need to authorize requests on your server, you will will want to use one of our SDKs to make that process simpler.
+
+Please see the Readme for the new instructions for using the Client API.
+
+## Breaking Changes
+
+Social Login now requires the use of the Client API, you will need to enable the Client API for your Stormpath Application.  This can be found under the Policies section of the application in our Admin Console.
+
 # 1.1.1
 
 Our UI Router integration will now look for `data.authorities` on UI state configuration, and apply the same behavior as `sp.authorize.group`.  This is a convenience for [JHipster](https://jhipster.github.io/) users, as they
@@ -289,3 +299,4 @@ would break after logout (user state was not properly reflected after logout)
 [Express-Stormpath]: https://github.com/stormpath/express-stormpath
 [Server Configuration]: http://docs.stormpath.com/angularjs/guide/protect_api.html
 [Yeoman Guide]: http://docs.stormpath.com/angularjs/guide/
+[Stormpath Client API]: https://docs.stormpath.com/client-api/product-guide/latest/index.html

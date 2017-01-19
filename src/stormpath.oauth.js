@@ -65,9 +65,15 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
   * {@link stormpath.oauth.StormpathOAuthToken#setTokenStoreType StormpathOAuthToken.setTokenStoreType}.
   */
   this.$get = function $get($q, $normalizeObjectKeys, TokenStoreManager, $injector) {
-    function StormpathOAuthToken() {
-      this.tokenStore = TokenStoreManager.getTokenStore(self._tokenStoreType);
-    }
+    function StormpathOAuthToken() {}
+
+    StormpathOAuthToken.prototype.getTokenStore = function getTokenStore() {
+      if (angular.isUndefined(this.tokenStore)) {
+        this.tokenStore = TokenStoreManager.getTokenStore(self._tokenStoreType);
+      }
+
+      return this.tokenStore;
+    };
 
     /**
     * @ngdoc method
@@ -102,7 +108,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
       var canonicalToken = $normalizeObjectKeys(token);
       // Store a time at which we should renew the token, subtract off one second to give us some buffer of time
       canonicalToken.exp = new Date(new Date().setMilliseconds(0)+((token.expires_in-1)*1000));
-      return this.tokenStore.put(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME, canonicalToken);
+      return this.getTokenStore().put(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME, canonicalToken);
     };
 
     /**
@@ -120,7 +126,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * {@link stormpath.oauth.StormpathOAuthToken#setTokenResponse StormpathOAuthToken.setTokenResponse}.
     */
     StormpathOAuthToken.prototype.getTokenResponse = function getTokenResponse() {
-      return this.tokenStore.get(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME);
+      return this.getTokenStore().get(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME);
     };
 
     /**
@@ -136,7 +142,7 @@ function StormpathOAuthTokenProvider(STORMPATH_CONFIG) {
     * implementation details.
     */
     StormpathOAuthToken.prototype.removeToken = function removeToken() {
-      return this.tokenStore.remove(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME);
+      return this.getTokenStore().remove(STORMPATH_CONFIG.OAUTH_TOKEN_STORAGE_NAME);
     };
 
     /**

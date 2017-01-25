@@ -426,6 +426,18 @@ StormpathUIRouter.prototype.registerInterceptor = function registerInterceptor(c
   });
 };
 
+/**
+ * @ngdoc method
+ * @name stormpath.ui-router.StormpathUIRouter#emitUnauthorized
+ * @methodOf stormpath.ui-router.StormpathUIRouter
+ *
+ * @param {StormpathUIRouterTransition} transition Current state transition
+ *
+ * @description
+ * Emits the {@link stormpath.ui-router.StormpathUIRouter#$stateChangeUnauthorized $stateChangeUnauthorized}
+ * event with the data about the target state to signify that the transition failed due to the user not
+ * being authorized.
+ */
 StormpathUIRouter.prototype.emitUnauthorized = function emitUnauthorized(transition) {
   /**
    * @ngdoc event
@@ -473,6 +485,18 @@ StormpathUIRouter.prototype.emitUnauthorized = function emitUnauthorized(transit
   );
 };
 
+/**
+ * @ngdoc method
+ * @name stormpath.ui-router.StormpathUIRouter#emitUnauthenticated
+ * @methodOf stormpath.ui-router.StormpathUIRouter
+ *
+ * @param {StormpathUIRouterTransition} transition Current state transition
+ *
+ * @description
+ * Emits the {@link stormpath.ui-router.StormpathUIRouter#$stateChangeUnauthenticated $stateChangeUnauthenticated}
+ * event with the data about the target state to signify that the transition failed due to the user not
+ * being authenticated (i.e. having the permissions to access this route).
+ */
 StormpathUIRouter.prototype.emitUnauthenticated = function emitUnauthenticated(transition) {
   /**
    * @ngdoc event

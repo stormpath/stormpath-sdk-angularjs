@@ -188,7 +188,8 @@ angular.module('stormpath', [
   'stormpath.userService',
   'stormpath.viewModelService',
   'stormpath.socialLogin',
-  'stormpath.oauth'
+  'stormpath.oauth',
+  'stormpath.ui-router'
 ])
 
 .factory('StormpathAgentInterceptor',['$isCurrentDomain', '$spHeaders', function($isCurrentDomain, $spHeaders){
@@ -246,10 +247,11 @@ angular.module('stormpath', [
    */
 
   this.$get = [
-    '$user', '$injector', 'STORMPATH_CONFIG', '$rootScope', '$location',
-    function stormpathServiceFactory($user, $injector, STORMPATH_CONFIG, $rootScope, $location) {
+    'StormpathUIRouter', '$user', '$injector', 'STORMPATH_CONFIG', '$rootScope', '$location',
+    function stormpathServiceFactory(StormpathUIRouter, $user, $injector, STORMPATH_CONFIG, $rootScope, $location) {
       var $state;
       var $route;
+      var $transitions; // ui-router 1 replacement for state events
 
       function StormpathService(){
         var encoder = new UrlEncodedFormParser();
@@ -263,158 +265,16 @@ angular.module('stormpath', [
           $route = $injector.get('$route');
         }
 
-        return this;
-      }
-      function stateChangeUnauthenticatedEvent(toState, toParams){
-        /**
-         * @ngdoc event
-         *
-         * @name stormpath.$stormpath#$stateChangeUnauthenticated
-         *
-         * @eventOf stormpath.$stormpath
-         *
-         * @eventType broadcast on root scope
-         *
-         * @param {Object} event
-         *
-         * Angular event object.
-         *
-         * @param {Object} toState The state that the user attempted to access.
-         *
-         * @param {Object} toParams The state params of the state that the user
-         * attempted to access.
-         *
-         * @description
-         *
-         * This event is broadcast when a UI state change is prevented,
-         * because the user is not logged in.
-         *
-         * Use this event if you want to implement your own strategy for
-         * presenting the user with a login form.
-         *
-         * To receive this event, you must be using the UI Router integration.
-         *
-         * @example
-         *
-         * <pre>
-         *   $rootScope.$on('$stateChangeUnauthenticated',function(e,toState,toParams){
-         *     // Your custom logic for deciding how the user should login, and
-         *     // if you want to redirect them to the desired state afterwards
-         *   });
-         * </pre>
-         */
-        $rootScope.$broadcast(STORMPATH_CONFIG.STATE_CHANGE_UNAUTHENTICATED,toState,toParams);
-      }
-      function stateChangeUnauthorizedEvent(toState,toParams){
-        /**
-         * @ngdoc event
-         *
-         * @name stormpath.$stormpath#$stateChangeUnauthorized
-         *
-         * @eventOf stormpath.$stormpath
-         *
-         * @eventType broadcast on root scope
-         *
-         * @param {Object} event
-         *
-         * Angular event object.
-         *
-         * @param {Object} toState The state that the user attempted to access.
-         *
-         * @param {Object} toParams The state params of the state that the user
-         * attempted to access.
-         *
-         * @description
-         *
-         * This event is broadcast when a UI state change is prevented,
-         * because the user is not authorized by the rules defined in the
-         * {@link stormpath.SpStateConfig:SpStateConfig Stormpath State Configuration}
-         * for the requested state.
-         *
-         * Use this event if you want to implement your own strategy for telling
-         * the user that they are forbidden from viewing that state.
-         *
-         * To receive this event, you must be using the UI Router integration.
-         *
-         * @example
-         *
-         * <pre>
-         *   $rootScope.$on('$stateChangeUnauthorized',function(e,toState,toParams){
-         *     // Your custom logic for deciding how the user should be
-         *     // notified that they are forbidden from this state
-         *   });
-         * </pre>
-         */
-        $rootScope.$broadcast(STORMPATH_CONFIG.STATE_CHANGE_UNAUTHORIZED,toState,toParams);
-      }
-      StormpathService.prototype.stateChangeInterceptor = function stateChangeInterceptor(config) {
-        $rootScope.$on('$stateChangeStart', function(e,toState,toParams){
-          var sp = toState.sp || {}; // Grab the sp config for this state
-          var authorities = (toState.data && toState.data.authorities) ? toState.data.authorities : undefined;
-
-          if((sp.authenticate || sp.authorize || (authorities && authorities.length)) && (!$user.currentUser)){
-            e.preventDefault();
-            $user.get().then(function(){
-              // The user is authenticated, continue to the requested state
-              if(sp.authorize || (authorities && authorities.length)){
-                if(authorizeStateConfig(sp, authorities)){
-                  $state.go(toState.name,toParams);
-                }else{
-                  stateChangeUnauthorizedEvent(toState,toParams);
-                }
-              }else{
-                $state.go(toState.name,toParams);
-              }
-            },function(){
-              // The user is not authenticated, emit the necessary event
-              stateChangeUnauthenticatedEvent(toState,toParams);
-            });
-          }else if(sp.waitForUser && ($user.currentUser===null)){
-            e.preventDefault();
-            $user.get().finally(function(){
-              $state.go(toState.name,toParams);
-            });
-          }
-          else if($user.currentUser && (sp.authorize || (authorities && authorities.length))){
-            if(!authorizeStateConfig(sp, authorities)){
-              e.preventDefault();
-              stateChangeUnauthorizedEvent(toState,toParams);
-            }
-          }else if(toState.name===config.loginState){
-            /*
-              If the user is already logged in, we will redirect
-              away from the login page and send the user to the
-              post login state.
-             */
-            if($user.currentUser!==false){
-              e.preventDefault();
-              $user.get().finally(function(){
-                if($user.currentUser && $user.currentUser.href){
-                  $state.go(config.defaultPostLoginState);
-                } else {
-                  $state.go(toState.name,toParams);
-                }
-              });
-            }
-          }
-        });
-      };
-
-      function authorizeStateConfig(spStateConfig, authorities){
-        var sp = spStateConfig;
-        if(sp && sp.authorize && sp.authorize.group) {
-          return $user.currentUser.inGroup(sp.authorize.group);
-        }else if(authorities){
-          // add support for reading from JHipster's data: { authorities: ['ROLE_ADMIN'] }
-          // https://github.com/stormpath/stormpath-sdk-angularjs/issues/190
-          var roles = authorities.filter(function(authority){
-            return $user.currentUser.inGroup(authority);
-          });
-          return roles.length > 0;
-        }else{
-          console.error('Unknown authorize configuration for spStateConfig',spStateConfig);
-          return false;
+        if ($injector.has('$transitions')) {
+          $transitions = $injector.get('$transitions');
         }
+
+        this.uiRouterWrapper = StormpathUIRouter.registerUIRouterInternals(
+          $transitions,
+          $state
+        );
+
+        return this;
       }
 
       function routeChangeUnauthenticatedEvent(toRoute) {
@@ -538,7 +398,7 @@ angular.module('stormpath', [
               goToRoute(toRoute);
             });
           } else if ($user.currentUser && sp.authorize) {
-            if (!authorizeStateConfig(sp)) {
+            if (!authorizeRouteConfig(sp)) {
               event.preventDefault();
               routeChangeUnauthorizedEvent(toRoute);
             }
@@ -620,10 +480,10 @@ angular.module('stormpath', [
        *   });
        * </pre>
        */
-      StormpathService.prototype.uiRouter = function uiRouter(config){
+      StormpathService.prototype.uiRouter = function uiRouter(config) {
         var self = this;
         config = typeof config === 'object' ? config : {};
-        this.stateChangeInterceptor(config);
+        this.uiRouterWrapper.registerInterceptor(config);
 
         if(config.loginState){
           self.unauthenticatedWather = $rootScope.$on(STORMPATH_CONFIG.STATE_CHANGE_UNAUTHENTICATED,function(e,toState,toParams){

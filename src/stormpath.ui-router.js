@@ -1,3 +1,33 @@
+'use strict';
+
+/**
+* @ngdoc overview
+*
+* @name stormpath.ui-router
+*
+* @description
+*
+* This module provides the {@link stormpath.ui-router.StormpathUIRouter StormpathUIRouter}
+* service, which handles Stormpath's integration with UIRouter (both 0.*.* and 1.**).
+*/
+angular
+  .module('stormpath.ui-router', ['stormpath.userService'])
+  .service('StormpathUIRouter', StormpathUIRouter);
+
+/**
+ * @private
+ * @name stormpath.ui-router.StormpathUIRouterTransition
+ * @description
+ *
+ * Encapsulates UIRouter state transitions for both versions 0.*.* and 1.*.*
+ * Expects UIRouter's `$state` as the first argument, and the transition start
+ * `arguments` as the second argument. It provides normalised access to the
+ * standard state transition manually.
+ *
+ * Should <b>never</b> be instantiated in client code. This class is meant only
+ * for private use in the {@link stormpath.ui-router.StormpathUIRouter StormpathUIRouter}
+ * service.
+ */
 function StormpathUIRouterTransition($state, args) {
   this.$state = $state;
   this._parseArguments(args);
@@ -15,38 +45,138 @@ StormpathUIRouterTransition.prototype._parseArguments = function _parseArguments
   }
 };
 
+/**
+ * @ngdoc method
+ * @name stormpath.ui-router.StormpathUIRouterTransition.isLegacy
+ * @methodOf stormpath.ui-router.StormpathUIRouterTransition
+ *
+ * @returns {Boolean} Whether this is UI Router < 1.0.0
+ *
+ * @description
+ * Checks whether the version of UIRouter being used is 0.*.*
+ */
 StormpathUIRouterTransition.prototype.isLegacy = function isLegacy() {
   return typeof this.$trans === 'undefined';
 };
 
+/**
+ * @ngdoc method
+ * @name stormpath.ui-router.StormpathUIRouterTransition.sp
+ * @methodOf stormpath.ui-router.StormpathUIRouterTransition
+ *
+ * @returns {Object}
+ * Stormpath configuration for this state, or empty object if none is defined
+ *
+ * @description
+ * Accesses the Stormpath state configuration (set in the `sp` property) for
+ * the state currently being transitioned to. If no such configuration object
+ * is defined, an empty object is returned instead.
+ */
 StormpathUIRouterTransition.prototype.sp = function sp() {
   return this.toState().sp || {};
 };
 
+/**
+ * @ngdoc method
+ * @name stormpath.ui-router.StormpathUIRouterTransition.authorities
+ * @methodOf stormpath.ui-router.StormpathUIRouterTransition
+ *
+ * @returns {Array} List of roles authorized to enter this state
+ *
+ * @description
+ * Retrieves a list of roles that are authorized to enter this state, defined
+ * in the state definition under `data.authorities`. If there is no such array,
+ * an empty array is returned.
+ */
 StormpathUIRouterTransition.prototype.authorities = function authorities() {
   var toState = this.toState();
 
   if (toState.data && toState.data.authorities) {
     return toState.data.authorities;
   }
+
+  return [];
 };
 
+/**
+ * @ngdoc method
+ * @name stormpath.ui-router.StormpathUIRouterTransition.fromState
+ * @methodOf stormpath.ui-router.StormpathUIRouterTransition
+ *
+ * @returns {State} State definition for state from which the transition is occurring
+ *
+ * @description
+ * Returns the state definition object for the state currently being transitioned
+ * from. This is a wrapper to provide uniform access to both UI Router 0.*.* and
+ * UI router 1.*.* state.
+ */
 StormpathUIRouterTransition.prototype.fromState = function fromState() {
   return this.$fromState || this.$trans.from();
 };
 
+/**
+ * @ngdoc method
+ * @name stormpath.ui-router.StormpathUIRouterTransition.fromParams
+ * @methodOf stormpath.ui-router.StormpathUIRouterTransition
+ *
+ * @returns {Object} Parameters of the state currently being transitioned from
+ *
+ * @description
+ * Returns the state parameters for the state currently being transitioned
+ * from. This is a wrapper to provide uniform access to both UI Router 0.*.* and
+ * UI router 1.*.* state parameters.
+ */
 StormpathUIRouterTransition.prototype.fromParams = function fromParams() {
   return this.$fromParams || this.$trans.params('from');
 };
 
+/**
+ * @ngdoc method
+ * @name stormpath.ui-router.StormpathUIRouterTransition.toState
+ * @methodOf stormpath.ui-router.StormpathUIRouterTransition
+ *
+ * @returns {State} State definition for state to which the transition is occurring
+ *
+ * @description
+ * Returns the state definition object for the state currently being transitioned
+ * to. This is a wrapper to provide uniform access to both UI Router 0.*.* and
+ * UI router 1.*.* state.
+ */
 StormpathUIRouterTransition.prototype.toState = function toState() {
   return this.$toState || this.$trans.to();
 };
 
+/**
+ * @ngdoc method
+ * @name stormpath.ui-router.StormpathUIRouterTransition.toParams
+ * @methodOf stormpath.ui-router.StormpathUIRouterTransition
+ *
+ * @returns {Object} Parameters of the state currently being transitioned to
+ *
+ * @description
+ * Returns the state parameters for the state currently being transitioned
+ * to. This is a wrapper to provide uniform access to both UI Router 0.*.* and
+ * UI router 1.*.* state parameters.
+ */
 StormpathUIRouterTransition.prototype.toParams = function toParams() {
   return this.$toParams || this.$trans.params();
 };
 
+/**
+ * @ngdoc method
+ * @name stormpath.ui-router.StormpathUIRouterTransition.pause
+ * @methodOf stormpath.ui-router.StormpathUIRouterTransition
+ *
+ * @returns {Boolean} Always `false`
+ *
+ * @description
+ * Prevents the current transition from happening. This actually only does so
+ * for UIRouter 0.*.*. For UIRouter 1.*.*, the resolution is promise-based and
+ * will not resolve when a promise is returned until that promise does.
+ *
+ * Returns `false` as a helper for UIRouter 1.*.* - in it, when `false` is returned,
+ * the transition is prevented.
+ */
 StormpathUIRouterTransition.prototype.pause = function pause() {
   if (this.isLegacy()) {
     this.$event.preventDefault();
@@ -55,19 +185,31 @@ StormpathUIRouterTransition.prototype.pause = function pause() {
   return false;
 };
 
+/**
+ * @ngdoc method
+ * @name stormpath.ui-router.StormpathUIRouterTransition.resume
+ * @methodOf stormpath.ui-router.StormpathUIRouterTransition
+ *
+ * @description
+ * Continues the transition to the original target state, if prevented. Otherwise
+ * a noop.
+ */
 StormpathUIRouterTransition.prototype.resume = function resume() {
   this.redirect(this.toState(), this.toParams());
 };
 
-StormpathUIRouterTransition.prototype.undo = function undo() {
-  if (this.isLegacy()) {
-    return this.$event.preventDefault();
-  }
-
-  var origin = this.makeTargetState(this.fromState(), this.fromParams());
-  return this.$trans.redirect(origin);
-};
-
+/**
+ * @ngdoc method
+ * @name stormpath.ui-router.StormpathUIRouterTransition.redirect
+ * @methodOf stormpath.ui-router.StormpathUIRouterTransition
+ *
+ * @param {State|String} state State definition or state name
+ * @param {Object} params State parameters
+ *
+ * @description
+ * Performs a transition to a given state with the given parameters. A wrapper
+ * around UIRouter's `$state.go`.
+ */
 StormpathUIRouterTransition.prototype.redirect = function redirect(state, params) {
   return this.$state.go(state.name || state, params);
 };
@@ -95,7 +237,7 @@ StormpathUIRouter.prototype.authorizeStateConfig = function authorizeStateConfig
 
   if (sp && sp.authorize && sp.authorize.group) {
     return this.$user.currentUser.inGroup(sp.authorize.group);
-  } else if (authorities) {
+  } else if (authorities.length) {
     // add support for reading from JHipster's data: { authorities: ['ROLE_ADMIN'] }
     // https://github.com/stormpath/stormpath-sdk-angularjs/issues/190
     var roles = authorities.filter(function(authority) {
@@ -114,14 +256,14 @@ StormpathUIRouter.prototype.onStateChange = function onStateChange(transition) {
   var authorities = transition.authorities();
   var needsAuth = sp.authenticate
     || sp.authorize
-    || (authorities && authorities.length);
+    || authorities.length;
 
   if (needsAuth && !this.$user.currentUser) {
     transition.pause();
 
     return this.$user.get().then(function() {
       // The user is authenticated, continue to the requested state
-      if (sp.authorize || (authorities && authorities.length)) {
+      if (sp.authorize || authorities.length) {
         if (this.authorizeStateConfig(transition)) {
           return transition.resume();
         }
@@ -141,7 +283,7 @@ StormpathUIRouter.prototype.onStateChange = function onStateChange(transition) {
     return this.$user.get().finally(function() {
       return transition.resume();
     });
-  } else if (this.$user.currentUser && (sp.authorize || (authorities && authorities.length))) {
+  } else if (this.$user.currentUser && (sp.authorize || authorities.length)) {
     if (!this.authorizeStateConfig(transition)) {
       this.emitUnauthorized(transition);
       return transition.pause();
@@ -274,7 +416,3 @@ StormpathUIRouter.prototype.emitUnauthenticated = function emitUnauthenticated(t
 };
 
 StormpathUIRouter.$inject = ['$rootScope', '$user', 'STORMPATH_CONFIG'];
-
-angular
-  .module('stormpath.ui-router', ['stormpath.userService'])
-  .service('StormpathUIRouter', StormpathUIRouter);

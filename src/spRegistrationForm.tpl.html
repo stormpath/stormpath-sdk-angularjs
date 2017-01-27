@@ -47,7 +47,7 @@
     <div ng-show="!viewModel" class="sp-loading">
       Loading...
     </div>
-    <form class="form-horizontal" ng-hide="!viewModel || (created && !authenticating)" ng-submit="submit()">
+    <form sp-auto-focus-form="viewModel" class="form-horizontal" ng-hide="!viewModel || (created && !authenticating)" ng-submit="submit()">
       <div class="form-group" ng-repeat="field in viewModel.form.fields">
         <label for="sp-{{field.name}}" class="col-xs-12 col-sm-4 control-label">{{field.label}}</label>
         <div class="col-xs-12 col-sm-4">

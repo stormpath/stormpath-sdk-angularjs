@@ -1209,4 +1209,33 @@ angular.module('stormpath', [
       });
     }
   };
+}])
+
+
+.directive('spAutoFocusForm', ['$timeout', function($timeout) {
+  return {
+    link: function link(scope, elem, attrs) {
+      function focusFirstInput() {
+        var firstInput = angular.element(elem).find('input')[0];
+
+        if (firstInput) {
+          $timeout(function() {
+            firstInput.focus();
+          });
+        }
+      }
+
+      if (attrs.spAutoFocusForm.length) {
+        scope.$watch(function() {
+          return scope.$eval(attrs.spAutoFocusForm);
+        }, function(curr, prev) {
+          if (curr && !prev) {
+            focusFirstInput();
+          }
+        });
+      } else {
+        focusFirstInput();
+      }
+    }
+  };
 }]);

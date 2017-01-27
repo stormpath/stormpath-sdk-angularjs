@@ -1211,9 +1211,40 @@ angular.module('stormpath', [
   };
 }])
 
-
+/**
+ * @ngdoc directive
+ * @restrict A
+ * @name stormpath.spAutoFocusForm:spAutoFocusForm
+ *
+ * @description
+ * This directive, when placed on a container element, automatically focuses
+ * on the first descendant <input> element inside the form.
+ *
+ * If the form is rendered synchronously, the directive can be placed on a form
+ * without any parameters and will focus immediately. However, if the form is
+ * instead loaded asynchronously, it needs to be passed a parameter that indicates
+ * when the form has loaded. As soon as the parameter evaluates to a truthy value,
+ * the autofocus will occur. When evaluation this value, the current scope is used.
+ *
+ * When there are no inputs inside the container, nothing happens.
+ *
+ * @example
+ * <pre><code>
+ * <form id="form-1" sp-auto-focus-form>
+ *  <input id="will-be-focused" type="text" />
+ * </form>
+ *
+ * <form id="form-2" sp-auto-focus="viewModel">
+ *  <div ng-repeat="field in viewModel.fields">
+ *    <!-- First one will be focused once it is rendered -->
+ *    <input name="{{field.name}}" type="{{field.type}}" />
+ *  </div>
+ * </form>
+ * </pre></code>
+ */
 .directive('spAutoFocusForm', ['$timeout', function($timeout) {
   return {
+    restrict: 'A',
     link: function link(scope, elem, attrs) {
       function focusFirstInput() {
         var firstInput = angular.element(elem).find('input')[0];

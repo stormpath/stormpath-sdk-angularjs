@@ -227,11 +227,11 @@ StormpathUIRouterTransition.prototype.redirect = function redirect(state, params
  * A wrapper around UI Router that allows Stormpath to connect to state transitions
  * and perform authentication, authorization and redirection.
  *
- * Emits {@link stormpath.ui.router:StormpathUIRouter#-$stateChangeUnauthorized $stateChangeUnauthorized}
- * or {@link stormpath.ui.router:StormpathUIRouter#-$stateChangeUnauthenticated $stateChangeUnauthenticated}
+ * Emits {@link stormpath.ui.router:StormpathUIRouter#events_$stateChangeUnauthorized $stateChangeUnauthorized}
+ * or {@link stormpath.ui.router:StormpathUIRouter#events_$stateChangeUnauthenticated $stateChangeUnauthenticated}
  * in case of authorization or authentication failure, to allow for further client handling.
  *
- * When initialized, {@link stormpath.ui.router:StormpathUIRouter#registerUIRouterInternals StormpathUIRouter.registerUIRouterInternals()}
+ * When initialized, {@link stormpath.ui.router:StormpathUIRouter#methods_registerUIRouterInternals StormpathUIRouter.registerUIRouterInternals()}
  * <b>must</b> be called to inject `$state` and `$transitions` (if UIRouter >= 1.0.0) into the service.
  */
 function StormpathUIRouter($rootScope, $user, STORMPATH_CONFIG) {

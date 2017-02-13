@@ -65,6 +65,11 @@ Follow these steps to add Stormpath user authentication to your AngularJS app.
       STORMPATH_CONFIG.ENDPOINT_PREFIX = 'https://{{clientApiDomainName}}';
     });
   ```
+  You will need to tell Stormpath where your front-end application is running, by adding its domain to the list of Authorized Origin URIs on your Stormpath Application. This can be done from the Stormpath Admin Console. For example, if you are developing on a local sever that runs your front-end app at `http://localhost:3000`, you need to add that URI to the list
+
+  If this is not done, you will see the error `Origin 'http://localhost:3000' is therefore not allowed access.` in the browser error log.
+
+  If you will be using social login, you will also need to add this URI to the list of Authorized Callback URIs, otherwise you will see the error `Specified redirect_uri is not in the application's configured authorized callback uri's.` when you attempt social login.
 
 
 4. **Configure Routing**

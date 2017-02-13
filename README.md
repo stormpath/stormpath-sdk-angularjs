@@ -7,6 +7,8 @@
 
 This module provides services and directives for AngularJS that will allow you to solve common user management tasks using [Stormpath](https://stormpath.com/), such as *login* and *signup*.
 
+If you're looking for **Angular (2)** support, please see [stormpath-sdk-angular](https://github.com/stormpath/stormpath-sdk-angular).
+
 *Stormpath is a User Management API that reduces development time with instant-on, scalable user infrastructure. Stormpath's intuitive API and expert support make it easy for developers to authenticate, manage and secure users and roles in any application.*
 
 * [Getting Started](#getting-started)

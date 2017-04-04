@@ -1,3 +1,7 @@
+# 2.0.1
+
+Fixed a bug in `$isCurrentDomain` that would incorrectly report a cross-domain situation in IE11.
+
 # 2.0.0
 
 This release adds support for the [Stormpath Client API][], which allows you to authenticate the user directly with Stormpath (authentication does not require special software in your server).  The user receives an access token, which can be used to authorize requests on your server.  If you need to authorize requests on your server, you will will want to use one of our SDKs to make that process simpler.

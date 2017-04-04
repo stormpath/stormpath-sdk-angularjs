@@ -2,7 +2,7 @@
  * stormpath-sdk-angularjs
  * Copyright Stormpath, Inc. 2017
  * 
- * @version v2.0.0-dev-2017-01-12
+ * @version v2.0.1-dev-2017-04-04
  * @link https://github.com/stormpath/stormpath-sdk-angularjs
  * @license Apache-2.0
  */
@@ -4108,12 +4108,12 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
     var link = $window.document.createElement('a');
     link.href = url;
 
-    return $window.location.host === link.host;
+    return (link.host === "") || $window.location.host === link.host.replace(/:443$/, "");
   };
 }])
 .constant('$spHeaders', {
   // The placeholders in the value are replaced by the `grunt dist` command.
-  'X-Stormpath-Agent': 'stormpath-sdk-angularjs/2.0.0' + ' angularjs/' + angular.version.full
+  'X-Stormpath-Agent': 'stormpath-sdk-angularjs/2.0.1' + ' angularjs/' + angular.version.full
 })
 .provider('$spErrorTransformer', [function $spErrorTransformer(){
   /**

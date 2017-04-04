@@ -13,7 +13,7 @@ angular.module('stormpath.utils', ['stormpath.CONFIG'])
     var link = $window.document.createElement('a');
     link.href = url;
 
-    return $window.location.host === link.host;
+    return $window.location.host === link.hostname;
   };
 }])
 .constant('$spHeaders', {
